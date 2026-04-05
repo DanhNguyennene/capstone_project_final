@@ -1,0 +1,87 @@
+---
+config:
+  look: neo
+  theme: base
+  themeVariables:
+    primaryColor: "#e3f2fd"
+    primaryBorderColor: "#1976d2"
+    secondaryColor: "#fff3e0"
+    secondaryBorderColor: "#f57c00"
+    tertiaryColor: "#f3e5f5"
+    tertiaryBorderColor: "#7b1fa2"
+    actorBkg: "#e8f5e9"
+    actorBorder: "#388e3c"
+    actorTextColor: "#1b5e20"
+    signalColor: "#424242"
+    signalTextColor: "#212121"
+    labelBoxBkgColor: "#fce4ec"
+    labelBoxBorderColor: "#c2185b"
+    noteBkgColor: "#fff8e1"
+    noteBorderColor: "#ffa000"
+    activationBkgColor: "#e3f2fd"
+    activationBorderColor: "#1976d2"
+---
+sequenceDiagram
+    autonumber
+    actor User
+    participant Web as Web Interface
+    participant Agent as Main Agent
+    participant LLM as LLM
+    participant Chart as Chart Tool
+    participant MCP as MCP Server
+    participant Context as Run Context
+
+    rect rgb(227, 242, 253)
+        Note over User,Web: User Request
+        User->>Web: "Show job distribution chart"
+        Web->>Agent: Forward request
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Agent,LLM: Think Phase
+        Agent->>LLM: Process request
+        LLM-->>Agent: Call chart tool
+    end
+
+    rect rgb(243, 229, 245)
+        Note over Agent,MCP: Act Phase - Chart Generation
+        Agent->>Chart: generate_chart(type, data)
+        Chart->>MCP: HTTP request (stateless)
+        MCP-->>Chart: Base64 PNG image
+    end
+
+    rect rgb(232, 245, 233)
+        Note over Chart,Context: Artifact Isolation
+        Chart->>Context: Store base64 artifact
+        Note over Context: Image stored in<br/>run context (NOT LLM)
+        Chart-->>Agent: Brief summary only<br/>"Chart generated successfully"
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Agent,LLM: Continue Processing
+        Agent->>LLM: Summary (no image data)
+        Note over LLM: Token-efficient:<br/>No base64 in context
+        LLM-->>Agent: Natural language response
+    end
+
+    rect rgb(227, 242, 253)
+        Note over Agent,Web: Streaming Response
+        Agent-)Web: Stream text response
+        Agent->>Context: Retrieve artifact
+        Context-->>Agent: Base64 image
+        Agent-)Web: Append [IMG]base64...[/IMG]
+    end
+
+    rect rgb(232, 245, 233)
+        Note over Web,User: Frontend Rendering
+        Web->>Web: Parse [IMG] markers
+        Web->>Web: Render inline image
+        Web-)User: Display text + chart
+    end
+
+    rect rgb(252, 228, 236)
+        Note over Agent,Context: History Cleanup
+        Agent->>Context: Next LLM call
+        Note over Context: ChartFilteredSession<br/>strips artifacts
+        Context-->>Agent: Clean history<br/>(no base64)
+    end

@@ -1,0 +1,145 @@
+\documentclass[12pt]{report}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=2cm]{geometry}
+% \usepackage{svg}
+\usepackage{tgtermes}
+\usepackage{fontspec}
+\usepackage{biblatex}
+\addbibresource{sections/ref.bib}
+% \usepackage{pgfsys}
+% \usepackage{transparent}
+\setmainfont{Times New Roman}
+\usepackage{eso-pic}
+\usepackage{tikz}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usetikzlibrary{positioning}
+\usepackage{anyfontsize}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{lscape}
+\linespread{1.5}
+\usepackage{hyperref}
+\usepackage{longtable}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+\usepackage{subcaption}
+
+
+\lstset{
+    basicstyle=\small\ttfamily, % Small font size
+    numbers=left,
+    frame=single,
+}
+\usepackage{pgfplots} % Required for the TikZ figure
+\pgfplotsset{compat=1.17} % Ensure compatibility with the latest version of pgfplots
+
+\newcommand{\Khang}[1]{\textcolor{red!70!pink}{\textbf{\textit{#1}}}}
+
+% Define chapter font size to be 15pt
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\begin{document}
+
+\input{sections/cover-page}
+\setmainfont{Times New Roman}
+
+\clearpage
+\pagenumbering{roman} 
+\input{sections/ins-signature}
+
+\input{sections/decl-of-authen}
+
+\input{sections/ack}
+
+\input{sections/abstract}
+
+\input{sections/table-of-glossary}
+
+% \input{sections/list-of-abbreviations}
+
+\input{sections/contents}
+
+\listoftables
+\newpage
+
+\listoffigures
+\newpage
+
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+
+\input{sections/1.Introduction/1.1.Motivation}
+
+\input{sections/1.Introduction/1.2.Scope-Goals}
+
+\input{sections/1.Introduction/1.3.Challenges}
+
+\input{sections/1.Introduction/1.4.Thesis-structure}
+
+\chapter{Theoretical Background}
+
+\input{sections/2.Background/2.1.Slurm}
+
+\input{sections/2.Background/2.2.LLM}
+
+\input{sections/2.Background/2.3.MCP}
+
+\input{sections/2.Background/2.4.Agent-Architectures}
+
+\chapter{Related Tools and Works}
+\label{chapter:related}
+
+\input{sections/3.RelatedWorks/3.1.HPC-Tools}
+
+\input{sections/3.RelatedWorks/3.2.Agent-Frameworks}
+
+\input{sections/3.RelatedWorks/3.3.MCP-Implementations}
+
+\chapter{Proposed Approaches}
+
+\input{sections/4.Proposed/4.1.Introduction}
+
+\input{sections/4.Proposed/4.2.Requirements}
+
+\input{sections/4.Proposed/4.3.Architecture}
+
+\chapter{Implementation}
+
+\input{sections/5.Implementation/5.1.Agent-Backend}
+
+\input{sections/5.Implementation/5.2.MCP-Server}
+
+\input{sections/5.Implementation/5.3.Frontend}
+
+\chapter{Experiments}
+
+\input{sections/6.Experiments/6.1.Testing-Approach}
+
+\input{sections/6.Experiments/6.2.Results}
+
+\chapter{Conclusion}
+
+\input{sections/7.Conclusion/7.1.Summary}
+
+\input{sections/7.Conclusion/7.2.Limitations}
+
+\input{sections/7.Conclusion/7.3.Future-Work}
+
+\input{sections/references}
+
+\input{sections/appendixes/appendix}
+\input{sections/appendixes/plan}
+% add appendix later on
+
+\end{document}

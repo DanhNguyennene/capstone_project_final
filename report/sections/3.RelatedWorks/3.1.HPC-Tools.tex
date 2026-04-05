@@ -1,0 +1,64 @@
+\section{HPC Management Tools}
+\label{sec:hpc-tools}
+
+The management of High-Performance Computing clusters has traditionally relied on command-line interfaces and specialized monitoring solutions. This section reviews existing tools and approaches for HPC cluster management, analyzing their capabilities and limitations in the context of user accessibility.
+
+\subsection{Native Slurm Interfaces}
+
+Slurm itself provides the primary interface for cluster management through its command-line utilities. While powerful and comprehensive, these tools present several usability challenges:
+
+\textbf{sview} is Slurm's graphical user interface, providing visual representations of cluster state, job queues, and partition configurations. However, sview requires X11 forwarding for remote access, has limited customization options, and does not support advanced features such as natural language queries or intelligent recommendations. The interface provides visualization capabilities but lacks the flexibility of modern web-based solutions.
+
+\textbf{slurmrestd} exposes Slurm functionality through a REST API, enabling programmatic access to cluster information and job management. While this opens possibilities for building custom interfaces, developers must still handle the complexity of Slurm's data models and operations. The REST interface provides machine-readable access but does not address user-facing accessibility concerns.
+
+\subsection{Third-Party Monitoring Solutions}
+
+Several third-party tools have emerged to provide enhanced cluster monitoring and management capabilities:
+
+\textbf{Open XDMoD} (Open XD Metrics on Demand) is an open-source tool for comprehensive HPC resource management and reporting. It provides detailed analytics on resource utilization, job statistics, and user behavior. XDMoD excels at historical analysis and reporting but focuses on administrative oversight rather than user-facing job management.
+
+\textbf{Grafana with Prometheus} represents a common monitoring stack deployed alongside Slurm clusters. Prometheus collects metrics from cluster nodes, while Grafana provides customizable dashboards for visualization. This combination offers flexible monitoring but requires significant configuration effort and does not provide interactive job management capabilities.
+
+\textbf{SLURM Job Viz} and similar tools provide web-based visualization of cluster state. These tools typically offer graphical views of node allocation and job queues. While improving visibility, they remain read-only monitoring solutions without job submission or management functionality.
+
+% Placeholder: Comparison table of HPC tools
+\begin{table}[H]
+    \centering
+    \caption{Comparison of HPC Management Tools}
+    \label{tab:hpc-tools}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Tool} & \textbf{NL Interface} & \textbf{Job Mgmt} & \textbf{Visualization} & \textbf{Web-based} \\
+        \hline
+        Slurm CLI & No & Yes & No & No \\
+        sview & No & Yes & Yes & No \\
+        Open XDMoD & No & Limited & Yes & Yes \\
+        Grafana & No & No & Yes & Yes \\
+        \textbf{Slurm Agent} & Yes & Yes & Yes & Yes \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Portal and Gateway Systems}
+
+Science gateways and web portals have been developed to provide more accessible interfaces to HPC resources:
+
+\textbf{Open OnDemand} is a popular open-source platform providing web-based access to HPC clusters. It offers file management, job submission through web forms, and interactive application launching. While significantly improving accessibility over command-line interfaces, Open OnDemand still requires users to understand Slurm concepts and manually specify job parameters.
+
+\textbf{JupyterHub} deployments on HPC systems enable interactive notebook-based computing. Users can launch Jupyter sessions that run on compute nodes, accessing cluster resources through a familiar interface. However, job management and cluster monitoring remain separate from the notebook environment.
+
+These portal solutions improve accessibility but do not address the fundamental challenge of translating user intent into appropriate cluster operations. Users must still possess knowledge of resource requirements, partition configurations, and job specifications.
+
+\subsection{Limitations of Existing Approaches}
+
+Analysis of existing HPC management tools reveals common limitations that motivate the development of intelligent agent-based interfaces:
+
+\textbf{Knowledge requirements}: All existing tools assume users understand Slurm concepts, command syntax, or form field meanings. There is no mechanism for translating high-level goals into appropriate system operations.
+
+\textbf{Static interfaces}: Current tools provide fixed interfaces that cannot adapt to individual user needs or provide contextual guidance based on the current situation.
+
+\textbf{Limited reasoning}: Existing solutions cannot reason about cluster state to provide recommendations, diagnose issues, or suggest optimizations.
+
+\textbf{No natural language}: Users must communicate through structured interfaces (commands, forms, queries) rather than expressing needs in natural language.
+
+These limitations create opportunities for LLM-based agents that can understand user intent, reason about cluster operations, and provide intelligent assistance—the approach pursued in this research.

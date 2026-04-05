@@ -1,0 +1,102 @@
+\section{Multi-Agent Design}
+\label{sec:agent-design}
+
+This section details the multi-agent architecture that enables the Slurm Agent to handle diverse task types effectively. The design employs specialized agents with distinct responsibilities, coordinated through a delegation mechanism that preserves conversation context while enabling focused reasoning within each specialized domain.
+
+\subsection{Agent Specialization Rationale}
+
+The decision to implement multiple specialized agents rather than a single monolithic agent stems from fundamental considerations about prompt engineering, tool management, and system maintainability in the context of HPC cluster operations.
+
+\subsubsection{Prompt Complexity Management}
+
+A monolithic agent that handles all cluster operations would require an extensive system prompt covering Slurm concepts, tool usage patterns, safety considerations, visualization capabilities, and web search synthesis. Such a prompt would consume substantial context window capacity, leaving less room for conversation history and tool outputs. More critically, a long, multifaceted prompt increases the likelihood of instruction conflicts and reduces the model's ability to follow specific guidance.
+
+By dividing responsibilities across specialized agents, each agent's prompt can remain focused and concise. The main agent's prompt emphasizes orchestration and user communication. The Analysis Sub-Agent's prompt focuses on data gathering methodology. The Action Sub-Agent's prompt emphasizes verification and consequence awareness. This separation ensures that each agent operates with clear, non-conflicting instructions.
+
+\subsubsection{Tool Isolation and Cognitive Load}
+
+Not all tools are relevant for all tasks. When a user asks about job queue status, visualization tools are irrelevant. When generating a chart, Slurm action commands like \texttt{scancel} should not be accessible. Presenting all tools to a single agent increases cognitive load on the model, potentially leading to inappropriate tool selection.
+
+Agent specialization enables appropriate tool scoping. The Analysis Sub-Agent has access to read-only Slurm commands and web search. The Action Sub-Agent has access to job management commands. The chart generation tool (invoked directly by the main agent) provides visualization capabilities. This isolation reduces decision complexity and prevents inappropriate tool usage.
+
+\subsubsection{Safety Through Separation}
+
+Safety-critical operations benefit from dedicated handling with specialized prompts and validation logic. By isolating action-oriented operations in a dedicated sub-agent, the system can apply enhanced scrutiny to potentially destructive operations without burdening every interaction with safety overhead. The Action Sub-Agent's instructions explicitly emphasize verification requirements and consequence awareness, creating a focused safety checkpoint.
+
+\subsubsection{Extensibility and Maintenance}
+
+New capabilities can be added as new agents or tools without modifying existing configurations. If future requirements demand specialized agents for storage management, network analysis, or container orchestration, these can be integrated by defining new sub-agents and adding them as tools to the main agent. This modular architecture supports evolution without destabilizing proven functionality.
+
+\subsection{Agent Definitions and Responsibilities}
+
+The system implements three primary agents coordinated through a tool-based delegation mechanism:
+
+% Placeholder: Agent relationship diagram
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram showing the three agents with delegation relationships and tool boundaries]}}}
+    \caption{Multi-Agent Architecture with Delegation Relationships}
+    \label{fig:multi-agent}
+\end{figure}
+
+\subsubsection{Main Agent}
+
+The Main Agent serves as the primary point of contact for user queries and the orchestrator for the multi-agent system. Its responsibilities center on user communication, task classification, delegation decisions, and result synthesis.
+
+The Main Agent determines whether a query requires cluster data gathering (delegate to Analysis Sub-Agent), action execution (delegate to Action Sub-Agent), visualization (invoke chart tool directly), or can be answered from conversation context alone. After delegation, the Main Agent synthesizes sub-agent results into coherent, user-facing responses that maintain conversational continuity.
+
+The Main Agent's available tools include a cluster analysis function (which invokes the Analysis Sub-Agent), a job management function (which invokes the Action Sub-Agent), a chart generation function for visualization, and confirmation/cancellation functions for managing the confirmation workflow.
+
+\subsubsection{Analysis Sub-Agent}
+
+The Analysis Sub-Agent specializes in read-only data gathering operations. When invoked, it receives a natural language description of the required investigation and autonomously determines which Slurm commands to execute.
+
+The Analysis Sub-Agent's tool set includes \texttt{squeue}, \texttt{sacct}, \texttt{sinfo}, \texttt{scontrol\_show}, predefined analysis scripts via \texttt{run\_analysis}, and \texttt{web\_search} for documentation lookup. Its instructions emphasize efficient data gathering, appropriate tool selection based on the investigation requirements, and structured output formatting for main agent consumption.
+
+A key design choice is that the Analysis Sub-Agent can chain multiple tool calls within a single invocation. When investigating why jobs are pending, for example, it might query \texttt{squeue} to identify pending jobs, then \texttt{sinfo} to check node availability, then \texttt{scontrol\_show} to examine partition limits. This multi-step reasoning occurs within the sub-agent, returning a comprehensive result to the main agent for synthesis.
+
+\subsubsection{Action Sub-Agent}
+
+The Action Sub-Agent handles operations that modify cluster state. Its tool set includes job control commands 
+\begin{itemize}
+    \item \texttt{sbatch} for job submission
+    \item \texttt{scancel} for job cancellation
+    \item \texttt{scontrol\_hold} and \texttt{scontrol\_release} for job state management
+    \item \texttt{scontrol\_update} for administrative updates
+    \item Interactive session commands (\texttt{srun}, \texttt{salloc})
+    \item Administrative commands with appropriate access controls
+\end{itemize}
+
+% (\texttt{sbatch}, \texttt{scancel}, \texttt{scontrol\_hold}, \texttt{scontrol\_release}, \texttt{scontrol\_update}), interactive session commands (\texttt{srun}, \texttt{salloc}), and administrative commands with appropriate access controls.
+
+The Action Sub-Agent's instructions emphasize verification before execution, clear reporting of action outcomes, and awareness of operation consequences. Dangerous operations are intercepted by the confirmation mechanism before reaching actual execution, ensuring that the Action Sub-Agent cannot autonomously execute destructive operations.
+
+\subsection{Delegation Mechanism}
+
+Agent delegation follows an ``agent-as-tool'' pattern where sub-agents are registered as callable tools with natural language descriptions that enable the main agent to understand when delegation is appropriate.
+
+\subsubsection{Delegation Decision}
+
+The main agent's reasoning determines when to delegate based on query content and context. Queries requesting cluster status, job information, or node details trigger Analysis Sub-Agent delegation. Queries requesting job submission, cancellation, or modification trigger Action Sub-Agent delegation. Queries requesting charts or visualizations invoke the chart tool directly.
+
+\subsubsection{Context Transfer}
+
+When delegation occurs, the sub-agent receives the delegation request as its input, along with any relevant context extracted by the main agent. The sub-agent operates independently, executing tool calls as needed, and returns its findings as the tool result. The main agent then incorporates this result into the conversation.
+
+\subsubsection{Custom Output Extraction}
+
+A critical implementation detail is the use of custom output extractors for sub-agents. By default, an agent-as-tool returns its final conversational response. However, for sub-agents performing data gathering, this conversational framing is unnecessary overhead. Custom extractors format sub-agent output as structured data (tool results with summaries) rather than conversational messages, enabling more efficient result synthesis by the main agent.
+
+\subsection{Response Streaming Integration}
+
+All agents integrate with the streaming response infrastructure to maintain responsive user experience:
+
+\textbf{Text streaming}: Agent-generated text streams token-by-token to the frontend, providing immediate feedback during reasoning and response generation.
+
+\textbf{Tool call markers}: When tools are invoked (including sub-agent delegation), special markers indicate the operation in progress, keeping users informed of system activity.
+
+\textbf{Image streaming}: The chart tool outputs images with special markers that the frontend recognizes and renders inline, seamlessly integrating visualizations into the conversation flow.
+
+\textbf{Confirmation markers}: When dangerous operations trigger the confirmation mechanism, markers indicate the pending action status, enabling appropriate UI presentation.
+
+This integration ensures responsive interaction regardless of which agent is processing the query, with consistent feedback mechanisms across all operation types.

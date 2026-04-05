@@ -1,0 +1,96 @@
+\section{Requirements Overview}
+\label{sec:requirements}
+
+This section presents the functional and non-functional requirements that guide the design and implementation of the Slurm Agent system. Requirements are derived from the project goals and the needs of target users identified in the previous section.
+
+\subsection{Functional Requirements}
+
+Functional requirements define the specific capabilities the system must provide:
+
+\textbf{FR1: Natural Language Understanding.} The system shall interpret user queries expressed in natural language and determine appropriate actions. This includes handling variations in phrasing, implicit context, and ambiguous requests through clarification dialogue.
+
+\textbf{FR2: Slurm Query Execution.} The system shall execute Slurm queries to retrieve cluster information, including:
+\begin{itemize}
+    \item Partition information (names, states, resource limits)
+    \item Node status (availability, resources, current allocations)
+    \item Job queue status (pending and running jobs)
+    \item Job details (parameters, resources, timing information)
+    \item Accounting data (historical job information)
+\end{itemize}
+
+\textbf{FR3: Job Management Operations.} The system shall support job management actions including:
+\begin{itemize}
+    \item Job submission via batch scripts
+    \item Job cancellation for running or pending jobs
+    \item Job control operations (hold, release, modify priority)
+    \item Retrieving detailed job information and output files
+\end{itemize}
+
+\textbf{FR4: Data Visualization.} The system shall generate visualizations for cluster data, including:
+\begin{itemize}
+    \item Node resource utilization charts
+    \item Job distribution by partition
+    \item Historical usage trends
+    \item Queue statistics
+\end{itemize}
+
+\textbf{FR5: Web Search Integration.} The system shall search web resources to assist with troubleshooting and documentation lookup, enabling access to current information beyond the system's training data.
+
+\textbf{FR6: Real-Time Response Streaming.} The system shall stream responses in real-time, providing incremental updates as the agent processes queries and generates results.
+
+\textbf{FR7: Markdown Response Formatting.} The system shall format responses using markdown, enabling rich text display including tables, code blocks, and inline formatting.
+
+\textbf{FR8: Multi-Turn Conversation.} The system shall maintain conversation context across multiple turns, enabling follow-up questions and contextual references.
+
+\textbf{FR9: Confirmation for Dangerous Operations.} The system shall require explicit user confirmation before executing operations that modify cluster state, such as job cancellation or configuration changes. Pending actions shall be stored persistently until confirmed or cancelled.
+
+\subsection{Non-Functional Requirements}
+
+Non-functional requirements define quality attributes and constraints:
+
+\textbf{NFR1: Response Latency.} The system should begin streaming responses within 2 seconds of query submission. Complete responses for simple queries should typically complete within 10 seconds.
+
+\textbf{NFR2: Accuracy.} Slurm command outputs should be accurately retrieved and presented. The agent should not fabricate cluster information.
+
+\textbf{NFR3: Safety.} The system shall not execute commands that could harm cluster operations. Dangerous operations shall be intercepted by a confirmation mechanism requiring explicit user approval before execution.
+
+\textbf{NFR4: Usability.} The web interface shall be intuitive and usable without specialized training. Users should be able to begin productive interaction immediately.
+
+\textbf{NFR5: Extensibility.} The MCP server architecture shall support addition of new tools without modifying the agent core. Visualization capabilities shall be extensible through modular chart definitions.
+
+\textbf{NFR6: Maintainability.} Code shall be organized in modular components with clear separation of concerns. The multi-agent architecture shall isolate different functional domains.
+
+% Requirements traceability matrix
+\begin{table}[H]
+    \centering
+    \caption{Requirements Traceability to Project Goals}
+    \label{tab:requirements-traceability}
+    \small
+    \begin{tabular}{|l|c|c|c|c|c|c|}
+        \hline
+        \textbf{Requirement} & \textbf{G1} & \textbf{G2} & \textbf{G3} & \textbf{G4} & \textbf{G5} & \textbf{G6} \\
+        & \textit{NL} & \textit{Multi-} & \textit{MCP} & \textit{Visual-} & \textit{Stream-} & \textit{Web} \\
+        & \textit{Interface} & \textit{Agent} & \textit{Tools} & \textit{ization} & \textit{ing} & \textit{UI} \\
+        \hline
+        FR1: NL Understanding & \checkmark & & & & & \\
+        FR2: Query Execution & \checkmark & & \checkmark & & & \\
+        FR3: Job Management & \checkmark & \checkmark & \checkmark & & & \\
+        FR4: Visualization & & & \checkmark & \checkmark & & \\
+        FR5: Web Search & & \checkmark & \checkmark & & & \\
+        FR6: Streaming & & & & & \checkmark & \checkmark \\
+        FR7: Formatting & & & & & & \checkmark \\
+        FR8: Multi-Turn & & & & & & \checkmark \\
+        FR9: Confirmation & & \checkmark & & & & \checkmark \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Constraints}
+
+The following constraints bound the system implementation:
+
+\textbf{Technology constraints}: The system uses the OpenAI API for LLM capabilities, requiring API access and incurring usage costs. The MCP server is implemented in Python using the official SDK.
+
+\textbf{Environment constraints}: Testing is conducted on a single-node Slurm cluster configuration. The system assumes standard Slurm command availability.
+
+\textbf{Scope constraints}: The current implementation focuses on read operations and visualization. Administrative write operations are limited to prevent accidental cluster impact.

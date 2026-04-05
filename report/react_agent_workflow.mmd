@@ -1,0 +1,79 @@
+---
+config:
+  look: neo
+  theme: base
+  themeVariables:
+    primaryColor: "#e3f2fd"
+    primaryBorderColor: "#1976d2"
+    secondaryColor: "#fff3e0"
+    secondaryBorderColor: "#f57c00"
+    tertiaryColor: "#f3e5f5"
+    tertiaryBorderColor: "#7b1fa2"
+    actorBkg: "#e8f5e9"
+    actorBorder: "#388e3c"
+    actorTextColor: "#1b5e20"
+    signalColor: "#424242"
+    signalTextColor: "#212121"
+    labelBoxBkgColor: "#fce4ec"
+    labelBoxBorderColor: "#c2185b"
+    noteBkgColor: "#fff8e1"
+    noteBorderColor: "#ffa000"
+    activationBkgColor: "#e3f2fd"
+    activationBorderColor: "#1976d2"
+---
+sequenceDiagram
+    autonumber
+    actor User
+    participant Web as Web Interface
+    participant Agent as Main ReAct Agent
+    participant Sub as Sub-Agents
+    participant MCP as MCP Tools
+    participant Slurm as Slurm Cluster
+
+    rect rgb(227, 242, 253)
+        Note over User,Web: Input Phase
+        User->>Web: Submit natural language query
+        Web->>Agent: Forward query
+    end
+    
+    rect rgb(255, 243, 224)
+        Note over Agent: THINK PHASE
+        Agent->>Agent: Reason about query intent
+    end
+    
+    rect rgb(243, 229, 245)
+        Note over Agent,MCP: ACT PHASE
+        Agent->>Sub: Invoke appropriate sub-agent
+        Sub->>MCP: Call MCP tools
+        MCP->>Slurm: Execute Slurm commands
+        Slurm-->>MCP: Return command results
+    end
+    
+    rect rgb(232, 245, 233)
+        Note over Agent: OBSERVE PHASE
+        MCP-->>Sub: Return tool results
+        Sub-->>Agent: Process and format results
+    end
+    
+    alt Dangerous Operation
+        Agent->>Web: Queue action for confirmation
+        Web->>User: Request confirmation
+        User->>Web: Confirm or reject
+        Web->>Agent: User decision
+    end
+    
+    Agent->>Agent: Generate natural language response
+    
+    opt Visualization Requested
+        Agent->>MCP: Call chart generation tool
+        MCP-->>Agent: Return chart data (stored in context)
+    end
+    
+    Agent-)Web: Stream formatted response
+    Web-)User: Display results with inline charts
+    
+    loop Follow-up Queries
+        Note over Web,Agent: Context preserved
+        User->>Web: Submit follow-up query
+        Web->>Agent: Forward with context
+    end
