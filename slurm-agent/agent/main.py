@@ -16,7 +16,7 @@ import os
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
-from flow.multi_agent import SlurmMultiAgentSystem
+from flow import SlurmMultiAgentSystem
 
 # Configuration
 MCP_SERVER_URL = "http://localhost:3002"

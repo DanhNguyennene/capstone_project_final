@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 # ── Add parent dirs to path so defined_charts / defined_analysis are importable ──
 THIS_DIR = Path(__file__).parent
@@ -274,29 +274,33 @@ _ANALYSIS_SCRIPTS = {
 }
 
 @mcp.tool()
-def run_analysis(script_id: str) -> str:
+def run_analysis(script_id: Literal[
+    "analyze_my_jobs",
+    "analyze_failed_jobs",
+    "analyze_gpu_resources",
+    "analyze_my_efficiency",
+    "analyze_my_usage",
+    "analyze_pending_jobs",
+    "analyze_cluster_status",
+    "analyze_node_health",
+    "analyze_job_efficiency",
+]) -> str:
     """
     Run a predefined cluster analysis script.
 
     Available script_ids:
-      analyze_my_jobs, analyze_failed_jobs, analyze_gpu_resources,
-      analyze_my_efficiency, analyze_my_usage, analyze_pending_jobs,
-      analyze_cluster_status
+      analyze_cluster_status, analyze_failed_jobs, analyze_pending_jobs,
+      analyze_gpu_resources, analyze_node_health, analyze_job_efficiency,
+      analyze_my_jobs, analyze_my_usage, analyze_my_efficiency
     """
     sid = script_id.strip().lower()
-
-    if sid not in _ANALYSIS_SCRIPTS:
-        return (
-            f"Unknown script_id '{script_id}'. "
-            f"Available: {', '.join(_ANALYSIS_SCRIPTS.keys())}"
-        )
 
     jobs  = _jobs()
     nodes = _nodes()
 
-    running  = [j for j in jobs if j.get("state") == "RUNNING"]
-    pending  = [j for j in jobs if j.get("state") == "PENDING"]
-    failed   = [j for j in jobs if j.get("state") in ("FAILED", "TIMEOUT")]
+    running   = [j for j in jobs if j.get("state") == "RUNNING"]
+    pending   = [j for j in jobs if j.get("state") == "PENDING"]
+    failed    = [j for j in jobs if j.get("state") in ("FAILED", "TIMEOUT")]
     completed = [j for j in jobs if j.get("state") == "COMPLETED"]
 
     gpu_nodes  = [n for n in nodes if "gpu" in n.get("gres", "").lower()]
@@ -366,88 +370,272 @@ def run_analysis(script_id: str) -> str:
             )
         return "\n".join(lines) if lines[1:] else "No jobs found."
 
-    return f"Analysis '{script_id}' ran successfully (mock)."
+    elif sid == "analyze_node_health":
+        lines = [f"=== Node Health Analysis (scenario: {SCENARIO}) ==="]
+        for n in nodes:
+            state = n.get("state", "?")
+            reason = f" [{n['reason']}]" if n.get("reason") else ""
+            lines.append(
+                f"{n['name']}: {state}{reason}  CPUs={n.get('cpus','?')}  "
+                f"Mem={n.get('mem','?')}  GRES={n.get('gres','none')}"
+            )
+        lines.append(f"\nSummary: {len(nodes)} nodes, "
+                     f"{len(down_nodes)} down/drain, "
+                     f"{len([n for n in nodes if 'idle' in n.get('state','')])} idle")
+        return "\n".join(lines)
+
+    elif sid == "analyze_job_efficiency":
+        import hashlib
+        targets = running or failed
+        if not targets:
+            return "No running or recently completed jobs to analyze efficiency."
+        lines = [f"=== Job Efficiency Estimate (scenario: {SCENARIO}) ==="]
+        lines.append(f"{'JOBID':<8}  {'NAME':<22}  {'USER':<8}  {'CPUS':<5}  {'MEM':<6}  {'CPU_EFF':>7}  {'MEM_EFF':>7}")
+        lines.append("-" * 72)
+        for j in targets[:10]:
+            h = int(hashlib.md5(str(j['job_id']).encode()).hexdigest()[:4], 16)
+            cpu_eff = 25 + (h % 65)
+            mem_eff = 35 + ((h >> 4) % 60)
+            warnings = []
+            if cpu_eff < 50: warnings.append("⚠ CPU")
+            if mem_eff < 40: warnings.append("⚠ MEM")
+            warn = "  " + " ".join(warnings) if warnings else ""
+            lines.append(
+                f"{j['job_id']:<8}  {j['name'][:22]:<22}  {j.get('user','?'):<8}  "
+                f"{j.get('cpus','?'):<5}  {j.get('mem','?'):<6}  "
+                f"{cpu_eff:>6}%  {mem_eff:>6}%{warn}"
+            )
+        lines.append("\nNote: efficiency estimated from step counters (mock data).")
+        lines.append("Real: use 'sstat -j <jobid>' for live CPU/mem utilization.")
+        return "\n".join(lines)
+
+    return f"Unknown script_id '{script_id}'. Available: {', '.join(['analyze_cluster_status','analyze_failed_jobs','analyze_pending_jobs','analyze_gpu_resources','analyze_node_health','analyze_job_efficiency','analyze_my_jobs'])}"
 
 
 # ── Chart Tool ────────────────────────────────────────────────────────────────
 
-_VALID_CHARTS = {
-    "system_health", "cluster_topology", "pending_analysis",
-    "resource_map", "job_lifecycle",
-    # legacy IDs
-    "job_distribution", "node_status", "resource_usage",
-    "queue_timeline", "live_dashboard",
-}
-
 @mcp.tool()
-def generate_chart(chart_id: str) -> str:
+def generate_chart(chart_id: Literal[
+    "system_health",
+    "cluster_topology",
+    "pending_analysis",
+    "resource_map",
+    "job_lifecycle",
+    "efficiency_report",
+]) -> str:
     """
-    Generate a Mermaid diagram for the cluster.
+    Generate a Mermaid diagram from live scenario data.
 
-    Available chart_ids:
-      system_health, cluster_topology, pending_analysis,
-      resource_map, job_lifecycle
+    Each chart_id uses a DIFFERENT Mermaid chart type:
+      system_health    → xychart-beta bars: CPU / Memory / GPU / Node-health %
+      cluster_topology → flowchart TD: nodes grouped by state with counts
+      pending_analysis → xychart-beta bars: jobs blocked per reason
+      resource_map     → xychart-beta bars: CPUs in-use per user
+      job_lifecycle    → gantt: running jobs with real elapsed times
+      efficiency_report → xychart-beta bars: estimated CPU efficiency per job
     """
-    cid = chart_id.strip().lower()
-
+    cid   = chart_id.strip().lower()
     jobs  = _jobs()
     nodes = _nodes()
 
-    running  = len([j for j in jobs if j.get("state") == "RUNNING"])
-    pending  = len([j for j in jobs if j.get("state") == "PENDING"])
-    failed   = len([j for j in jobs if j.get("state") in ("FAILED", "TIMEOUT")])
-    completed = len([j for j in jobs if j.get("state") == "COMPLETED"])
+    # ── shared micro-helpers ────────────────────────────────────────────────
+    def _cpu_pair(s: str):
+        p = s.split("/")
+        try: return int(p[0]), int(p[-1])
+        except: return 0, 0
 
-    idle_nodes  = len([n for n in nodes if "idle" in n.get("state", "")])
-    alloc_nodes = len([n for n in nodes if "alloc" in n.get("state", "") or "mix" in n.get("state", "")])
-    down_nodes  = len([n for n in nodes if "down" in n.get("state", "") or "drain" in n.get("state", "")])
+    def _mem_gb(s: str) -> float:
+        s = (s or "0").strip().upper()
+        try:
+            if s.endswith("T"): return float(s[:-1]) * 1024
+            if s.endswith("G"): return float(s[:-1])
+            if s.endswith("M"): return float(s[:-1]) / 1024
+        except: pass
+        return 0.0
 
-    if cid in ("system_health", "job_distribution"):
-        mermaid = f"""pie title Job Distribution
-    "Running" : {max(running, 0)}
-    "Pending" : {max(pending, 0)}
-    "Failed"  : {max(failed, 0)}
-    "Completed" : {max(completed, 0)}"""
+    def _elapsed_min(t: str) -> int:
+        p = t.split(":")
+        try:
+            if len(p) >= 3: return int(p[0]) * 60 + int(p[1])
+            if len(p) == 2: return int(p[0]) * 60 + int(p[1])
+        except: pass
+        return 1
 
-    elif cid in ("cluster_topology", "node_status"):
-        node_lines = "\n".join(
-            f'    {n["name"]}["{n["name"]}\\n{n["state"]}"]'
-            for n in nodes[:8]
+    def _hhmm(m: int) -> str:
+        m = max(0, m)
+        return f"{m // 60:02d}:{m % 60:02d}"
+
+    # ── system_health: xychart-beta utilization bars ───────────────────────
+    if cid == "system_health":
+        cpu_a = cpu_t = 0
+        mem_a = mem_t = 0.0
+        gpu_n = gpu_a = down_n = 0
+        for n in nodes:
+            ca, ct = _cpu_pair(n.get("cpus", "0/0"))
+            cpu_a += ca; cpu_t += ct
+            mp = n.get("mem", "0/0").split("/")
+            mem_a += _mem_gb(mp[0]); mem_t += _mem_gb(mp[-1])
+            st = n.get("state", "")
+            if n.get("gres", ""):
+                gpu_n += 1
+                if "alloc" in st or "mix" in st: gpu_a += 1
+            if "down" in st or "drain" in st: down_n += 1
+
+        cpu_pct  = round(cpu_a / cpu_t * 100)  if cpu_t  else 0
+        mem_pct  = round(mem_a / mem_t * 100)  if mem_t  else 0
+        gpu_pct  = round(gpu_a / gpu_n * 100)  if gpu_n  else 0
+        heal_pct = round((len(nodes) - down_n) / len(nodes) * 100) if nodes else 100
+
+        return (
+            f"xychart-beta\n"
+            f"    title \"Cluster Utilization — {SCENARIO}\"\n"
+            f"    x-axis [\"CPU\", \"Memory\", \"GPU Nodes\", \"Node Health\"]\n"
+            f"    y-axis \"%\" 0 --> 100\n"
+            f"    bar [{cpu_pct}, {mem_pct}, {gpu_pct}, {heal_pct}]"
         )
-        mermaid = f"""graph TD
-    Cluster["HPC Cluster"]
-{node_lines}
-    Cluster --> {nodes[0]['name'] if nodes else 'no-nodes'}"""
 
-    elif cid in ("pending_analysis", "queue_timeline"):
-        pending_jobs = [j for j in jobs if j.get("state") == "PENDING"]
-        lines = "\n".join(
-            f'    J{j["job_id"]}["{j["name"]}\\n({j.get("reason","?")})]'
-            for j in pending_jobs[:6]
+    # ── cluster_topology: flowchart grouped by state ───────────────────────
+    elif cid == "cluster_topology":
+        from collections import defaultdict
+        groups: dict = defaultdict(list)
+        for n in nodes:
+            st = n.get("state", "unknown").lower().rstrip("*")
+            if   "down"  in st: key = "DOWN"
+            elif "drain" in st: key = "DRAIN"
+            elif "alloc" in st: key = "ALLOC"
+            elif "mix"   in st: key = "MIX"
+            elif "idle"  in st: key = "IDLE"
+            else:               key = st.upper()[:6]
+            groups[key].append(n["name"])
+
+        defs   = "".join(
+            f'\n    {k}["{k}\\n{len(v)} node(s)\\n{", ".join(v[:3])}{"..." if len(v) > 3 else ""}"]'
+            for k, v in sorted(groups.items())
         )
-        mermaid = f"""graph LR
-    Queue["Job Queue"]
-{lines if lines else "    NoJobs[No pending jobs]"}"""
+        arrows = "".join(f"\n    Cluster --> {k}" for k in sorted(groups))
+        return (
+            f"flowchart TD\n"
+            f"    Cluster[\"HPC Cluster — {SCENARIO}\\n{len(nodes)} nodes total\"]"
+            f"{defs}{arrows}"
+        )
 
-    elif cid in ("resource_map", "resource_usage"):
-        mermaid = f"""pie title Node States
-    "Idle"      : {max(idle_nodes, 0)}
-    "Allocated" : {max(alloc_nodes, 0)}
-    "Down"      : {max(down_nodes, 0)}"""
+    # ── pending_analysis: xychart-beta reason bars ─────────────────────────
+    elif cid == "pending_analysis":
+        from collections import Counter
+        pj = [j for j in jobs if j.get("state") == "PENDING"]
+        if not pj:
+            return (
+                "flowchart LR\n"
+                "    OK[\"✅ Queue clear — no pending jobs\"]"
+            )
+        reasons = Counter(j.get("reason") or "Unknown" for j in pj)
+        top = reasons.most_common(5)
+        _SHORT = {
+            "Resources": "Resources", "Priority": "Priority",
+            "Dependency": "Dependency",
+            "QOSMaxJobsPerUserLimit": "QOSMaxJobs",
+            "QOSMaxCpuPerUserLimit":  "QOSMaxCPU",
+            "ReqNodeNotAvail":        "NodeUnavail",
+            "AssocGrpCPUMinutesLimit":"CPUBudget",
+        }
+        labels = json.dumps([_SHORT.get(r, r[:12]) for r, _ in top])
+        counts = json.dumps([c for _, c in top])
+        max_c  = max(c for _, c in top)
+        return (
+            f"xychart-beta\n"
+            f"    title \"Pending Queue: {len(pj)} jobs blocked\"\n"
+            f"    x-axis {labels}\n"
+            f"    y-axis \"Jobs\" 0 --> {max_c + 1}\n"
+            f"    bar {counts}"
+        )
 
-    elif cid in ("job_lifecycle", "live_dashboard"):
-        mermaid = """flowchart LR
-    Submit["Job Submit\\n(sbatch)"] --> Pending["PENDING\\n(queued)"]
-    Pending --> |"Resources available"| Running["RUNNING"]
-    Running --> |"Success"| Completed["COMPLETED"]
-    Running --> |"Error"| Failed["FAILED"]
-    Running --> |"Time limit"| Timeout["TIMEOUT"]"""
+    # ── resource_map: xychart-beta per-user CPU bars ───────────────────────
+    elif cid == "resource_map":
+        from collections import defaultdict
+        user_cpu: dict = defaultdict(int)
+        for j in jobs:
+            if j.get("state") == "RUNNING":
+                user_cpu[j.get("user", "?")] += int(j.get("cpus", 0))
+        if not user_cpu:
+            return (
+                "flowchart LR\n"
+                "    EMPTY[\"No running jobs — all resources free\"]"
+            )
+        users  = sorted(user_cpu)
+        mc     = max(user_cpu.values())
+        labels = json.dumps(users)
+        vals   = json.dumps([user_cpu[u] for u in users])
+        return (
+            f"xychart-beta\n"
+            f"    title \"CPU Usage by User — {SCENARIO}\"\n"
+            f"    x-axis {labels}\n"
+            f"    y-axis \"CPUs\" 0 --> {mc + 4}\n"
+            f"    bar {vals}"
+        )
+
+    # ── job_lifecycle: gantt with real running jobs ────────────────────────
+    elif cid == "job_lifecycle":
+        running = [j for j in jobs if j.get("state") == "RUNNING"]
+        if not running:
+            return (
+                "flowchart LR\n"
+                "    A[\"sbatch\"] -->|queue| B[\"PENDING\"]\n"
+                "    B -->|free slot| C[\"RUNNING\"]\n"
+                "    C -->|success| D[\"COMPLETED\"]\n"
+                "    C -->|error| E[\"FAILED\"]\n"
+                "    C -->|wall limit| F[\"TIMEOUT\"]"
+            )
+        from collections import defaultdict
+        by_user: dict = defaultdict(list)
+        for j in running: by_user[j.get("user", "?")].append(j)
+
+        now = 600  # reference checkpoint = 10:00
+        sections = "".join(
+            f"\n    section {u}\n" + "".join(
+                f"        {j['name'][:18]} [{j['job_id']}] :active, "
+                f"{_hhmm(now - _elapsed_min(j.get('time', '0:01')))}, "
+                f"{_elapsed_min(j.get('time', '0:01'))}m\n"
+                for j in uj
+            )
+            for u, uj in sorted(by_user.items())
+        )
+        return (
+            f"gantt\n"
+            f"    title Running Jobs Timeline (checkpoint 10:00)\n"
+            f"    dateFormat HH:mm\n"
+            f"    axisFormat %H:%M"
+            f"{sections}"
+        )
+
+    # ── efficiency_report: xychart-beta estimated efficiency bars ──────────
+    elif cid == "efficiency_report":
+        import hashlib
+        targets = [j for j in jobs if j.get("state") == "RUNNING"] or \
+                  [j for j in jobs if j.get("state") in ("FAILED", "COMPLETED")]
+        if not targets:
+            return "No jobs available for efficiency analysis."
+        targets = targets[:6]
+
+        def _eff(job_id: str) -> int:
+            h = int(hashlib.md5(job_id.encode()).hexdigest()[:4], 16)
+            return 25 + (h % 65)
+
+        labels = json.dumps([f"{j['name'][:10]}/{j['job_id']}" for j in targets])
+        effs   = json.dumps([_eff(str(j["job_id"])) for j in targets])
+        return (
+            f"xychart-beta\n"
+            f"    title \"Estimated CPU Efficiency per Job (%)\"\n"
+            f"    x-axis {labels}\n"
+            f"    y-axis \"Efficiency %\" 0 --> 100\n"
+            f"    bar {effs}"
+        )
 
     else:
-        return f"Unknown chart_id '{chart_id}'. Available: {', '.join(_VALID_CHARTS)}"
-
-    # Return as MCP resource with mermaid mime type
-    return f"```mermaid\n{mermaid.strip()}\n```"
+        return (
+            f"Unknown chart_id '{chart_id}'. "
+            "Available: system_health, cluster_topology, pending_analysis, "
+            "resource_map, job_lifecycle, efficiency_report"
+        )
 
 
 # ── Web Search Tool ───────────────────────────────────────────────────────────
@@ -509,12 +697,196 @@ def web_search(
     return f"Search: {query}\n\n" + "\n\n".join(results)
 
 
+# ── Diagnostic Tools ─────────────────────────────────────────────────────────
+
+@mcp.tool()
+def sdiag() -> str:
+    """Show Slurm scheduler diagnostics: backfill stats, cycle times, submit/RPC rates."""
+    running = len([j for j in _jobs() if j.get("state") == "RUNNING"])
+    pending = len([j for j in _jobs() if j.get("state") == "PENDING"])
+    return (
+        f"=== Slurm Scheduler Diagnostics (scenario: {SCENARIO}) ===\n"
+        f"Server Thread      : Alive\n"
+        f"Main sched cycles  : 1 (last=8ms, mean=6ms, depth=12)\n"
+        f"Backfill cycles    : 89 (last=45ms, mean=40ms, sched%=94.2)\n"
+        f"Queue depth        : {running} running, {pending} pending\n"
+        f"RPCs/last minute   : 3 submitted, 42 completed\n"
+        f"RPC queue latency  : 1.8 ms avg\n"
+        f"Last cycle end     : 0.000 sec\n"
+        f"Last full cycle    : 0.023 sec\n"
+    )
+
+
+@mcp.tool()
+def sprio(user: str = "", partition: str = "") -> str:
+    """Show composite job priority factors for pending jobs (age, fairshare, QOS, size)."""
+    import hashlib
+    pending = [j for j in _jobs() if j.get("state") == "PENDING"]
+    if user:
+        pending = [j for j in pending if j.get("user", "").lower() == user.lower()]
+    if partition:
+        pending = [j for j in pending if j.get("partition", "").lower() == partition.lower()]
+    if not pending:
+        return "No pending jobs match the given filters."
+
+    lines = [
+        f"{'JOBID':<8}  {'USER':<8}  {'PARTITION':<10}  {'PRIORITY':>8}  "
+        f"{'AGE':>6}  {'FAIRSHARE':>9}  {'QOS':>6}  {'SIZE':>6}  NICE"
+    ]
+    lines.append("-" * 72)
+    for j in pending:
+        h = int(hashlib.md5(str(j["job_id"]).encode()).hexdigest()[:6], 16)
+        priority  = 1000 + (h % 8000)
+        age       = (h >> 2) % 500
+        fairshare = (h >> 4) % 700
+        qos       = (h >> 6) % 300
+        size      = max(1, j.get("cpus", 1)) * 10
+        lines.append(
+            f"{j['job_id']:<8}  {j.get('user','?'):<8}  {j.get('partition','?'):<10}  "
+            f"{priority:>8}  {age:>6}  {fairshare:>9}  {qos:>6}  {size:>6}  0"
+        )
+    lines.append(
+        f"\nNote: Priority = age({lines[1].count('AGE')}) + fairshare + QOS + "
+        f"size. Higher = runs sooner."
+    )
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def sstat(job_id: str) -> str:
+    """Show real-time step statistics for a running job: CPU usage, AveRSS, MaxRSS, disk I/O."""
+    import hashlib
+    jobs = _jobs()
+    match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
+    if not match:
+        return f"sstat: error: Invalid job id: {job_id}"
+    if match.get("state") != "RUNNING":
+        return (
+            f"sstat: Job {job_id} is {match.get('state','?')} — "
+            f"sstat only works on RUNNING jobs."
+        )
+
+    h = int(hashlib.md5(job_id.encode()).hexdigest()[:5], 16)
+    cpus      = int(match.get("cpus", 1))
+    cpu_pct   = round((25 + (h % 65)) * cpus / max(cpus, 1), 1)
+    ave_rss   = f"{200 + (h % 600)}M"
+    max_rss   = f"{400 + (h % 800)}M"
+    ave_vss   = f"{1024 + (h % 2048)}M"
+    max_disk_r = f"{10 + (h % 200)}G"
+    max_disk_w = f"{5 + (h % 100)}G"
+
+    return (
+        f"JobID         = {job_id}.batch\n"
+        f"JobName       = {match.get('name','?')}\n"
+        f"State         = RUNNING\n"
+        f"CPUs          = {cpus}\n"
+        f"AveCPU        = {cpu_pct}%\n"
+        f"AveRSS        = {ave_rss}\n"
+        f"MaxRSS        = {max_rss}\n"
+        f"AveVMSize     = {ave_vss}\n"
+        f"MaxDiskRead   = {max_disk_r}\n"
+        f"MaxDiskWrite  = {max_disk_w}\n"
+        f"AllocCPUS     = {cpus}\n"
+        f"ReqMem        = {match.get('mem','?')}\n"
+        f"Elapsed       = {match.get('time','?')}\n"
+    )
+
+
+# Exit-code hints for diagnose_job
+_EXIT_HINTS: dict[str, str] = {
+    "0:0": "COMPLETED normally.",
+    "1:0": "Application returned exit code 1 — check stderr for Python/app error.",
+    "2:0": "Misuse of shell command (bad syntax) — check the job script.",
+    "137:0": "OOM-killed (SIGKILL). Increase --mem; current: {mem}.",
+    "143:0": "Walltime exceeded (SIGTERM). Increase --time or checkpoint more often.",
+    "1:53": "Node hardware failure (slurm signal 53). Requeue: scontrol_requeue {job_id}.",
+    "7:0": "Bus error — often memory corruption or file I/O on shared FS.",
+    "127:0": "Command not found in job script (module not loaded?).",
+}
+
+# Pending-reason hints
+_PENDING_HINTS: dict[str, str] = {
+    "Resources":               "Wait for matching nodes to free up, or reduce --nodes/--cpus.",
+    "Priority":                "Lower priority than other jobs — wait or ask admin to boost.",
+    "Dependency":              "Waiting on parent job to finish — check with `scontrol show job <id>`.",
+    "QOSMaxCpuPerUserLimit":   "You hit your per-user CPU quota. Wait for your other jobs to finish.",
+    "QOSMaxJobsPerUserLimit":  "You hit the max-jobs-per-user limit. Wait for a slot.",
+    "QOSMaxWallDurationPerJobLimit": "Requested --time exceeds QOS wall limit. Reduce or use a different QOS.",
+    "ReqNodeNotAvail":         "Requested node(s) are unavailable/down. Remove node constraint or resubmit.",
+    "AssocGrpCPUMinutesLimit": "Group CPU-minute budget exhausted. Contact your PI or HPC admin.",
+    "AssocMaxJobsLimit":       "Account job limit reached. Wait for other jobs to complete.",
+    "None":                    "Job is probably starting — should move to RUNNING shortly.",
+}
+
+
+@mcp.tool()
+def diagnose_job(job_id: str) -> str:
+    """
+    Full job diagnosis: current state, resources, exit code interpretation,
+    captured stderr, and actionable fix hints.
+    """
+    jobs = _jobs()
+    match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
+    if not match:
+        return (
+            f"diagnose_job: Job {job_id} not found in current scenario '{SCENARIO}'.\n"
+            f"Tip: use sacct to look up completed / recently failed jobs."
+        )
+
+    state     = match.get("state", "UNKNOWN")
+    exit_code = match.get("exit_code", "0:0")
+    stderr    = match.get("stderr", "")
+    reason    = match.get("reason") or "None"
+    user      = match.get("user", "?")
+    mem       = match.get("mem", "?")
+    cpus      = match.get("cpus", "?")
+    partition = match.get("partition", "?")
+    elapsed   = match.get("time", "?")
+
+    hint = _EXIT_HINTS.get(exit_code, f"Exit code {exit_code} — check Slurm docs or stderr.")
+    hint = hint.format(mem=mem, job_id=job_id)
+
+    if state == "PENDING":
+        pending_hint = _PENDING_HINTS.get(reason, f"Reason '{reason}' — check `scontrol show job {job_id}`.")
+        diagnosis = (
+            f"=== Job Diagnosis: {job_id} ===\n"
+            f"State     : PENDING\n"
+            f"Reason    : {reason}\n"
+            f"User      : {user}   Partition: {partition}\n"
+            f"Resources : {cpus} CPU(s), {mem} RAM\n\n"
+            f"DIAGNOSIS : {pending_hint}\n"
+        )
+    elif state == "RUNNING":
+        diagnosis = (
+            f"=== Job Diagnosis: {job_id} ===\n"
+            f"State     : RUNNING\n"
+            f"User      : {user}   Partition: {partition}\n"
+            f"Resources : {cpus} CPU(s), {mem} RAM\n"
+            f"Elapsed   : {elapsed}\n\n"
+            f"DIAGNOSIS : Job is healthy and running. Use sstat({job_id}) for live step stats.\n"
+        )
+    else:
+        diagnosis = (
+            f"=== Job Diagnosis: {job_id} ===\n"
+            f"State     : {state}\n"
+            f"ExitCode  : {exit_code}\n"
+            f"User      : {user}   Partition: {partition}\n"
+            f"Resources : {cpus} CPU(s), {mem} RAM\n"
+            f"Elapsed   : {elapsed}\n\n"
+            f"DIAGNOSIS : {hint}\n"
+        )
+        if stderr:
+            diagnosis += f"\nSTDERR (last 300 chars):\n{stderr[-300:]}\n"
+
+    return diagnosis
+
+
 # ── Admin Tools (mock — all safe, just return confirmation) ───────────────────
 
 @mcp.tool()
 def scontrol_update(entity: str, id: str, params: str) -> str:
-    """Update a Slurm entity attribute (mock)."""
-    return f"scontrol update {entity} {id}: {params} — applied (mock)."
+    """Update a Slurm entity attribute. params format: 'key=value key2=value2' (e.g. 'TimeLimit=2:00:00 Priority=100')."""
+    return f"scontrol update {entity} {entity}={id} {params} — applied (mock)."
 
 @mcp.tool()
 def scontrol_create(entity: str, params: str) -> str:
@@ -530,6 +902,18 @@ def scontrol_delete(entity: str, id: str) -> str:
 def scontrol_reconfigure() -> str:
     """Force slurmctld to re-read its configuration (mock)."""
     return "scontrol reconfigure: daemon reconfigured (mock)."
+
+
+@mcp.tool()
+def scontrol_requeue(job_id: str) -> str:
+    """Requeue (restart) a failed, cancelled, or completed Slurm job."""
+    jobs = _jobs()
+    match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
+    if not match:
+        return f"scontrol: error: Invalid job id {job_id}"
+    if match.get("state") == "RUNNING":
+        return f"scontrol: error: Job {job_id} is RUNNING — cancel it first."
+    return f"Job {job_id} ({match.get('name', '?')}) requeued. New state: PENDING."
 
 @mcp.tool()
 def sacctmgr_show(entity: str = "user", params: str = "") -> str:
@@ -575,11 +959,9 @@ def sreport(report_type: str = "cluster", params: str = "") -> str:
 if __name__ == "__main__":
     import uvicorn
 
-    # FastMCP exposes a Starlette app via .sse_app()
-    sse_app = mcp.sse_app()
-
+    # FastMCP SSE transport: /sse for persistent connections, /messages for session posts
     uvicorn.run(
-        sse_app,
+        mcp.sse_app(),
         host=HOST,
         port=PORT,
         log_level="info",

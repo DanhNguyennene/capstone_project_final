@@ -491,12 +491,139 @@ TOOL_MODEL_SETTINGS = ModelSettings(
 MODEL_SETTINGS = TOOL_MODEL_SETTINGS
 
 
+# ============ Streaming Status Helpers ============
+
+def _format_tool_call(tool_name: str, args: dict) -> str:
+    """Format a tool call as a one-line terminal-style step."""
+    inp = str(args.get("input", args.get("request", ""))).strip()
+
+    if tool_name == "analyze_cluster":
+        if inp.lower().startswith("search for"):
+            q = inp[inp.lower().index("search for") + 10:].lstrip(": ").strip()[:60]
+            return f"Searching: {q}"
+        return f"Querying: {inp[:60]}" if inp else "Querying cluster..."
+
+    if tool_name == "manage_jobs":
+        return f"Action: {inp[:60]}" if inp else "Executing job operation..."
+
+    if tool_name == "generate_chart":
+        return f"Generating chart: {args.get('chart_id', 'system_health')}"
+
+    if tool_name == "run_analysis":
+        return f"$ run_analysis {args.get('script_id', '')}"
+
+    if tool_name in ("squeue", "sacct", "sinfo"):
+        parts = [tool_name] + [f"--{k} {v}" for k, v in list(args.items())[:3]]
+        return "$ " + " ".join(parts)
+
+    if tool_name == "scontrol_show":
+        return f"$ scontrol show {args.get('entity','')} {args.get('id', args.get('job_id',''))}".strip()
+
+    if tool_name == "web_search":
+        return f"$ web_search \"{args.get('query', '')[:50]}\""
+
+    if tool_name in ("confirm_action", "cancel_action"):
+        verb = "✓ Confirming" if "confirm" in tool_name else "✗ Cancelling"
+        return f"{verb} pending actions"
+
+    if tool_name == "check_pending_actions":
+        return "Checking pending actions..."
+
+    # Generic Slurm command
+    parts = [tool_name] + [f"{k}={v}" for k, v in list(args.items())[:2]]
+    return "$ " + " ".join(parts)
+
+
+def _brief_output_summary(output_str: str) -> str | None:
+    """Extract a 1-line result summary to display as a completed step."""
+    text = output_str.strip()
+    if not text or len(text) < 5:
+        return None
+
+    if text.startswith("QUEUED:"):
+        return f"↳ {text[:100]}"
+
+    if "SUMMARY:" in text:
+        m = re.search(r"SUMMARY:\s*(.+?)(?:\n|$)", text)
+        if m:
+            return f"↳ {m.group(1).strip()[:100]}"
+
+    # Count Slurm job states in output
+    running = len(re.findall(r'\bRUNNING\b', text))
+    pending = len(re.findall(r'\bPENDING\b', text))
+    failed  = len(re.findall(r'\bFAILED\b|\bTIMEOUT\b', text))
+    if running + pending + failed > 0:
+        parts = []
+        if running: parts.append(f"{running} running")
+        if pending: parts.append(f"{pending} pending")
+        if failed:  parts.append(f"{failed} failed")
+        return f"↳ {', '.join(parts)}"
+
+    return None
+
+
 # ============ Agent Instructions ============
 
-MAIN_AGENT_INSTRUCTIONS = """You are a Slurm HPC cluster assistant.
+MAIN_AGENT_INSTRUCTIONS = """You are a Slurm HPC cluster assistant. Expert in job scheduling, resource management, and HPC troubleshooting.
 
-## CRITICAL RULES
-1. ALWAYS call tools first - NEVER say "I can't" or make up data
+## NON-NEGOTIABLE RULES
+1. CALL A TOOL FIRST. Never answer without fresh data.
+2. `analyze_cluster` for all read-only queries. `manage_jobs` for all mutations.
+3. When `manage_jobs` returns "QUEUED:": tell the user what's pending, then wait for confirm/cancel.
+4. Never fabricate job IDs, node names, exit codes, or counts.
+
+## TOOLS
+| Tool | Use |
+|------|-----|
+| `analyze_cluster(request)` | Status, jobs, nodes, failures, efficiency, web search |
+| `manage_jobs(request)` | Cancel, hold, release, submit, update |
+| `generate_chart(chart_id)` | system_health \u00b7 cluster_topology \u00b7 pending_analysis \u00b7 resource_map \u00b7 job_lifecycle |
+| `confirm_action()` | User confirmed a queued action |
+| `cancel_action()` | User declined a queued action |
+| `check_pending_actions()` | List what is currently queued |
+
+## WHAT TO PASS TO analyze_cluster
+- Full snapshot → `"run_analysis cluster_status"`
+- Failed jobs → `"run_analysis failed_jobs"`
+- Pending reasons → `"run_analysis pending_jobs"`
+- GPU state → `"run_analysis gpu_resources"`
+- Specific job → `"scontrol show job 12345"`
+- Web lookup → `"search for: OOMKilled exit code 137 fix"`
+
+## DIAGNOSIS CHEAT SHEET
+- PENDING Priority → normal queue backlog
+- PENDING Resources → no matching free nodes
+- PENDING QOSMaxCpuPerUserLimit → user hit CPU quota
+- PENDING ReqNodeNotAvail → requested node is down
+- FAILED ExitCode=1 → application error (check stderr)
+- FAILED ExitCode=137 → OOM-killed (increase --mem)
+- FAILED ExitCode=143 → walltime exceeded (increase --time)
+- FAILED ExitCode=1:53 → node hardware failure (re-queue)
+
+## OUTPUT FORMAT
+Markdown tables and headers. Show exact IDs, codes, counts. One actionable recommendation per issue."""
+
+ANALYSIS_SUBAGENT_INSTRUCTIONS = """You are a data collector. Call ONE tool and return its raw output. Do not explain or summarize.
+
+Available tools:
+- `run_analysis(script_id)` — script_id: analyze_cluster_status | analyze_failed_jobs | analyze_gpu_resources | analyze_my_efficiency | analyze_my_usage | analyze_pending_jobs | analyze_my_jobs
+- `squeue` — list queued/running jobs
+- `sacct` — job accounting history
+- `sinfo` — node/partition status
+- `scontrol_show` — detailed entity info (entity: job|node|partition)
+- `web_search(query, search_type, fetch_content)` — search_type: slurm|error|general
+
+Pick the right tool. Return output exactly as received."""
+
+ACTION_SUBAGENT_INSTRUCTIONS = """You are an executor. Call exactly ONE tool and return the result verbatim.
+
+Available tools:
+- Job ops: sbatch, scancel, scontrol_hold, scontrol_release, scontrol_update
+- Interactive: srun, salloc
+- Admin: scontrol_create, scontrol_delete, scontrol_reconfigure
+- Accounting: sacctmgr_show, sacctmgr_add, sacctmgr_modify, sacctmgr_delete, sreport
+
+Dangerous tools return \"QUEUED:\" — report this exactly, do not invent results.
 2. You CAN search the web - use analyze_cluster("search for: <query>")
 3. Use analyze_cluster for ALL data gathering including web searches
 4. Use manage_jobs for actions
@@ -1170,192 +1297,87 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
     async def run_streaming(
         self,
         user_message: str,
-        conversation_history: Optional[list] = None  # Kept for API compatibility, not used
+        conversation_history: Optional[list] = None  # Kept for API compatibility
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """
-        Run with streaming, session memory, and SlurmContext for confirmation.
-        
-        Simplified streaming - only emits:
-        - status: Stage updates (Thinking, Analyzing, etc.)
-        - final_answer: The final response to show to user
-        - error: Any errors
-        - done: Completion signal
-        """
         try:
-            logger.info(f"User message: {user_message[:100]}...")
-            yield {"type": "status", "message": "Thinking..."}
             await self._ensure_agents()
-            
-            # Log available tools on main agent
-            if self.main_agent and hasattr(self.main_agent, 'tools'):
-                tool_names = [getattr(t, 'name', str(t)) for t in self.main_agent.tools]
-                logger.info(f"Main agent tools: {tool_names}")
-            
             session = self._get_session()
-            ctx = self._create_context()
-            logger.info(f"Created SlurmContext with id: {id(ctx)}")
-            
-            logger.info("Opening MCP connections for streaming...")
+            ctx     = self._create_context()
+
             async with self._analysis_mcp, self._action_mcp:
-                logger.info(f"MCP ready, starting streaming with session: {self.session_id}")
-                
                 result = Runner.run_streamed(
                     starting_agent=self.main_agent,
                     input=user_message,
                     session=session,
-                    context=ctx
+                    context=ctx,
                 )
-                
-                # Track state for stage updates
-                current_agent = "Slurm Assistant"
-                last_status = "Thinking..."
-                # Note: Chart artifacts are stored in ctx.chart_artifacts by the wrapper tool
-                
-                # Process events for stage updates only
+
                 async for event in result.stream_events():
+
+                    # ── Real model reasoning tokens ────────────────────────────
                     if event.type == "raw_response_event":
-                        # Capture actual model reasoning tokens (gemma4 → delta.reasoning)
                         try:
-                            data = event.data
-                            choices = getattr(data, 'choices', None)
-                            if choices:
-                                d = choices[0].delta
-                                reasoning = (
-                                    getattr(d, 'reasoning', None) or
-                                    getattr(d, 'reasoning_content', None)
-                                )
-                                if reasoning:
-                                    yield {"type": "thinking", "content": reasoning}
+                            d = event.data.choices[0].delta
+                            r = getattr(d, "reasoning", None) or getattr(d, "reasoning_content", None)
+                            if r:
+                                yield {"type": "thinking", "content": r}
                         except Exception:
                             pass
                         continue
-                    
-                    # Agent switch - update status
-                    elif event.type == "agent_updated_stream_event":
-                        new_agent = event.new_agent.name
-                        logger.info(f"Agent switch: {current_agent} -> {new_agent}")
-                        if new_agent != current_agent:
-                            current_agent = new_agent
-                            if "Analysis" in new_agent:
-                                status = "Analyzing cluster..."
-                            elif "Action" in new_agent:
-                                status = "Executing action..."
-                            else:
-                                status = "Processing..."
-                            
-                            if status != last_status:
-                                last_status = status
-                                yield {"type": "status", "message": status}
-                    
-                    # Run items - tool calls and messages
-                    elif event.type == "run_item_stream_event":
-                        item = event.item
-                        logger.debug(f"Run item: {item.type}")
-                        
-                        if item.type == "tool_call_item":
-                            # Get tool name from raw_item
-                            tool_name = getattr(item.raw_item, 'name', '') if hasattr(item, 'raw_item') else ''
-                            tool_args = getattr(item.raw_item, 'arguments', '') if hasattr(item, 'raw_item') else ''
-                            logger.info(f"Tool call: {tool_name}, args: {str(tool_args)[:100]}")
-                            
-                            if tool_name:
-                                # Check if analyze_cluster is being called for web search
-                                if tool_name == "analyze_cluster":
-                                    status = "Gathering cluster data..."
-                                elif tool_name == "manage_jobs":
-                                    status = "Managing jobs..."
-                                elif tool_name == "confirm_action":
-                                    status = "Confirming action..."
-                                elif tool_name == "cancel_action":
-                                    status = "Cancelling action..."
-                                elif tool_name == "check_pending_actions":
-                                    status = "Checking pending actions..."
-                                elif tool_name == "generate_chart":
-                                    status = "Generating chart..."
-                                else:
-                                    status = f"Running {tool_name}..."
-                                
-                                if status != last_status:
-                                    last_status = status
-                                    yield {"type": "status", "message": status}
-                        
-                        elif item.type == "tool_call_output_item":
-                            # Check tool output for subagent activity
-                            output = item.output if hasattr(item, 'output') else ""
-                            output_str = str(output)
-                            logger.info(f"Tool output (first 300): {output_str[:300]}")
-                            
-                            # Detect web_search by [WEB_SEARCH]: marker from tool_use_behavior
-                            if "[WEB_SEARCH]:" in output_str:
-                                if last_status != "Searching web...":
-                                    last_status = "Searching web..."
-                                    yield {"type": "status", "message": "Searching web..."}
-                                
-                                # Extract URLs from web search results
-                                import re
-                                url_pattern = r'URL:\s*(https?://[^\s\n\'"]+)'
-                                urls = re.findall(url_pattern, output_str)
-                                if urls:
-                                    logger.info(f"Web search found {len(urls)} URLs: {urls[:3]}")
-                                    yield {"type": "web_results", "urls": urls[:5]}
-                            # Detect run_analysis script execution
-                            elif "[run_analysis]:" in output_str:
-                                if last_status != "Running analysis script...":
-                                    last_status = "Running analysis script..."
-                                    yield {"type": "status", "message": "Running analysis script..."}
-                        
-                        elif item.type == "message_output_item":
-                            # Final message from main agent
-                            if current_agent == "Slurm Assistant":
-                                # Emit status before final answer (only once)
-                                if last_status != "Generating response...":
-                                    last_status = "Generating response..."
-                                    yield {"type": "status", "message": "Generating response..."}
-                                
-                                content = ItemHelpers.text_message_output(item)
-                                logger.info(f"LLM response (first 200 chars): {content[:200] if content else 'empty'}")
-                                
-                                # Get chart artifacts from context (stored by wrapper tool)
-                                chart_artifacts = ctx.chart_artifacts if ctx else []
-                                logger.info(f"Final message - charts in context: {len(chart_artifacts)}, ctx id: {id(ctx)}")
-                                
-                                if content:
-                                    clean_content = self._clean_hallucinated_calls(content)
-                                    
-                                    if clean_content.strip():
-                                        # Append chart artifacts to final answer
-                                        full_response = clean_content
-                                        for i, chart_code in enumerate(chart_artifacts):
-                                            logger.info(f"Appending chart {i+1}/{len(chart_artifacts)}, len={len(chart_code)}")
-                                            full_response += self._wrap_chart_artifact(chart_code)
-                                        
-                                        logger.info(f"Final response length: {len(full_response)}")
-                                        yield {"type": "final_answer", "message": full_response}
-                
-                pending = ctx.get_pending_actions()
-                yield {"type": "done", "pending_actions": pending}
-                
+
+                    # ── Run items (tool calls, outputs, final message) ─────────
+                    if event.type != "run_item_stream_event":
+                        continue
+
+                    item = event.item
+
+                    if item.type == "tool_call_item":
+                        name     = getattr(item.raw_item, "name", "") if hasattr(item, "raw_item") else ""
+                        args_raw = getattr(item.raw_item, "arguments", "{}") if hasattr(item, "raw_item") else "{}"
+                        try:
+                            args = json.loads(args_raw)
+                        except Exception:
+                            args = {}
+                        if name:
+                            yield {"type": "status", "message": _format_tool_call(name, args)}
+
+                    elif item.type == "tool_call_output_item":
+                        output_str = str(item.output or "")
+                        summary = _brief_output_summary(output_str)
+                        if summary:
+                            yield {"type": "status", "message": summary}
+                        if "[WEB_SEARCH]:" in output_str:
+                            urls = re.findall(r"URL:\s*(https?://[^\s\n'\"]+)", output_str)
+                            if urls:
+                                yield {"type": "web_results", "urls": urls[:5]}
+
+                    elif item.type == "message_output_item":
+                        content = ItemHelpers.text_message_output(item)
+                        if content:
+                            clean = self._clean_hallucinated_calls(content)
+                            if clean.strip():
+                                full = clean
+                                for chart in ctx.chart_artifacts:
+                                    full += self._wrap_chart_artifact(chart)
+                                yield {"type": "final_answer", "message": full}
+
+            yield {"type": "done", "pending_actions": ctx.get_pending_actions()}
+
         except Exception as e:
             logger.error(f"Streaming error: {e}")
             import traceback
             traceback.print_exc()
-            
             error_msg = str(e)
-            
-            # Handle corrupted history - clear session and suggest retry
             if "invalid tool call arguments" in error_msg.lower():
-                logger.warning(f"Corrupted tool call in history detected, clearing session: {self.session_id}")
                 try:
                     await self.clear_session()
-                    error_msg = "I had a hiccup with my memory. I've cleared my context - please try your request again."
-                except Exception as clear_err:
-                    logger.error(f"Failed to clear session: {clear_err}")
-                    error_msg = "I encountered an issue. Please start a new conversation."
+                    error_msg = "Memory cleared due to a hiccup — please retry."
+                except Exception:
+                    error_msg = "Encountered an issue. Please start a new conversation."
             elif "Invalid JSON" in error_msg:
-                error_msg = "There was a technical issue with my response. Please try rephrasing your question."
-            
+                error_msg = "Technical issue with the response. Please rephrase."
             yield {"type": "error", "message": error_msg}
-    
+
     def _clean_hallucinated_calls(self, text: str) -> str:
         """Remove hallucinated XML function calls from model output."""
         import re
