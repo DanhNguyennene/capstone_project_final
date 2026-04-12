@@ -465,26 +465,30 @@ _CONFIRM_OUTPUT_GUARDRAILS: List[ToolOutputGuardrail] = [_guard_redact_secrets]
 
 
 # ============ Model Configuration ============
-def create_ollama_model(model_name: str = "gpt-oss:latest", base_url: str = "http://localhost:11434/v1") -> OpenAIChatCompletionsModel:
+def create_ollama_model(model_name: str = None, base_url: str = None) -> OpenAIChatCompletionsModel:
     """Create Ollama-compatible model."""
+    from .model import DEFAULT_MODEL, OLLAMA_BASE_URL
+    model_name = model_name or DEFAULT_MODEL
+    base_url = base_url or OLLAMA_BASE_URL
     client = AsyncOpenAI(base_url=base_url, api_key="ollama")
     return OpenAIChatCompletionsModel(model=model_name, openai_client=client)
 
 
 # Model settings for reasoning (main agent) - gemma4 thinks before answering
 # Google recommends temperature=1.0, top_p=0.95, top_k=64 for best gemma4 quality
+# "think": True tells Ollama to activate thinking mode; top_k is Ollama-specific
 REASONING_MODEL_SETTINGS = ModelSettings(
     temperature=1.0,
     top_p=0.95,
-    top_k=64,
+    extra_body={"think": True, "options": {"top_k": 64}},
 )
 
 # Model settings for tool execution (sub-agents) - lower temp for precise tool calls
 TOOL_MODEL_SETTINGS = ModelSettings(
     temperature=0.3,
     top_p=0.95,
-    top_k=64,
     tool_choice="required",  # Force tool usage - sub-agents MUST call tools
+    extra_body={"options": {"top_k": 64}},
 )
 
 # Legacy alias
@@ -747,12 +751,16 @@ class SlurmMultiAgentSystem:
     
     def __init__(
         self,
-        reasoning_model: str = "gemma4:e4b",  # Main agent - thinks/reasons
-        tool_model: str = "gemma4:e4b",  # Sub-agents - executes tools
-        base_url: str = "http://localhost:11434/v1",
+        reasoning_model: str = None,  # Main agent - thinks/reasons
+        tool_model: str = None,  # Sub-agents - executes tools
+        base_url: str = None,
         mcp_url: str = "http://localhost:3002",
         session_id: str = "default"
     ):
+        from .model import DEFAULT_MODEL, OLLAMA_BASE_URL
+        reasoning_model = reasoning_model or DEFAULT_MODEL
+        tool_model = tool_model or DEFAULT_MODEL
+        base_url = base_url or OLLAMA_BASE_URL
         self.reasoning_model_name = reasoning_model
         self.tool_model_name = tool_model
         self.base_url = base_url
@@ -1315,12 +1323,23 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                 async for event in result.stream_events():
 
                     # ── Real model reasoning tokens ────────────────────────────
+                    # The agents SDK converts Ollama delta.reasoning into
+                    # Responses-API events with type "response.reasoning_text.delta"
+                    # and OpenAI delta.reasoning_content into
+                    # "response.reasoning_summary_text.delta".
+                    # Both carry the text in event.data.delta.
                     if event.type == "raw_response_event":
                         try:
-                            d = event.data.choices[0].delta
-                            r = getattr(d, "reasoning", None) or getattr(d, "reasoning_content", None)
-                            if r:
-                                yield {"type": "thinking", "content": r}
+                            event_data = event.data
+                            event_data_type = getattr(event_data, "type", "")
+                            if event_data_type in (
+                                "response.reasoning_text.delta",
+                                "response.reasoning_summary_text.delta",
+                            ):
+                                r = getattr(event_data, "delta", None)
+                                if r:
+                                    logger.debug(f"Thinking token: {r[:60]!r}")
+                                    yield {"type": "thinking", "content": r}
                         except Exception:
                             pass
                         continue
@@ -1339,12 +1358,14 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                         except Exception:
                             args = {}
                         if name:
+                            logger.info(f"Tool call: {name}, args: {json.dumps(args)[:200]}")
                             yield {"type": "status", "message": _format_tool_call(name, args)}
 
                     elif item.type == "tool_call_output_item":
                         output_str = str(item.output or "")
                         summary = _brief_output_summary(output_str)
                         if summary:
+                            logger.info(f"Tool output (first 300): {output_str[:300]}")
                             yield {"type": "status", "message": summary}
                         if "[WEB_SEARCH]:" in output_str:
                             urls = re.findall(r"URL:\s*(https?://[^\s\n'\"]+)", output_str)
@@ -1359,6 +1380,7 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                                 full = clean
                                 for chart in ctx.chart_artifacts:
                                     full += self._wrap_chart_artifact(chart)
+                                logger.info(f"Final response length: {len(full)}")
                                 yield {"type": "final_answer", "message": full}
 
             yield {"type": "done", "pending_actions": ctx.get_pending_actions()}

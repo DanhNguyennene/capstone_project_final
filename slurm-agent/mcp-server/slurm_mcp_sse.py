@@ -1,12 +1,13 @@
 """
-Slurm MCP Server (SSE transport) — mock mode for local development
+Slurm MCP Server (SSE transport) — mock or real mode
 
 Usage:
-    python slurm_mcp_sse.py                        # healthy scenario, port 3002
-    python slurm_mcp_sse.py --mock mixed           # mixed scenario
-    python slurm_mcp_sse.py --mock failed --port 3002
+    python slurm_mcp_sse.py                        # mock healthy scenario, port 3002
+    python slurm_mcp_sse.py --mock mixed           # mock mixed scenario
+    python slurm_mcp_sse.py --real                  # real Slurm commands
+    python slurm_mcp_sse.py --real --port 3002
 
-Scenarios: healthy | failed | pending | mixed | debug_needed
+Mock scenarios: healthy | failed | pending | mixed | debug_needed
 """
 
 import argparse
@@ -34,17 +35,43 @@ logger = logging.getLogger(__name__)
 _parser = argparse.ArgumentParser(add_help=False)
 _parser.add_argument("--mock", default="healthy",
                      choices=["healthy", "failed", "pending", "mixed", "debug_needed"])
+_parser.add_argument("--real", action="store_true", help="Use real Slurm commands instead of mock data")
 _parser.add_argument("--port", type=int, default=3002)
 _parser.add_argument("--host", default="0.0.0.0")
 _known, _ = _parser.parse_known_args()
 
+REAL_MODE: bool = _known.real
 SCENARIO: str = _known.mock
 PORT: int = _known.port
 HOST: str = _known.host
 
-logger.info(f"Starting Slurm MCP SSE server — scenario={SCENARIO}, {HOST}:{PORT}")
+mode_str = "REAL Slurm" if REAL_MODE else f"mock (scenario={SCENARIO})"
+logger.info(f"Starting Slurm MCP SSE server — {mode_str}, {HOST}:{PORT}")
 
-mcp = FastMCP("slurm-mcp-mock")
+mcp = FastMCP("slurm-mcp-mock" if not REAL_MODE else "slurm-mcp-real")
+
+
+# ── Real-mode helper ──────────────────────────────────────────────────────────
+
+def _run_cmd(cmd: list[str], timeout: int = 30) -> str:
+    """Execute a Slurm CLI command and return stdout. Raises on failure."""
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout
+        )
+        output = result.stdout.strip()
+        if result.returncode != 0:
+            err = result.stderr.strip()
+            if err:
+                return f"Error (exit {result.returncode}): {err}"
+            if output:
+                return output
+            return f"Command failed with exit code {result.returncode}"
+        return output or "(no output)"
+    except FileNotFoundError:
+        return f"Error: '{cmd[0]}' not found. Is Slurm installed?"
+    except subprocess.TimeoutExpired:
+        return f"Error: command timed out after {timeout}s"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -54,6 +81,72 @@ def _jobs():
 
 def _nodes():
     return MOCK_NODES.get(SCENARIO, [])
+
+
+def _real_jobs() -> list[dict]:
+    """Parse real squeue output into the same dict format as mock data."""
+    raw = _run_cmd(["squeue", "--noheader",
+                    "--format=%i|%j|%u|%T|%M|%D|%C|%m|%P|%r|%e"])
+    jobs = []
+    for line in raw.strip().split("\n"):
+        if not line.strip() or "error" in line.lower():
+            continue
+        parts = line.strip().split("|")
+        if len(parts) < 9:
+            continue
+        jobs.append({
+            "job_id": parts[0].strip(),
+            "name": parts[1].strip(),
+            "user": parts[2].strip(),
+            "state": parts[3].strip(),
+            "time": parts[4].strip(),
+            "nodes": parts[5].strip(),
+            "cpus": parts[6].strip(),
+            "mem": parts[7].strip(),
+            "partition": parts[8].strip(),
+            "reason": parts[9].strip() if len(parts) > 9 else "",
+            "exit_code": "0:0",
+        })
+    return jobs
+
+
+def _real_nodes() -> list[dict]:
+    """Parse real sinfo output into the same dict format as mock data.
+    Deduplicates nodes that appear once per partition."""
+    raw = _run_cmd(["sinfo", "--noheader",
+                    "--format=%N|%T|%C|%m|%P|%G|%E"])
+    seen = {}  # name → dict (keep first occurrence, merge partitions)
+    for line in raw.strip().split("\n"):
+        if not line.strip() or "error" in line.lower():
+            continue
+        parts = line.strip().split("|")
+        if len(parts) < 5:
+            continue
+        name = parts[0].strip()
+        if name in seen:
+            # Merge partition names
+            seen[name]["partition"] += "," + parts[4].strip().rstrip("*")
+            continue
+        seen[name] = {
+            "name": name,
+            "state": parts[1].strip(),
+            "cpus": parts[2].strip(),  # A/I/O/T format
+            "mem": parts[3].strip(),
+            "partition": parts[4].strip().rstrip("*"),
+            "gres": parts[5].strip() if len(parts) > 5 else "",
+            "reason": parts[6].strip() if len(parts) > 6 and parts[6].strip() not in ("(null)", "none") else "",
+        }
+    return list(seen.values())
+
+
+def _get_jobs():
+    """Return job list — real Slurm data or mock depending on mode."""
+    return _real_jobs() if REAL_MODE else _jobs()
+
+
+def _get_nodes():
+    """Return node list — real Slurm data or mock depending on mode."""
+    return _real_nodes() if REAL_MODE else _nodes()
 
 def _fmt_jobs(jobs: list) -> str:
     if not jobs:
@@ -86,7 +179,24 @@ def _fmt_nodes(nodes: list) -> str:
 
 @mcp.tool()
 def squeue(user: str = "", state: str = "", partition: str = "") -> str:
-    """Show current job queue. Filter by user, state, or partition."""
+    """Show current job queue with JOBID, name, user, state, time, resources.
+    Filter: user="alice", state="RUNNING|PENDING|FAILED|COMPLETED", partition="gpu".
+    Returns pipe-delimited table."""
+    if REAL_MODE:
+        cmd = [
+            "squeue",
+            "--format=%i|%j|%u|%T|%M|%D|%C|%m|%P",
+            "--noheader",
+        ]
+        if user: cmd += ["--user", user]
+        if state: cmd += ["--state", state]
+        if partition: cmd += ["--partition", partition]
+        raw = _run_cmd(cmd)
+        if not raw or raw == "(no output)":
+            return "No jobs in queue."
+        # Add a header for clarity
+        header = "JOBID|NAME|USER|STATE|TIME|NODES|CPUS|MIN_MEM|PARTITION"
+        return header + "\n" + raw
     jobs = _jobs()
     if user:
         jobs = [j for j in jobs if j.get("user", "").lower() == user.lower()]
@@ -99,7 +209,13 @@ def squeue(user: str = "", state: str = "", partition: str = "") -> str:
 
 @mcp.tool()
 def sinfo(partition: str = "", node: str = "") -> str:
-    """Show cluster node and partition information."""
+    """Show cluster partition and node status (allocated/idle/down counts, per-node CPUs/memory/GPUs).
+    Filter: partition="gpu", node="node01"."""
+    if REAL_MODE:
+        cmd = ["sinfo", "--format=%P|%a|%l|%D|%T|%N|%C|%m|%G"]
+        if partition: cmd += ["--partition", partition]
+        if node: cmd += ["--nodes", node]
+        return _run_cmd(cmd)
     nodes = _nodes()
     if partition:
         nodes = [n for n in nodes if n.get("partition", "").lower() == partition.lower()]
@@ -141,7 +257,20 @@ def sacct(
     endtime: str = "",
     format: str = "JobID,JobName,User,State,ExitCode,Elapsed,NCPUs,ReqMem",
 ) -> str:
-    """Query job accounting records from Slurm database."""
+    """Query historical job accounting records for completed/failed/cancelled/timed-out jobs.
+    Filter: user, state="FAILED|COMPLETED|CANCELLED|TIMEOUT", starttime="now-7days" or "2024-01-01".
+    Returns pipe-delimited table with ExitCode, elapsed time, resources."""
+    if REAL_MODE:
+        cmd = ["sacct", f"--format={format}", "--parsable2", "--noheader"]
+        if user: cmd += ["--user", user]
+        if state: cmd += ["--state", state]
+        if starttime: cmd += ["--starttime", starttime]
+        if endtime: cmd += ["--endtime", endtime]
+        raw = _run_cmd(cmd)
+        if not raw or raw == "(no output)":
+            return "No accounting records found."
+        header = format.replace(",", "|")
+        return header + "\n" + raw
     jobs = _jobs()
     # Include completed/failed/timeout jobs from mock data
     history_states = {"FAILED", "COMPLETED", "TIMEOUT", "CANCELLED"}
@@ -178,7 +307,13 @@ def sacct(
 
 @mcp.tool()
 def scontrol_show(entity: str = "job", id: str = "") -> str:
-    """Show detailed information about a Slurm entity (job, node, partition)."""
+    """Show detailed Slurm entity info — more fields than squeue/sinfo.
+    entity="job"|"node"|"partition", id=job ID or node name.
+    Returns key=value pairs: Reason, AllocTRES, StdErr path, etc."""
+    if REAL_MODE:
+        cmd = ["scontrol", "show", entity]
+        if id: cmd.append(id)
+        return _run_cmd(cmd)
     if entity.lower() == "job":
         jobs = _jobs()
         if id:
@@ -218,43 +353,175 @@ def scontrol_show(entity: str = "job", id: str = "") -> str:
 
 @mcp.tool()
 def sbatch(script: str, flags: str = "") -> str:
-    """Submit a batch job script to Slurm."""
+    """Submit one or more batch job scripts to Slurm.
+    script (REQUIRED): a single file path, OR comma-separated paths for batch submit.
+    Examples: "/tmp/slurm_uploads/job.sh" or "/tmp/a.sh,/tmp/b.sh,/tmp/c.sh".
+    flags (optional): extra sbatch flags applied to ALL scripts, like "--partition=gpu".
+    Returns submission results for each script."""
+    # Split comma-separated paths (but don't split inline scripts containing commas)
+    raw = script.strip()
+    if not raw:
+        return "sbatch: error: 'script' argument is required. Provide a file path."
+
+    # Heuristic: if it contains newlines, it's inline content (single script)
+    # Otherwise, split on commas to support batch submission
+    if "\n" in raw:
+        scripts = [raw]
+    else:
+        scripts = [s.strip() for s in raw.split(",") if s.strip()]
+
+    if not scripts:
+        return "sbatch: error: No scripts specified."
+
+    results = []
+    for one_script in scripts:
+        result = _sbatch_single(one_script, flags)
+        results.append(result)
+
+    if len(results) == 1:
+        return results[0]
+    return "\n".join(f"[{i+1}/{len(results)}] {r}" for i, r in enumerate(results))
+
+
+def _sbatch_single(script: str, flags: str = "") -> str:
+    """Submit a single script to Slurm."""
+    stripped = script.strip()
+    if REAL_MODE:
+        is_path = (
+            (stripped.startswith("/") or stripped.startswith("~/") or stripped.startswith("./"))
+            and "\n" not in stripped
+        )
+
+        if is_path:
+            expanded = os.path.expanduser(stripped)
+            if not os.path.isfile(expanded):
+                return f"sbatch: error: File not found: {expanded}"
+            script_path = expanded
+            tmp_path = None
+        else:
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+                f.write(stripped)
+                script_path = f.name
+                tmp_path = f.name
+
+        cmd = ["sbatch"]
+        if flags:
+            cmd += flags.split()
+        cmd.append(script_path)
+        result = _run_cmd(cmd)
+
+        if tmp_path:
+            os.unlink(tmp_path)
+        return result
+
     import random
     job_id = random.randint(9000, 9999)
+    script_name = os.path.basename(stripped) if stripped else "job"
+    _mock_submitted.append({
+        "job_id": str(job_id),
+        "name": script_name.replace(".sh", ""),
+        "user": "user",
+        "state": "PENDING",
+        "time": "0:00",
+        "nodes": 1,
+        "cpus": 4,
+        "mem": "4G",
+        "partition": "cpu",
+        "reason": "Priority",
+    })
     return f"Submitted batch job {job_id}"
 
 
 @mcp.tool()
 def scancel(job_id: str, user: str = "") -> str:
-    """Cancel a Slurm job."""
+    """Cancel one or more Slurm jobs.
+    job_id (REQUIRED): a single job ID, array parent ID, or comma-separated IDs.
+    Examples: "12345", "12345_[1-5]", "100,101,102".
+    For array jobs, pass the parent ID (e.g. "7") to cancel all tasks at once.
+    Returns summary of cancelled jobs."""
+    # Normalize: split comma-separated into individual IDs
+    ids = [i.strip() for i in job_id.split(",") if i.strip()]
+    if not ids:
+        return "scancel: error: No job IDs specified"
+
+    if REAL_MODE:
+        cmd = ["scancel"] + ids
+        if user:
+            cmd += ["--user", user]
+        result = _run_cmd(cmd)
+        if "error" not in result.lower():
+            return f"Jobs {', '.join(ids)} cancelled successfully."
+        return result
+
+    # ── Mock mode: match exact IDs OR parent array IDs ──
     jobs = _jobs()
-    match = [j for j in jobs if str(j.get("job_id", "")) == str(job_id)]
-    if not match:
-        return f"scancel: error: Kill job error on job id {job_id}: Invalid job id specified"
-    return f"Job {job_id} cancelled successfully."
+    cancelled = []
+    not_found = []
+    for one_id in ids:
+        # Exact match
+        exact = [j for j in jobs if str(j.get("job_id", "")) == one_id]
+        if exact:
+            cancelled.append(one_id)
+            continue
+        # Parent ID match: "7" should match "7_[1-5]", "7_1", etc.
+        parent_matches = [
+            j for j in jobs
+            if str(j.get("job_id", "")).split("_")[0] == one_id
+        ]
+        if parent_matches:
+            cancelled.extend(str(j["job_id"]) for j in parent_matches)
+            continue
+        not_found.append(one_id)
+
+    parts = []
+    if cancelled:
+        parts.append(f"Jobs {', '.join(cancelled)} cancelled successfully.")
+    if not_found:
+        parts.append(f"scancel: error: Invalid job id(s): {', '.join(not_found)}")
+    return " ".join(parts) if parts else f"Job {job_id} cancelled successfully."
 
 
 @mcp.tool()
 def scontrol_hold(job_id: str) -> str:
-    """Place a hold on a pending Slurm job."""
+    """Hold a pending job so it won't be scheduled until released.
+    job_id (REQUIRED): the numeric job ID. Only works on PENDING jobs."""
+    if REAL_MODE:
+        result = _run_cmd(["scontrol", "hold", job_id])
+        if "error" not in result.lower():
+            return f"Job {job_id} held."
+        return result
     return f"Job {job_id} held."
 
 
 @mcp.tool()
 def scontrol_release(job_id: str) -> str:
-    """Release a held Slurm job."""
+    """Release a held job so it can be scheduled again.
+    job_id (REQUIRED): the numeric job ID of a held job."""
+    if REAL_MODE:
+        result = _run_cmd(["scontrol", "release", job_id])
+        if "error" not in result.lower():
+            return f"Job {job_id} released."
+        return result
     return f"Job {job_id} released."
 
 
 @mcp.tool()
 def srun(command: str, nodes: int = 1, cpus: int = 1, partition: str = "cpu") -> str:
-    """Run a command interactively via srun (mock)."""
+    """Run a command interactively on the cluster via srun (allocates then executes).
+    command (REQUIRED): the shell command. nodes/cpus/partition are optional resource controls."""
+    if REAL_MODE:
+        cmd = ["srun", "-N", str(nodes), "-c", str(cpus), "-p", partition, "--"] + command.split()
+        return _run_cmd(cmd, timeout=60)
     return f"[mock srun] {command} — would run on {nodes} node(s), {cpus} CPU(s), partition={partition}"
 
 
 @mcp.tool()
 def salloc(nodes: int = 1, cpus: int = 1, partition: str = "cpu", time: str = "01:00:00") -> str:
-    """Allocate resources interactively (mock)."""
+    """Allocate interactive resources on the cluster without running a command.
+    Returns a job allocation ID. Use for interactive sessions."""
+    if REAL_MODE:
+        return _run_cmd(["salloc", "-N", str(nodes), "-c", str(cpus), "-p", partition, "-t", time], timeout=10)
     import random
     job_id = random.randint(9000, 9999)
     return f"salloc: Granted job allocation {job_id} ({nodes} node(s), {cpus} CPUs, {partition})"
@@ -294,6 +561,48 @@ def run_analysis(script_id: Literal[
       analyze_my_jobs, analyze_my_usage, analyze_my_efficiency
     """
     sid = script_id.strip().lower()
+
+    # ── Real mode: compose analysis from actual Slurm commands ──
+    if REAL_MODE:
+        if sid == "analyze_cluster_status":
+            info = _run_cmd(["sinfo", "--format=%P %a %D %T %N", "--noheader"])
+            q = _run_cmd(["squeue", "--format=%i %j %u %T %M %D", "--noheader"])
+            return f"=== Cluster Status ===\n\nPartitions & Nodes:\n{info}\n\nJob Queue:\n{q}"
+        elif sid == "analyze_failed_jobs":
+            return _run_cmd(["sacct", "--state=FAILED,TIMEOUT,NODE_FAIL,OUT_OF_MEMORY",
+                             "--format=JobID,JobName,User,State,ExitCode,Elapsed,NodeList",
+                             "--parsable2", "--starttime=now-7days"])
+        elif sid == "analyze_pending_jobs":
+            return _run_cmd(["squeue", "--state=PENDING",
+                             "--format=%i %j %u %T %r %P %D %C", "--noheader"])
+        elif sid == "analyze_gpu_resources":
+            info = _run_cmd(["sinfo", "--format=%N %G %C %m %T", "--noheader", "-p", "gpu"])
+            q = _run_cmd(["squeue", "-p", "gpu", "--format=%i %j %u %T %b", "--noheader"])
+            return f"=== GPU Resources ===\nNodes:\n{info}\n\nGPU Jobs:\n{q}"
+        elif sid == "analyze_node_health":
+            return _run_cmd(["sinfo", "--format=%N %T %C %m %G %E", "--noheader"])
+        elif sid == "analyze_job_efficiency":
+            running = _run_cmd(["squeue", "--state=RUNNING", "--format=%i", "--noheader"]).split()
+            if not running:
+                return "No running jobs to analyze efficiency."
+            lines = ["=== Job Efficiency (live sstat) ==="]
+            for jid in running[:5]:
+                jid = jid.strip()
+                if not jid: continue
+                stat = _run_cmd(["sstat", "--format=JobID,AveCPU,AveRSS,MaxRSS,AveDiskRead,AveDiskWrite",
+                                 "--parsable2", "--noheader", "-j", f"{jid}.batch"])
+                lines.append(f"Job {jid}: {stat}")
+            return "\n".join(lines)
+        elif sid in ("analyze_my_jobs", "analyze_my_usage", "analyze_my_efficiency"):
+            user = os.environ.get("USER", os.environ.get("SLURM_USER", ""))
+            if not user:
+                return "Cannot determine current user. Set USER env var."
+            q = _run_cmd(["squeue", "--user", user, "--format=%i %j %T %M %D %C %P", "--noheader"])
+            acct = _run_cmd(["sacct", "--user", user, "--starttime=now-7days",
+                             "--format=JobID,JobName,State,ExitCode,Elapsed,NCPUs",
+                             "--parsable2", "--noheader"])
+            return f"=== My Jobs ({user}) ===\n\nRunning/Pending:\n{q}\n\nRecent History:\n{acct}"
+        return f"Unknown script_id '{script_id}'."
 
     jobs  = _jobs()
     nodes = _nodes()
@@ -435,29 +744,48 @@ def generate_chart(chart_id: Literal[
       efficiency_report → xychart-beta bars: estimated CPU efficiency per job
     """
     cid   = chart_id.strip().lower()
-    jobs  = _jobs()
-    nodes = _nodes()
+    jobs  = _get_jobs()
+    nodes = _get_nodes()
+    mode_label = "live" if REAL_MODE else SCENARIO
 
     # ── shared micro-helpers ────────────────────────────────────────────────
     def _cpu_pair(s: str):
+        """Parse CPU string. Supports A/T (mock) and A/I/O/T (real sinfo)."""
         p = s.split("/")
-        try: return int(p[0]), int(p[-1])
+        try:
+            if len(p) == 4:  # A/I/O/T from real sinfo
+                return int(p[0]), int(p[3])
+            return int(p[0]), int(p[-1])
         except: return 0, 0
 
     def _mem_gb(s: str) -> float:
+        """Parse memory string. Handles '64G', '1024M', '63000' (MB from sinfo)."""
         s = (s or "0").strip().upper()
         try:
             if s.endswith("T"): return float(s[:-1]) * 1024
             if s.endswith("G"): return float(s[:-1])
             if s.endswith("M"): return float(s[:-1]) / 1024
+            # Plain number — assume MB (real sinfo format)
+            val = float(s)
+            if val > 1024:
+                return val / 1024  # MB → GB
+            return val  # Already in GB or small value
         except: pass
         return 0.0
 
     def _elapsed_min(t: str) -> int:
-        p = t.split(":")
+        """Parse elapsed time to minutes. Handles D-HH:MM:SS, HH:MM:SS, MM:SS, M:SS."""
+        t = (t or "0:01").strip()
         try:
-            if len(p) >= 3: return int(p[0]) * 60 + int(p[1])
-            if len(p) == 2: return int(p[0]) * 60 + int(p[1])
+            days = 0
+            if "-" in t:
+                d, t = t.split("-", 1)
+                days = int(d)
+            p = t.split(":")
+            if len(p) >= 3:
+                return days * 1440 + int(p[0]) * 60 + int(p[1])
+            if len(p) == 2:
+                return days * 1440 + int(p[0])  # MM:SS → MM
         except: pass
         return 1
 
@@ -468,27 +796,45 @@ def generate_chart(chart_id: Literal[
     # ── system_health: xychart-beta utilization bars ───────────────────────
     if cid == "system_health":
         cpu_a = cpu_t = 0
-        mem_a = mem_t = 0.0
+        mem_t_gb = 0.0
+        mem_a_gb = 0.0
         gpu_n = gpu_a = down_n = 0
         for n in nodes:
             ca, ct = _cpu_pair(n.get("cpus", "0/0"))
             cpu_a += ca; cpu_t += ct
-            mp = n.get("mem", "0/0").split("/")
-            mem_a += _mem_gb(mp[0]); mem_t += _mem_gb(mp[-1])
+            # Total memory from node
+            mp = n.get("mem", "0").split("/")
+            mem_t_gb += _mem_gb(mp[-1])  # Total is always last part (or only part)
+            if len(mp) > 1:
+                mem_a_gb += _mem_gb(mp[0])  # Mock format: alloc/total
             st = n.get("state", "")
             if n.get("gres", ""):
                 gpu_n += 1
                 if "alloc" in st or "mix" in st: gpu_a += 1
             if "down" in st or "drain" in st: down_n += 1
 
+        # In real mode, estimate allocated memory from scontrol AllocTRES
+        if REAL_MODE and mem_a_gb == 0.0:
+            import re as _re
+            alloc_raw = _run_cmd(["squeue", "--state=RUNNING", "--noheader",
+                                  "--format=%i"])
+            for jid in alloc_raw.strip().split("\n"):
+                jid = jid.strip()
+                if not jid:
+                    continue
+                info = _run_cmd(["scontrol", "show", "job", jid])
+                m = _re.search(r"AllocTRES=.*?mem=(\d+[A-Z]?)", info)
+                if m:
+                    mem_a_gb += _mem_gb(m.group(1))
+
         cpu_pct  = round(cpu_a / cpu_t * 100)  if cpu_t  else 0
-        mem_pct  = round(mem_a / mem_t * 100)  if mem_t  else 0
+        mem_pct  = round(mem_a_gb / mem_t_gb * 100) if mem_t_gb else 0
         gpu_pct  = round(gpu_a / gpu_n * 100)  if gpu_n  else 0
         heal_pct = round((len(nodes) - down_n) / len(nodes) * 100) if nodes else 100
 
         return (
             f"xychart-beta\n"
-            f"    title \"Cluster Utilization — {SCENARIO}\"\n"
+            f"    title \"Cluster Utilization — {mode_label}\"\n"
             f"    x-axis [\"CPU\", \"Memory\", \"GPU Nodes\", \"Node Health\"]\n"
             f"    y-axis \"%\" 0 --> 100\n"
             f"    bar [{cpu_pct}, {mem_pct}, {gpu_pct}, {heal_pct}]"
@@ -515,7 +861,7 @@ def generate_chart(chart_id: Literal[
         arrows = "".join(f"\n    Cluster --> {k}" for k in sorted(groups))
         return (
             f"flowchart TD\n"
-            f"    Cluster[\"HPC Cluster — {SCENARIO}\\n{len(nodes)} nodes total\"]"
+            f"    Cluster[\"HPC Cluster — {mode_label}\\n{len(nodes)} nodes total\"]"
             f"{defs}{arrows}"
         )
 
@@ -537,6 +883,8 @@ def generate_chart(chart_id: Literal[
             "QOSMaxCpuPerUserLimit":  "QOSMaxCPU",
             "ReqNodeNotAvail":        "NodeUnavail",
             "AssocGrpCPUMinutesLimit":"CPUBudget",
+            "Nodes required for job are DOWN, DRAINED or reserved for jobs in higher priority partitions": "NodesDown",
+            "None": "Starting",
         }
         labels = json.dumps([_SHORT.get(r, r[:12]) for r, _ in top])
         counts = json.dumps([c for _, c in top])
@@ -567,7 +915,7 @@ def generate_chart(chart_id: Literal[
         vals   = json.dumps([user_cpu[u] for u in users])
         return (
             f"xychart-beta\n"
-            f"    title \"CPU Usage by User — {SCENARIO}\"\n"
+            f"    title \"CPU Usage by User — {mode_label}\"\n"
             f"    x-axis {labels}\n"
             f"    y-axis \"CPUs\" 0 --> {mc + 4}\n"
             f"    bar {vals}"
@@ -638,6 +986,29 @@ def generate_chart(chart_id: Literal[
         )
 
 
+# ── File Read Tool ────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def read_file(file_path: str) -> str:
+    """Read a text file from the filesystem (max 1MB).
+    file_path (REQUIRED): absolute path like /home/user/job.sh.
+    Returns file contents as plain text, or error if not found."""
+    import os
+    resolved = os.path.realpath(file_path)
+    if not os.path.exists(resolved):
+        return f"Error: File not found: {file_path}"
+    if not os.path.isfile(resolved):
+        return f"Error: Not a file: {file_path}"
+    try:
+        size = os.path.getsize(resolved)
+        if size > 1_000_000:  # 1MB limit
+            return f"Error: File too large ({size} bytes). Max 1MB."
+        with open(resolved, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+
 # ── Web Search Tool ───────────────────────────────────────────────────────────
 
 @mcp.tool()
@@ -701,7 +1072,10 @@ def web_search(
 
 @mcp.tool()
 def sdiag() -> str:
-    """Show Slurm scheduler diagnostics: backfill stats, cycle times, submit/RPC rates."""
+    """Show Slurm scheduler diagnostics: main/backfill cycle times, queue depth, RPC rates.
+    No args. Good for health checks and performance analysis."""
+    if REAL_MODE:
+        return _run_cmd(["sdiag"])
     running = len([j for j in _jobs() if j.get("state") == "RUNNING"])
     pending = len([j for j in _jobs() if j.get("state") == "PENDING"])
     return (
@@ -719,7 +1093,17 @@ def sdiag() -> str:
 
 @mcp.tool()
 def sprio(user: str = "", partition: str = "") -> str:
-    """Show composite job priority factors for pending jobs (age, fairshare, QOS, size)."""
+    """Show priority factors for pending jobs (age, fairshare, QOS, job size).
+    Higher priority = scheduled sooner. Filter by user or partition."""
+    if REAL_MODE:
+        cmd = ["sprio", "--format=%i|%u|%P|%Y|%A|%F|%Q|%S|%N", "--noheader"]
+        if user: cmd += ["--user", user]
+        if partition: cmd += ["--partition", partition]
+        raw = _run_cmd(cmd)
+        if not raw or raw == "(no output)":
+            return "No pending jobs with priority info."
+        header = "JOBID|USER|PARTITION|PRIORITY|AGE|FAIRSHARE|QOS|SIZE|NICE"
+        return header + "\n" + raw
     import hashlib
     pending = [j for j in _jobs() if j.get("state") == "PENDING"]
     if user:
@@ -754,7 +1138,11 @@ def sprio(user: str = "", partition: str = "") -> str:
 
 @mcp.tool()
 def sstat(job_id: str) -> str:
-    """Show real-time step statistics for a running job: CPU usage, AveRSS, MaxRSS, disk I/O."""
+    """Show real-time resource stats for a RUNNING job (CPU%, RSS memory, disk I/O).
+    job_id (REQUIRED). Only works on RUNNING jobs; use sacct for completed ones."""
+    if REAL_MODE:
+        return _run_cmd(["sstat", "--format=JobID,AveCPU,AveRSS,MaxRSS,AveVMSize,AveDiskRead,AveDiskWrite",
+                         "--parsable2", "-j", f"{job_id}.batch"])
     import hashlib
     jobs = _jobs()
     match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
@@ -793,38 +1181,169 @@ def sstat(job_id: str) -> str:
 
 
 # Exit-code hints for diagnose_job
+# Format: "exit_code:signal" → explanation + fix
 _EXIT_HINTS: dict[str, str] = {
-    "0:0": "COMPLETED normally.",
-    "1:0": "Application returned exit code 1 — check stderr for Python/app error.",
-    "2:0": "Misuse of shell command (bad syntax) — check the job script.",
-    "137:0": "OOM-killed (SIGKILL). Increase --mem; current: {mem}.",
-    "143:0": "Walltime exceeded (SIGTERM). Increase --time or checkpoint more often.",
-    "1:53": "Node hardware failure (slurm signal 53). Requeue: scontrol_requeue {job_id}.",
-    "7:0": "Bus error — often memory corruption or file I/O on shared FS.",
-    "127:0": "Command not found in job script (module not loaded?).",
+    # Normal
+    "0:0":   "COMPLETED normally.",
+    # Application errors (exit code > 0, signal 0)
+    "1:0":   "Application exit code 1 — generic failure. Check stderr/stdout for Python tracebacks or app errors.",
+    "2:0":   "Misuse of shell command (bad syntax, missing argument). Check the job script shebang and commands.",
+    "3:0":   "Cannot execute (permission denied or not a script). Check `chmod +x` and shebang line.",
+    "126:0": "Command invoked cannot execute — permission problem or not an executable. Check `chmod +x`.",
+    "127:0": "Command not found — missing binary or module not loaded. Add `module load` to your script.",
+    "128:0": "Invalid exit argument — script used `exit` with non-integer or negative.",
+    # Signal-killed jobs (exit 0, signal > 0) — signal = 128 + N convention
+    "0:1":   "SIGHUP — terminal hangup. Job lost connection to controlling terminal.",
+    "0:2":   "SIGINT — interrupt (Ctrl+C). Job was interrupted, possibly by scancel --signal=INT.",
+    "0:3":   "SIGQUIT — quit with core dump. Check for core file.",
+    "0:4":   "SIGILL — illegal instruction. Binary incompatible with CPU architecture.",
+    "0:6":   "SIGABRT — abort. Application called abort(), often from assertion failure.",
+    "0:7":   "SIGBUS — bus error. Memory alignment issue or I/O error on memory-mapped file.",
+    "0:8":   "SIGFPE — floating point exception. Division by zero or overflow.",
+    "0:9":   "SIGKILL — killed. OOM-killer or admin killed the job. Increase --mem.",
+    "0:11":  "SIGSEGV — segfault. Memory corruption, bad pointer, or stack overflow. Check with valgrind.",
+    "0:13":  "SIGPIPE — broken pipe. Process wrote to a closed pipe/socket.",
+    "0:14":  "SIGALRM — alarm timer expired.",
+    "0:15":  "SIGTERM — terminated. Walltime exceeded or scancel. Increase --time or checkpoint.",
+    "0:18":  "SIGCONT — continued (informational).",
+    "0:24":  "SIGXCPU — CPU time limit exceeded. Increase --time or reduce computation.",
+    "0:25":  "SIGXFSZ — file size limit exceeded. Reduce output size or request more disk.",
+    "0:31":  "SIGSYS — bad system call. Seccomp/sandbox violation.",
+    # Combined patterns (common in practice)
+    "137:0": "OOM-killed (SIGKILL=9, 128+9=137). Increase --mem; current allocation: {mem}.",
+    "139:0": "Segfault (SIGSEGV=11, 128+11=139). Memory bug. Debug with valgrind/gdb.",
+    "140:0": "SIGBUS (128+7+5). Bus error — bad memory access or shared FS issue.",
+    "143:0": "Walltime exceeded (SIGTERM=15, 128+15=143). Increase --time or add checkpointing.",
+    "134:0": "SIGABRT (128+6=134). Assertion failure or abort() call in application.",
+    "130:0": "SIGINT (128+2=130). Job interrupted — user or scancel.",
+    # Slurm-specific signals
+    "1:53":  "Node failure (Slurm signal 53). Hardware or network issue. Requeue: scontrol_requeue {job_id}.",
+    "0:53":  "Node failure during job execution. Requeue the job.",
+    "7:0":   "Bus error — often memory corruption or file I/O on shared filesystem. Check lustre/gpfs health.",
 }
 
-# Pending-reason hints
+# Pending-reason hints — comprehensive from Slurm docs
 _PENDING_HINTS: dict[str, str] = {
-    "Resources":               "Wait for matching nodes to free up, or reduce --nodes/--cpus.",
-    "Priority":                "Lower priority than other jobs — wait or ask admin to boost.",
-    "Dependency":              "Waiting on parent job to finish — check with `scontrol show job <id>`.",
-    "QOSMaxCpuPerUserLimit":   "You hit your per-user CPU quota. Wait for your other jobs to finish.",
-    "QOSMaxJobsPerUserLimit":  "You hit the max-jobs-per-user limit. Wait for a slot.",
-    "QOSMaxWallDurationPerJobLimit": "Requested --time exceeds QOS wall limit. Reduce or use a different QOS.",
-    "ReqNodeNotAvail":         "Requested node(s) are unavailable/down. Remove node constraint or resubmit.",
-    "AssocGrpCPUMinutesLimit": "Group CPU-minute budget exhausted. Contact your PI or HPC admin.",
+    # Most common
+    "Resources":               "Waiting for matching nodes to free up. Reduce --nodes/--cpus/--mem or wait.",
+    "Priority":                "Lower priority than other pending jobs. Wait, or ask admin to boost via `sprio`.",
+    "Dependency":              "Waiting on parent job. Check dependency chain: `scontrol show job {job_id}`.",
+    "DependencyNeverSatisfied":"Dependency can never be met (parent failed/cancelled). Cancel or remove dependency.",
+    "None":                    "Job is being evaluated — should move to RUNNING shortly.",
+    "BeginTime":               "Job has --begin time that hasn't arrived yet. Wait or update with scontrol_update.",
+
+    # QOS limits
+    "QOSMaxCpuPerUserLimit":   "Per-user CPU quota hit. Wait for your running jobs to finish.",
+    "QOSMaxJobsPerUserLimit":  "Per-user job limit hit. Wait for a running job to complete.",
+    "QOSMaxWallDurationPerJobLimit": "Requested --time exceeds QOS wall limit. Reduce or switch QOS.",
+    "QOSMaxCpuPerJobLimit":    "Job requests more CPUs than QOS allows per job. Reduce --cpus-per-task or -n.",
+    "QOSMaxMemoryPerJob":      "Job requests more memory than QOS allows. Reduce --mem.",
+    "QOSMaxMemoryPerNode":     "Per-node memory exceeds QOS limit. Reduce --mem-per-cpu or spread across more nodes.",
+    "QOSMaxNodePerJobLimit":   "Job requests more nodes than QOS allows. Reduce -N.",
+    "QOSMaxNodePerUserLimit":  "Per-user node limit hit. Wait for running jobs to free nodes.",
+    "QOSMaxGRESPerJob":        "GRES (GPU) request exceeds QOS limit. Reduce --gres.",
+    "QOSMaxGRESPerUser":       "Per-user GPU limit hit. Wait for GPU jobs to finish.",
+    "QOSMaxSubmitJobPerUserLimit": "Max pending+running jobs per user reached. Wait for completion.",
+    "QOSGrpCpuLimit":          "QOS aggregate CPU limit reached. Wait for other jobs in your QOS to finish.",
+    "QOSGrpMemLimit":          "QOS aggregate memory limit reached. Wait for other jobs.",
+    "QOSGrpNodeLimit":         "QOS aggregate node limit reached.",
+    "QOSGrpJobsLimit":         "QOS total running job limit reached.",
+    "QOSGrpGRES":              "QOS aggregate GRES limit reached. Wait for GPU jobs.",
+    "QOSNotAllowed":           "Requested QOS not permitted for your association. Check with sacctmgr_show.",
+    "QOSResourceLimit":        "Generic QOS resource limit. Check `sacctmgr show qos` for limits.",
+    "QOSUsageThreshold":       "QOS usage threshold breached. Fairshare penalty.",
+
+    # Association limits
+    "AssocGrpCPUMinutesLimit": "Group CPU-minute budget exhausted. Contact PI or admin.",
+    "AssocGrpCpuLimit":        "Association aggregate CPU limit. Wait or contact admin.",
+    "AssocGrpMemLimit":        "Association aggregate memory limit.",
+    "AssocGrpNodeLimit":       "Association aggregate node limit.",
+    "AssocGrpJobsLimit":       "Association running job limit. Wait for completion.",
+    "AssocGrpGRES":            "Association GRES limit. Wait for GPU jobs to finish.",
+    "AssocGrpWallLimit":       "Association walltime budget exhausted.",
+    "AssocGrpSubmitJobsLimit": "Max pending+running jobs for association reached.",
     "AssocMaxJobsLimit":       "Account job limit reached. Wait for other jobs to complete.",
-    "None":                    "Job is probably starting — should move to RUNNING shortly.",
+    "AssocMaxCpuPerJobLimit":  "Per-job CPU limit for association. Reduce --cpus.",
+    "AssocMaxNodePerJobLimit": "Per-job node limit for association. Reduce -N.",
+    "AssocMaxMemPerJob":       "Per-job memory limit for association. Reduce --mem.",
+    "AssocMaxWallDurationPerJobLimit": "Per-job walltime limit. Reduce --time.",
+    "AssocMaxSubmitJobLimit":  "Max pending+running jobs for association reached.",
+    "AssociationJobLimit":     "Association has reached its maximum job count.",
+    "AssociationResourceLimit":"Association has reached a resource limit.",
+    "AssociationTimeLimit":    "Association has reached its time limit.",
+
+    # Node/partition issues
+    "ReqNodeNotAvail":         "Requested node(s) unavailable/down/drained. Remove --nodelist or --constraint, or wait.",
+    "NodeDown":                "Required node is down. Remove specific node requirement or wait for repair.",
+    "PartitionDown":           "Partition is DOWN. Switch to another partition with -p.",
+    "PartitionNodeLimit":      "Requested more nodes than partition has. Reduce -N.",
+    "PartitionTimeLimit":      "Job --time exceeds partition limit. Reduce or switch partition.",
+    "PartitionInactive":       "Partition is inactive. Use a different partition.",
+    "PartitionConfig":         "Job violates a partition limit. Check `scontrol show partition`.",
+    "BadConstraints":          "Job requirements can never be met. Fix --constraint, --gres, or resource requests.",
+    "Constraints":             "Constraints can't be satisfied right now. Wait for resources or relax constraints.",
+
+    # Other
+    "Licenses":                "Waiting for a software license. Check `scontrol show license`.",
+    "Reservation":             "Job is waiting for its reservation to start.",
+    "ReservationDeleted":      "The reservation was deleted. Resubmit without --reservation.",
+    "JobArrayTaskLimit":       "Array task concurrency limit (%N) reached. Wait for running tasks to finish.",
+    "JobHeldAdmin":            "Admin put a hold on the job. Contact sysadmin.",
+    "JobHeldUser":             "You (or coordinator) held the job. Release with scontrol_release.",
+    "JobHoldMaxRequeue":       "Max requeue count reached. Job won't run again.",
+    "JobLaunchFailure":        "Launch failed — bad script, missing file, or FS issue. Check script path and permissions.",
+    "Prolog":                  "Node prolog script still running. Should clear automatically.",
+    "Cleaning":                "Job is being requeued and cleaning up. Should clear automatically.",
+    "InactiveLimit":           "Job reached InactiveLimit. Resubmit with activity.",
+    "InvalidAccount":          "Account is invalid. Check `sacctmgr show account`.",
+    "InvalidQOS":              "Requested QOS doesn't exist. Check `sacctmgr show qos`.",
+    "DeadLine":                "Job can't meet its --deadline. Extend deadline or reduce --time.",
+    "MaxMemPerLimit":          "Memory request violates MaxMemPer{CPU,Node} limit. Reduce --mem or --mem-per-cpu.",
+    "SchedDefer":              "Immediate allocation requested but SchedulerParameters=defer set. Use sbatch instead.",
+    "SystemFailure":           "System failure (FS, network). Contact admin.",
+    "FedJobLock":              "Federated cluster sync in progress. Wait.",
+    "AccountNotAllowed":       "Account not allowed in this partition. Switch -A or -p.",
 }
 
 
 @mcp.tool()
 def diagnose_job(job_id: str) -> str:
     """
-    Full job diagnosis: current state, resources, exit code interpretation,
-    captured stderr, and actionable fix hints.
+    Full job diagnosis: state, resources, exit code interpretation, stderr output, and fix hints.
+    job_id (REQUIRED). Works on running, pending, failed, and completed jobs.
+    Exit code meanings: 137=OOM (increase --mem), 143=walltime (increase --time), 1=app error.
     """
+    if REAL_MODE:
+        info = _run_cmd(["scontrol", "show", "job", job_id])
+        if "error" in info.lower() or "Invalid" in info:
+            # Try sacct for completed jobs
+            acct = _run_cmd(["sacct", "-j", job_id,
+                            "--format=JobID,JobName,User,State,ExitCode,Elapsed,NodeList,Reason",
+                            "--parsable2", "--noheader"])
+            if acct and "error" not in acct.lower():
+                parts = acct.split("|") if "|" in acct else acct.split()
+                exit_code = parts[4] if len(parts) > 4 else "?"
+                hint = _EXIT_HINTS.get(exit_code, f"Exit code {exit_code} — check stderr.")
+                return f"=== Job Diagnosis: {job_id} ===\n\nAccounting record:\n{acct}\n\nDIAGNOSIS: {hint}"
+            return f"Job {job_id} not found. {info}"
+        # Parse state and exit code from scontrol output
+        import re as _re
+        state_m = _re.search(r"JobState=(\S+)", info)
+        exit_m = _re.search(r"ExitCode=(\S+)", info)
+        reason_m = _re.search(r"Reason=(\S+)", info)
+        state = state_m.group(1) if state_m else "UNKNOWN"
+        exit_code = exit_m.group(1) if exit_m else "0:0"
+        reason = reason_m.group(1) if reason_m else "None"
+        hint = ""
+        if state == "PENDING":
+            hint = _PENDING_HINTS.get(reason, f"Reason '{reason}' — check scontrol output.")
+        elif state in ("FAILED", "TIMEOUT", "OUT_OF_MEMORY"):
+            hint = _EXIT_HINTS.get(exit_code, f"Exit code {exit_code} — check stderr.")
+        elif state == "RUNNING":
+            hint = f"Job is healthy and running. Use sstat({job_id}) for live stats."
+        else:
+            hint = f"State: {state}."
+        return f"=== Job Diagnosis: {job_id} ===\n\n{info}\n\nDIAGNOSIS: {hint}"
     jobs = _jobs()
     match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
     if not match:
@@ -885,28 +1404,44 @@ def diagnose_job(job_id: str) -> str:
 
 @mcp.tool()
 def scontrol_update(entity: str, id: str, params: str) -> str:
-    """Update a Slurm entity attribute. params format: 'key=value key2=value2' (e.g. 'TimeLimit=2:00:00 Priority=100')."""
+    """Update a Slurm entity attribute.
+    entity="job"|"node"|"partition", id=entity ID, params="key=value key2=value2"."""
+    if REAL_MODE:
+        cmd = ["scontrol", "update", f"{entity}={id}"] + params.split()
+        return _run_cmd(cmd)
     return f"scontrol update {entity} {entity}={id} {params} — applied (mock)."
 
 @mcp.tool()
 def scontrol_create(entity: str, params: str) -> str:
-    """Create a new Slurm entity (partition, node reservation) (mock)."""
+    """Create a new Slurm entity (partition, reservation). Admin only."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "create", entity] + params.split())
     return f"scontrol create {entity}: {params} — created (mock)."
 
 @mcp.tool()
 def scontrol_delete(entity: str, id: str) -> str:
-    """Delete a Slurm entity (mock)."""
+    """Delete a Slurm entity (partition, reservation). Admin only."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "delete", f"{entity}={id}"])
     return f"scontrol delete {entity} {id} — deleted (mock)."
 
 @mcp.tool()
 def scontrol_reconfigure() -> str:
-    """Force slurmctld to re-read its configuration (mock)."""
+    """Force slurmctld to re-read slurm.conf. Admin only, no args."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "reconfigure"])
     return "scontrol reconfigure: daemon reconfigured (mock)."
 
 
 @mcp.tool()
 def scontrol_requeue(job_id: str) -> str:
-    """Requeue (restart) a failed, cancelled, or completed Slurm job."""
+    """Requeue a failed/cancelled/completed job back to PENDING state.
+    job_id (REQUIRED). Cannot requeue RUNNING jobs — cancel first."""
+    if REAL_MODE:
+        result = _run_cmd(["scontrol", "requeue", job_id])
+        if "error" not in result.lower():
+            return f"Job {job_id} requeued."
+        return result
     jobs = _jobs()
     match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
     if not match:
@@ -917,7 +1452,12 @@ def scontrol_requeue(job_id: str) -> str:
 
 @mcp.tool()
 def sacctmgr_show(entity: str = "user", params: str = "") -> str:
-    """Show Slurm accounting manager entities (mock)."""
+    """Show accounting entities (user, account, qos, association, cluster)."""
+    if REAL_MODE:
+        cmd = ["sacctmgr", "show", entity]
+        if params: cmd += params.split()
+        cmd += ["--parsable2"]
+        return _run_cmd(cmd)
     if entity.lower() == "user":
         return "alice  1000  general  normal\nbob    1001  general  normal\ncharlie 1002 general normal"
     if entity.lower() == "qos":
@@ -926,22 +1466,32 @@ def sacctmgr_show(entity: str = "user", params: str = "") -> str:
 
 @mcp.tool()
 def sacctmgr_add(entity: str, params: str) -> str:
-    """Add a Slurm accounting entity (mock)."""
+    """Add an accounting entity."""
+    if REAL_MODE:
+        return _run_cmd(["sacctmgr", "add", entity] + params.split() + ["--immediate"])
     return f"sacctmgr add {entity}: {params} — added (mock)."
 
 @mcp.tool()
 def sacctmgr_modify(entity: str, where: str, params: str) -> str:
-    """Modify a Slurm accounting entity (mock)."""
+    """Modify an accounting entity."""
+    if REAL_MODE:
+        return _run_cmd(["sacctmgr", "modify", entity, "where"] + where.split() + ["set"] + params.split() + ["--immediate"])
     return f"sacctmgr modify {entity} where {where} set {params} — modified (mock)."
 
 @mcp.tool()
 def sacctmgr_delete(entity: str, params: str) -> str:
-    """Delete a Slurm accounting entity (mock)."""
+    """Delete an accounting entity."""
+    if REAL_MODE:
+        return _run_cmd(["sacctmgr", "delete", entity] + params.split() + ["--immediate"])
     return f"sacctmgr delete {entity}: {params} — deleted (mock)."
 
 @mcp.tool()
 def sreport(report_type: str = "cluster", params: str = "") -> str:
-    """Generate Slurm usage report (mock)."""
+    """Generate a Slurm usage/utilization report."""
+    if REAL_MODE:
+        cmd = ["sreport", report_type]
+        if params: cmd += params.split()
+        return _run_cmd(cmd)
     jobs = _jobs()
     total_cpu_hours = sum(int(j.get("cpus", 1)) for j in jobs) * 2  # rough estimate
     return (
@@ -952,6 +1502,367 @@ def sreport(report_type: str = "cluster", params: str = "") -> str:
         f"CPU-hours   : {total_cpu_hours}\n"
         f"Users       : alice, bob, charlie\n"
     )
+
+
+# ── Fairshare / Trigger / Attach / Broadcast Tools ───────────────────────────
+
+@mcp.tool()
+def sshare(user: str = "", account: str = "") -> str:
+    """Show fairshare usage vs allocation for users/accounts."""
+    if REAL_MODE:
+        cmd = ["sshare", "--parsable2"]
+        if user: cmd += ["--users", user]
+        if account: cmd += ["--accounts", account]
+        return _run_cmd(cmd)
+    # Mock
+    return (
+        "Account|User|RawShares|NormShares|RawUsage|EffectvUsage|FairShare\n"
+        "general|alice|100|0.333|50000|0.250|0.750\n"
+        "general|bob|100|0.333|80000|0.400|0.600\n"
+        "general|charlie|100|0.333|70000|0.350|0.650"
+    )
+
+
+@mcp.tool()
+def strigger(action: str = "get", job_id: str = "", event: str = "", program: str = "") -> str:
+    """Manage Slurm event triggers (get/set/clear)."""
+    if REAL_MODE:
+        if action == "get":
+            cmd = ["strigger", "--get"]
+            if job_id: cmd += ["--jobid", job_id]
+            return _run_cmd(cmd)
+        elif action == "set":
+            if not event or not program:
+                return "Error: --set requires event and program. E.g. event='down' program='/path/to/script.sh'"
+            cmd = ["strigger", "--set"]
+            if job_id: cmd += ["--jobid", job_id]
+            cmd += [f"--{event}", f"--program={program}"]
+            return _run_cmd(cmd)
+        elif action == "clear":
+            cmd = ["strigger", "--clear"]
+            if job_id: cmd += ["--jobid", job_id]
+            return _run_cmd(cmd)
+        return f"Unknown strigger action: {action}. Use get/set/clear."
+    # Mock
+    if action == "get":
+        return "TRIGGER_ID TYPE       RES_TYPE   RES_ID     OFFSET     USER       PROGRAM\n1          node       node       *          0          root       /usr/sbin/strigger_notify.sh"
+    elif action == "set":
+        return f"strigger: trigger set for event={event} program={program} (mock)."
+    elif action == "clear":
+        return "strigger: trigger(s) cleared (mock)."
+    return f"Unknown strigger action: {action}."
+
+
+@mcp.tool()
+def sattach(job_id: str) -> str:
+    """View recent stdout/stderr from a running job. job_id REQUIRED."""
+    if REAL_MODE:
+        # sattach is interactive; just show the job's output file instead
+        info = _run_cmd(["scontrol", "show", "job", job_id])
+        import re as _re
+        stdout_m = _re.search(r"StdOut=(\S+)", info)
+        if stdout_m:
+            out_file = stdout_m.group(1)
+            try:
+                with open(out_file, "r") as f:
+                    lines = f.readlines()
+                tail = lines[-50:] if len(lines) > 50 else lines
+                return f"=== Last {len(tail)} lines of {out_file} ===\n" + "".join(tail)
+            except Exception as e:
+                return f"Cannot read output file {out_file}: {e}"
+        return f"No StdOut file found for job {job_id}.\n\n{info}"
+    return f"sattach: would attach to job {job_id} stdin/stdout/stderr (mock — not interactive)."
+
+
+@mcp.tool()
+def sbcast(source: str, destination: str, job_id: str = "") -> str:
+    """Broadcast a file to allocated nodes' local storage."""
+    if REAL_MODE:
+        cmd = ["sbcast", source, destination]
+        if job_id: cmd += ["--jobid", job_id]
+        return _run_cmd(cmd)
+    return f"sbcast: would broadcast {source} → {destination} on allocated nodes (mock)."
+
+
+@mcp.tool()
+def scrontab(action: str = "list", user: str = "", content: str = "") -> str:
+    """Manage Slurm crontab (recurring scheduled jobs).
+    action: "list" (show current crontab), "edit" (set new crontab from content), "remove" (delete crontab).
+    user (optional): target user (admin only). content: crontab text for "edit" action.
+    Cron syntax: minute hour day_of_month month day_of_week command.
+    Use #SCRON for sbatch options before each entry."""
+    if REAL_MODE:
+        if action == "list":
+            cmd = ["scrontab", "-l"]
+            if user:
+                cmd += ["-u", user]
+            return _run_cmd(cmd)
+        elif action == "remove":
+            cmd = ["scrontab", "-r"]
+            if user:
+                cmd += ["-u", user]
+            return _run_cmd(cmd)
+        elif action == "edit" and content:
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.cron', delete=False) as f:
+                f.write(content)
+                tmp = f.name
+            cmd = ["scrontab"]
+            if user:
+                cmd += ["-u", user]
+            cmd.append(tmp)
+            result = _run_cmd(cmd)
+            os.unlink(tmp)
+            return result or "Crontab updated."
+        return "scrontab: specify action='list', 'edit' (with content=), or 'remove'."
+    if action == "list":
+        return (
+            "# Slurm crontab (mock)\n"
+            "#SCRON -p cpu\n"
+            "#SCRON -t 5:00\n"
+            "@daily /home/user/backup.sh\n"
+            "\n"
+            "#SCRON -p gpu\n"
+            "#SCRON --gres=gpu:1\n"
+            "0 */6 * * * /home/user/train_checkpoint.sh\n"
+        )
+    elif action == "remove":
+        return "Crontab removed (mock). Running crontab jobs will continue but won't recur."
+    elif action == "edit":
+        return "Crontab updated (mock)."
+    return "Unknown action."
+
+
+@mcp.tool()
+def sjobexitmod(job_id: str, exit_code: str = "", comment: str = "") -> str:
+    """View or modify a completed job's derived exit code and comment string.
+    job_id (REQUIRED). exit_code (optional): new derived exit code. comment (optional): annotation.
+    Useful for annotating jobs that failed but appear successful, or vice versa."""
+    if REAL_MODE:
+        if not exit_code and not comment:
+            return _run_cmd(["sjobexitmod", "-l", job_id])
+        cmd = ["sjobexitmod"]
+        if exit_code:
+            cmd += ["-e", exit_code]
+        if comment:
+            cmd += ["-r", comment]
+        cmd.append(job_id)
+        return _run_cmd(cmd)
+    if not exit_code and not comment:
+        return (
+            f"JobID  DerivedExitCode  Comment\n"
+            f"-----  ---------------  -------\n"
+            f"{job_id}    0:0              (none)\n"
+        )
+    parts = []
+    if exit_code:
+        parts.append(f"DerivedExitCode={exit_code}")
+    if comment:
+        parts.append(f"Comment='{comment}'")
+    return f"Job {job_id} updated: {', '.join(parts)} (mock)."
+
+
+# ── Tool discovery (lazy loading) ────────────────────────────────────────────
+# Short docstrings keep the tool schema small. Agents call tool_help(name) for
+# full usage details before calling an unfamiliar tool.
+
+_TOOL_HELP: dict[str, str] = {
+    "squeue": """\
+Show current Slurm job queue.
+Args: user (str, optional), state (str, optional: RUNNING|PENDING|COMPLETED|FAILED|CANCELLED|TIMEOUT), partition (str, optional)
+Returns: pipe-delimited table JOBID|NAME|USER|STATE|TIME|NODES|CPUS|MIN_MEM|PARTITION
+Example: squeue(state="PENDING") → all pending jobs
+Example: squeue(user="alice", partition="gpu") → alice's GPU jobs""",
+
+    "sinfo": """\
+Show cluster partition and node status.
+Args: partition (str, optional), node (str, optional)
+Returns: partition summary (Allocated/Idle/Down counts) + node details (hostname, state, CPUs, memory, GPUs)
+Example: sinfo() → full cluster overview
+Example: sinfo(partition="gpu") → GPU partition only""",
+
+    "sacct": """\
+Query historical job accounting records (completed/failed/cancelled jobs).
+Args: user (str), state (str: COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY), starttime (str: YYYY-MM-DD or now-7days), endtime (str), format (str: comma-separated fields)
+Returns: pipe-delimited accounting table
+Example: sacct(state="FAILED", starttime="now-7days") → recent failures
+Example: sacct(user="alice") → alice's job history""",
+
+    "scontrol_show": """\
+Show detailed Slurm entity info — more fields than squeue/sinfo.
+Args: entity (str: job|node|partition, default=job), id (str, optional)
+Returns: raw key=value output (ReasonList, AllocTRES, StdErr path, etc.)
+Example: scontrol_show(entity="job", id="12345") → full job details""",
+
+    "sbatch": """\
+Submit one or more batch job scripts to Slurm.
+Args: script (str, REQUIRED: file path or comma-separated paths), flags (str, optional)
+For multiple files, pass ALL paths comma-separated in ONE call.
+Returns: "Submitted batch job {id}" per script
+Example: sbatch(script="/tmp/slurm_uploads/train.sh")
+Example: sbatch(script="/tmp/a.sh,/tmp/b.sh,/tmp/c.sh") → submits all 3
+Example: sbatch(script="/tmp/job.sh", flags="--partition=gpu --gres=gpu:1")""",
+
+    "scancel": """\
+Cancel one or more Slurm jobs.
+Args: job_id (str, REQUIRED: single ID, parent array ID, or comma-separated), user (str, optional)
+For array jobs, use the parent ID (e.g. "7") to cancel all tasks at once.
+For multiple jobs, pass comma-separated IDs (e.g. "5,7,8") in ONE call.
+Returns: summary of cancelled jobs or error
+Example: scancel(job_id="12345")
+Example: scancel(job_id="100,101,102") → cancel 3 jobs in one call
+Example: scancel(job_id="7") → cancel all tasks of array job 7""",
+
+    "scontrol_hold": """\
+Hold a pending job (prevents scheduling until released).
+Args: job_id (str, REQUIRED)
+Example: scontrol_hold(job_id="12345")""",
+
+    "scontrol_release": """\
+Release a held job so it can be scheduled.
+Args: job_id (str, REQUIRED)
+Example: scontrol_release(job_id="12345")""",
+
+    "scontrol_requeue": """\
+Requeue a failed/cancelled/completed job back to PENDING.
+Args: job_id (str, REQUIRED). Cannot requeue RUNNING jobs — cancel first.
+Example: scontrol_requeue(job_id="12345")""",
+
+    "srun": """\
+Run a command interactively via Slurm (allocate + execute).
+Args: command (str, REQUIRED), nodes (int, default=1), cpus (int, default=1), partition (str, default="cpu")
+Example: srun(command="hostname", nodes=2)""",
+
+    "salloc": """\
+Allocate interactive resources without running a command.
+Args: nodes (int), cpus (int), partition (str), time (str: HH:MM:SS)
+Example: salloc(partition="gpu", time="02:00:00")""",
+
+    "sdiag": """\
+Show scheduler diagnostics: backfill stats, cycle times, RPC rates, queue depth.
+No args. Useful for health checks.""",
+
+    "sprio": """\
+Show priority factors for pending jobs (age, fairshare, QOS, size).
+Args: user (str, optional), partition (str, optional)
+Higher priority = scheduled sooner.""",
+
+    "sstat": """\
+Show real-time resource stats for a RUNNING job (CPU%, RSS, disk I/O).
+Args: job_id (str, REQUIRED). Only works on RUNNING jobs; use sacct for completed.
+Example: sstat(job_id="12345")""",
+
+    "diagnose_job": """\
+Full job diagnosis: state, resources, exit code interpretation, stderr, fix hints.
+Args: job_id (str, REQUIRED). Works on running AND completed/failed jobs.
+Exit code meanings: 137=OOM(increase --mem), 143=walltime(increase --time), 1=app error
+Example: diagnose_job(job_id="12345")""",
+
+    "read_file": """\
+Read a text file from the filesystem (max 1MB).
+Args: file_path (str, REQUIRED: absolute path)
+Example: read_file(file_path="/home/alice/job.sh")""",
+
+    "web_search": """\
+Search the web via DuckDuckGo.
+Args: query (str, REQUIRED), search_type (str: general|slurm|error), fetch_content (bool)
+Example: web_search(query="slurm OOM killed fix", search_type="error")""",
+
+    "generate_chart": """\
+Generate a Mermaid diagram from live cluster data.
+Args: chart_id (REQUIRED, one of: system_health, cluster_topology, pending_analysis, resource_map, job_lifecycle, efficiency_report)
+Each chart_id produces a different Mermaid chart type (xychart, flowchart, gantt).""",
+
+    "run_analysis": """\
+Run a predefined analysis script.
+Args: script_id (REQUIRED, one of: analyze_cluster_status, analyze_failed_jobs, analyze_pending_jobs, analyze_gpu_resources, analyze_node_health, analyze_job_efficiency, analyze_my_jobs, analyze_my_usage, analyze_my_efficiency)""",
+
+    "scontrol_update": """\
+Update a Slurm entity attribute.
+Args: entity (str: job|node|partition), id (str), params (str: "key=value key2=value2")
+Example: scontrol_update(entity="job", id="12345", params="TimeLimit=2-00:00:00")""",
+
+    "scontrol_create": "Create a Slurm entity. Args: entity (str), params (str).",
+    "scontrol_delete": "Delete a Slurm entity. Args: entity (str), id (str).",
+    "scontrol_reconfigure": "Force slurmctld to re-read slurm.conf. No args.",
+
+    "sacctmgr_show": """\
+Show accounting entities.
+Args: entity (str: user|account|qos|association|cluster|tres|wckey), params (str, optional)
+Example: sacctmgr_show(entity="qos")""",
+
+    "sacctmgr_add": "Add accounting entity. Args: entity (str), params (str).",
+    "sacctmgr_modify": "Modify accounting entity. Args: entity (str), where (str), params (str).",
+    "sacctmgr_delete": "Delete accounting entity. Args: entity (str), params (str).",
+
+    "sreport": "Generate Slurm usage report. Args: report_type (str, default='cluster'), params (str).",
+    "sshare": "Show fairshare info. Args: user (str), account (str).",
+    "strigger": "Manage event triggers. Args: action (get|set|clear), job_id, event, program.",
+    "sattach": "View recent stdout/stderr from a running job. Args: job_id (str, REQUIRED).",
+    "sbcast": "Broadcast file to compute nodes. Args: source (str), destination (str), job_id (str).",
+
+    "scrontab": """\
+Manage Slurm cron-like scheduled jobs (scrontab).
+Args: action (str: list|edit|remove, default=list), user (str, optional), content (str, for edit)
+list → show current crontab entries. edit → replace crontab with content. remove → clear crontab.
+Example: scrontab(action="list") → show scheduled jobs
+Example: scrontab(action="edit", content="0 2 * * * /scripts/backup.sh")""",
+
+    "sjobexitmod": """\
+View or modify the derived exit code of a completed job.
+Args: job_id (str, REQUIRED), new_exit_code (int, optional)
+Without new_exit_code → returns current exit info. With new_exit_code → updates derived exit code.
+Example: sjobexitmod(job_id="12345") → view exit details
+Example: sjobexitmod(job_id="12345", new_exit_code=0) → override to success""",
+}
+
+
+@mcp.tool()
+def list_tools() -> str:
+    """List all available Slurm tools grouped by category. Call tool_help(name) for usage details."""
+    return """\
+=== Query Tools (read-only) ===
+squeue        — Show job queue (filter by user/state/partition)
+sinfo         — Show partition & node status
+sacct         — Job history (completed/failed)
+scontrol_show — Detailed entity info (job/node/partition)
+sdiag         — Scheduler diagnostics
+sprio         — Pending job priority factors
+sstat         — Real-time stats for RUNNING jobs
+diagnose_job  — Full job diagnosis with fix hints
+sjobexitmod   — View/modify derived exit codes
+read_file     — Read a text file
+web_search    — Web search via DuckDuckGo
+
+=== Action Tools (modify cluster — requires approval) ===
+sbatch           — Submit a job script
+scancel          — Cancel a job
+scontrol_hold    — Hold a pending job
+scontrol_release — Release a held job
+scontrol_requeue — Requeue a failed/cancelled job
+srun             — Run command interactively
+salloc           — Allocate interactive resources
+scrontab         — Manage scheduled cron jobs (list/edit/remove)
+
+=== Admin Tools ===
+scontrol_update/create/delete/reconfigure
+sacctmgr_show/add/modify/delete
+sreport, sshare, strigger, sattach, sbcast
+
+=== Analysis & Visualization ===
+run_analysis   — Predefined analysis scripts
+generate_chart — Mermaid diagrams from live data
+
+Call tool_help(name) for detailed args and examples."""
+
+
+@mcp.tool()
+def tool_help(name: str) -> str:
+    """Get detailed usage, args, and examples for a specific tool. Call list_tools() first to see names."""
+    key = name.strip().lower()
+    if key in _TOOL_HELP:
+        return f"=== {key} ===\n{_TOOL_HELP[key]}"
+    return f"Unknown tool: '{name}'. Call list_tools() to see available tools."
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

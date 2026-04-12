@@ -1,15 +1,19 @@
 // Async generator: yields OpenAI delta objects from SSE stream
 // Pass an AbortSignal to cancel mid-stream
-export async function* streamChat(agentUrl, sessionId, userText, signal) {
+export async function* streamChat(agentUrl, sessionId, userText, signal, mcpUrl, hitlDecision = null) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (mcpUrl) headers['X-MCP-URL'] = mcpUrl
+  const payload = {
+    model: 'slurm-agent',
+    messages: [{ role: 'user', content: userText }],
+    stream: true,
+    chat_id: sessionId,
+  }
+  if (hitlDecision) payload.hitl_decision = hitlDecision
   const resp = await fetch(`${agentUrl}/v1/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'slurm-agent',
-      messages: [{ role: 'user', content: userText }],
-      stream: true,
-      chat_id: sessionId,
-    }),
+    headers,
+    body: JSON.stringify(payload),
     signal,
   })
 
@@ -52,4 +56,15 @@ export async function checkHealth(agentUrl) {
 
 export async function clearSessionOnServer(agentUrl, sessionId) {
   await fetch(`${agentUrl}/sessions/${sessionId}`, { method: 'DELETE' })
+}
+
+export async function uploadFile(agentUrl, file) {
+  const form = new FormData()
+  form.append('file', file)
+  const resp = await fetch(`${agentUrl}/upload`, { method: 'POST', body: form })
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '')
+    throw new Error(body || resp.statusText)
+  }
+  return resp.json()
 }

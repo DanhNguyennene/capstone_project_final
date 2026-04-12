@@ -38,14 +38,14 @@ try:
     client = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
     
     resp = client.chat.completions.create(
-        model='qwen3-coder:latest',
+        model='qwen3.5:9b',
         messages=[{'role': 'user', 'content': 'Rate this response quality from 0.0 to 1.0. Just output a single number, nothing else: "Hello, I can help you with Slurm jobs."'}],
         max_tokens=10,
         temperature=0
     )
     score = resp.choices[0].message.content.strip()
     print(f'   ✓ Ollama connection successful')
-    print(f'   Model: qwen3-coder:latest')
+    print(f'   Model: qwen3.5:9b')
     print(f'   Sample judge response: "{score}"')
     print(f'   → LLM-as-judge is ACTIVE')
 except Exception as e:

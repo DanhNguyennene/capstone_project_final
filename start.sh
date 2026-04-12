@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 # start.sh — Start MCP server, Agent API, and Frontend in one go
 # Usage:
-#   ./start.sh                  # default: mixed scenario
+#   ./start.sh                  # default: mixed scenario (mock)
 #   ./start.sh --mock failed    # choose scenario: healthy|failed|pending|mixed|debug_needed
+#   ./start.sh --real            # use real Slurm commands (requires slurmctld + slurmd)
 #   ./start.sh --no-frontend    # skip npm dev server
 
 set -e
 SCENARIO="mixed"
 FRONTEND=true
+REAL_MODE=false
 
 for arg in "$@"; do
   case $arg in
     --mock) shift; SCENARIO="$1"; shift ;;
     --mock=*) SCENARIO="${arg#*=}" ;;
+    --real) REAL_MODE=true ;;
     --no-frontend) FRONTEND=false ;;
   esac
 done
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-AGENT_DIR="$ROOT/specialized_project_slurm_agent/danh_agent/agent"
-MCP_DIR="$ROOT/specialized_project_slurm_agent/danh_agent/mcp_server"
+AGENT_DIR="$ROOT/slurm-agent/agent"
+MCP_DIR="$ROOT/slurm-agent/mcp-server"
 FRONTEND_DIR="$ROOT/slurm-agent/frontend"
 
 # ── Colours ────────────────────────────────────────────────────────
@@ -30,6 +33,16 @@ log()  { echo -e "${CYAN}[start]${NC} $*"; }
 ok()   { echo -e "${GREEN}  ✓${NC} $*"; }
 warn() { echo -e "${YELLOW}  !${NC} $*"; }
 die()  { echo -e "${RED}  ✗ $*${NC}"; exit 1; }
+
+# ── Kill stale processes on our ports ──────────────────────────────
+for port in 3002 8000; do
+  pid=$(lsof -ti :"$port" -sTCP:LISTEN 2>/dev/null || true)
+  if [[ -n "$pid" ]]; then
+    warn "Port $port in use (pid $pid) — killing"
+    kill "$pid" 2>/dev/null; sleep 0.5
+    kill -9 "$pid" 2>/dev/null || true
+  fi
+done
 
 # ── Trap — kill background children on exit ────────────────────────
 PIDS=()
@@ -53,10 +66,16 @@ PYTHON=$(command -v python || command -v python3 || die "python not found")
 ok "Python: $($PYTHON --version)"
 
 # ── 1. MCP Server ─────────────────────────────────────────────────
-log "Starting MCP server  (scenario=${BOLD}${SCENARIO}${NC}, port 3002)..."
+if $REAL_MODE; then
+  log "Starting MCP server  (${BOLD}REAL Slurm${NC}, port 3002)..."
+  MCP_ARGS="--real --port 3002"
+else
+  log "Starting MCP server  (scenario=${BOLD}${SCENARIO}${NC}, port 3002)..."
+  MCP_ARGS="--mock $SCENARIO --port 3002"
+fi
 (
   cd "$MCP_DIR"
-  $PYTHON slurm_mcp_sse.py --mock "$SCENARIO" --port 3002 2>&1 \
+  $PYTHON slurm_mcp_sse.py $MCP_ARGS 2>&1 \
     | sed 's/^/  [mcp] /'
 ) &
 PIDS+=($!)
@@ -107,7 +126,8 @@ echo ""
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BOLD}  Slurm Agent — running${NC}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "  MCP server  →  ${CYAN}http://localhost:3002${NC}  (${SCENARIO})"
+MODE_LABEL=$($REAL_MODE && echo "REAL Slurm" || echo "$SCENARIO")
+echo -e "  MCP server  →  ${CYAN}http://localhost:3002${NC}  (${MODE_LABEL})"
 echo -e "  Agent API   →  ${CYAN}http://localhost:8000${NC}"
 $FRONTEND && echo -e "  Frontend    →  ${CYAN}http://localhost:5173${NC}"
 echo ""

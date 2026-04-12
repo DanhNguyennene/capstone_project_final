@@ -1,107 +1,92 @@
 """
 Agent instruction strings and streaming-display helpers.
 
-- MAIN_AGENT_INSTRUCTIONS
-- ANALYSIS_SUBAGENT_INSTRUCTIONS
-- ACTION_SUBAGENT_INSTRUCTIONS
-- _format_tool_call(name, args) → one-line terminal step label
-- _brief_output_summary(output)  → short result annotation or None
+Two-agent handoff architecture:
+  - OBSERVER_INSTRUCTIONS  — read-only monitoring, analysis, diagnosis, skills
+  - OPERATOR_INSTRUCTIONS  — dangerous actions with HITL approval
+  - build_observer_instructions(skills_text) — inject skills into observer prompt
+
+Display helpers:
+  - format_tool_call(name, args) → one-line terminal step label
+  - brief_output_summary(output)  → short result annotation or None
 """
 import re
 
 
-# ── Main agent ────────────────────────────────────────────────────────────────
+# ── Observer agent (read-only) ────────────────────────────────────────────────
+# Budget: ~1500 chars. Tools are already provided via MCP schemas.
+# Only behavioral rules the model can't learn from tool schemas alone.
 
-MAIN_AGENT_INSTRUCTIONS = """\
-You are a Slurm HPC cluster assistant. Expert in job scheduling, resource management, and HPC troubleshooting.
+_OBSERVER_BASE = """\
+You are a Slurm HPC cluster assistant. You monitor, analyze, and diagnose.
 
-## AVAILABLE TOOLS — EXACT NAMES ONLY
-Only call these tools: `analyze_cluster`, `manage_jobs`, `generate_chart`, `confirm_action`, `cancel_action`, `check_pending_actions`.
-Do NOT invent tool names like `google:search`, `search`, `web`, or anything else.
-For web searches always use: `analyze_cluster("search for: <query>")`
+CRITICAL RULE — ATTACHED FILES:
+When the user sends attached .sh files with words like "run", "submit", "execute", "start", \
+or "these" → IMMEDIATELY call transfer_to_operator. List ALL file paths comma-separated. \
+Example: "Submit: /tmp/slurm_uploads/a.sh,/tmp/slurm_uploads/b.sh,/tmp/slurm_uploads/c.sh"
+Do NOT read file contents. Do NOT run squeue/sinfo first. Just hand off.
 
-## NON-NEGOTIABLE RULES
-1. CALL A TOOL FIRST. Never answer without fresh data.
-2. `analyze_cluster` for all read-only queries. `manage_jobs` for all mutations.
-3. When `manage_jobs` returns "QUEUED:": tell the user exactly what is pending, then wait.
-4. Never fabricate job IDs, node names, exit codes, or counts.
+CRITICAL RULE — ACTIONS:
+For ANY action (submit, run, cancel, kill, stop, hold, release, requeue, update, delete, create) \
+→ transfer_to_operator IMMEDIATELY. Do not analyze first.
+Your handoff message IS the Operator's instruction — state the action and ALL targets:
+  - Submit: list file paths comma-separated
+  - Cancel: list job IDs comma-separated (use parent IDs for arrays)
 
-## TOOLS
-| Tool | When to use |
-|------|-------------|
-| `analyze_cluster(request)` | Status, jobs, nodes, failures, efficiency, diagnostics, web search |
-| `manage_jobs(request)` | Cancel, hold, release, submit, update, requeue |
-| `generate_chart(chart_id)` | system_health · cluster_topology · pending_analysis · resource_map · job_lifecycle · efficiency_report |
-| `confirm_action()` | User said yes/confirm/proceed |
-| `cancel_action()` | User said no/cancel/nevermind |
-| `check_pending_actions()` | List what is currently queued |
+BEHAVIOR:
+- Act immediately — call tools first, never ask questions or say "would you like".
+- Vague requests → interpret generously. "jobs" → squeue. "nodes" → sinfo. "check" → health check.
+- Empty result → say "No results found." Never invent data.
+- Never repeat the same tool call with identical arguments.
+- Never end with a question, option list, or "let me know if…".
 
-## WHAT TO PASS TO analyze_cluster
-- Full snapshot     → `"run_analysis cluster_status"`
-- Failed jobs       → `"run_analysis failed_jobs"`
-- Pending reasons   → `"run_analysis pending_jobs"`
-- GPU state         → `"run_analysis gpu_resources"`
-- Node health       → `"run_analysis node_health"`
-- Job efficiency    → `"run_analysis job_efficiency"`
-- Specific job      → `"scontrol show job 12345"`
-- Job diagnosis     → `"diagnose_job 12345"`
-- Scheduler info    → `"sdiag"`
-- Job priorities    → `"sprio"`
-- Live job stats    → `"sstat 12345"`
-- Web lookup        → `"search for: OOMKilled exit code 137 fix"`
+OUTPUT:
+- Markdown tables for structured data. Pick the most useful columns, not every field.
+- **Bold** important values: job IDs, states, error codes.
+- 1-2 lines of analysis after data. No filler, no preamble.
 
-## DIAGNOSIS CHEAT SHEET
-- PENDING Priority             → normal queue backlog
-- PENDING Resources            → no matching free nodes
-- PENDING QOSMaxCpuPerUserLimit → user hit CPU quota
-- PENDING ReqNodeNotAvail      → requested node is down
-- FAILED ExitCode=1            → application error (check stderr)
-- FAILED ExitCode=137          → OOM-killed (increase --mem)
-- FAILED ExitCode=143          → walltime exceeded (increase --time)
-- FAILED ExitCode=1:53         → node hardware failure (re-queue)
-
-## OUTPUT FORMAT
-Markdown tables and headers. Show exact IDs, codes, counts. One actionable recommendation per issue.
+PLAN: If a [PLAN] says "Hand off to Operator" → do that FIRST before any analysis.
+{skills_section}\
 """
 
 
-# ── Analysis sub-agent ───────────────────────────────────────────────────────
+def build_observer_instructions(skills_text: str = "") -> str:
+    """Build observer instructions with optional skill index."""
+    skills_section = ""
+    if skills_text:
+        skills_section = (
+            f"\nSKILLS: For complex investigations, call lookup_skill(skill_name).\n"
+            f"Available: {skills_text}\n"
+        )
+    return _OBSERVER_BASE.format(skills_section=skills_section)
 
-ANALYSIS_SUBAGENT_INSTRUCTIONS = """\
-You are a data collector. Call ONE tool and return its raw output. Do not explain or summarize.
 
-Available tools:
-- `run_analysis(script_id)` — script_id: cluster_status | failed_jobs | gpu_resources | node_health | job_efficiency | pending_jobs | my_jobs | my_usage | my_efficiency
-- `squeue` — list queued/running jobs
-- `sacct`  — job accounting history
-- `sinfo`  — node/partition status
-- `scontrol_show` — detailed entity info (entity: job|node|partition, id: <id>)
-- `sdiag`  — scheduler diagnostics (cycle times, backfill stats, RPC rates)
-- `sprio(user, partition)` — composite priority factors for pending jobs
-- `sstat(job_id)` — real-time step stats for a running job (CPU%, RSS, disk I/O)
-- `diagnose_job(job_id)` — full diagnosis: state + exit code + stderr + actionable hints
-- `web_search(query, search_type, fetch_content)` — search_type: slurm|error|general
+# ── Operator agent (actions) ─────────────────────────────────────────────────
 
-Pick the right tool. Return the output exactly as received.
+OPERATOR_INSTRUCTIONS = """\
+You are a Slurm action executor. You receive a handoff telling you WHAT to do and on WHICH targets.
+
+RULE 1: Your FIRST response MUST be a tool call. Never explain, never call transfer_to_observer first.
+RULE 2: Complete ALL actions before calling transfer_to_observer or responding.
+RULE 3: You have: sbatch, scancel, scontrol_hold, scontrol_release, scontrol_requeue, scontrol_update, scontrol_show.
+RULE 4: You do NOT have squeue, sinfo, sacct, or any read-only tool (except scontrol_show).
+
+SUBMIT FILES — pass ALL paths comma-separated in ONE sbatch call:
+  sbatch(script="/tmp/slurm_uploads/a.sh,/tmp/slurm_uploads/b.sh,/tmp/slurm_uploads/c.sh")
+  Do NOT call sbatch multiple times. ONE call handles all files.
+
+CANCEL JOBS — pass ALL IDs comma-separated in ONE scancel call:
+  scancel(job_id="100,101,102")
+  For array jobs, use the parent ID (e.g. "7" not "7_1,7_2,...").
+
+AFTER all actions complete:
+1. Report results in a short markdown table: Target | Status | Details.
+2. Call transfer_to_observer so the Observer can verify or answer follow-ups.
+Do NOT call squeue, sinfo, or sacct yourself — you don't have them.
 """
 
-
-# ── Action sub-agent ─────────────────────────────────────────────────────────
-
-ACTION_SUBAGENT_INSTRUCTIONS = """\
-You are an executor. Call exactly ONE tool and return the result verbatim.
-
-Dangerous tools (sbatch, scancel, scontrol_hold, scontrol_release, scontrol_update,
-scontrol_create, scontrol_delete, scontrol_reconfigure, sacctmgr_add, sacctmgr_modify,
-sacctmgr_delete) return "QUEUED:" — report this exactly, do not invent results.
-
-Safe tools (squeue, sacct, sinfo, scontrol_show, sacctmgr_show, sreport, srun, salloc)
-execute immediately.
-
-Rules:
-1. NEVER claim an action completed without calling the tool.
-2. Return the EXACT tool response.
-"""
+# Backward compatibility alias
+MAIN_AGENT_INSTRUCTIONS = build_observer_instructions()
 
 
 # ── Streaming display helpers ─────────────────────────────────────────────────
@@ -110,19 +95,8 @@ def format_tool_call(tool_name: str, args: dict) -> str:
     """
     One-line terminal-style label shown as an active step while a tool runs.
     e.g.  "$ squeue --user alice --state PENDING"
-          "Querying: get cluster status"
-          "Generating chart: system_health"
+          "$ generate_chart system_health"
     """
-    inp = str(args.get("input", args.get("request", ""))).strip()
-
-    if tool_name == "analyze_cluster":
-        if inp.lower().startswith("search for"):
-            q = inp[inp.lower().index("search for") + 10:].lstrip(": ").strip()[:60]
-            return f"$ web_search \"{q}\""
-        return f"$ analyze_cluster \"{inp[:60]}\"" if inp else "$ analyze_cluster"
-
-    if tool_name == "manage_jobs":
-        return f"$ manage_jobs \"{inp[:60]}\"" if inp else "$ manage_jobs"
 
     if tool_name == "generate_chart":
         return f"$ generate_chart {args.get('chart_id', 'system_health')}"
@@ -131,7 +105,7 @@ def format_tool_call(tool_name: str, args: dict) -> str:
         return f"$ run_analysis {args.get('script_id', '')}"
 
     if tool_name in ("squeue", "sacct", "sinfo"):
-        parts = [tool_name] + [f"--{k} {v}" for k, v in list(args.items())[:3]]
+        parts = [tool_name] + [f"--{k} {v}" for k, v in list(args.items())[:3] if v]
         return "$ " + " ".join(parts)
 
     if tool_name == "scontrol_show":
@@ -155,15 +129,40 @@ def format_tool_call(tool_name: str, args: dict) -> str:
     if tool_name == "diagnose_job":
         return f"$ diagnose_job {args.get('job_id', '')}"
 
-    if tool_name in ("confirm_action", "cancel_action"):
-        verb = "✓ Confirming" if "confirm" in tool_name else "✗ Cancelling"
-        return f"{verb} queued actions"
+    if tool_name == "read_file":
+        path = str(args.get("file_path", ""))
+        return f"$ cat {path.split('/')[-1] if '/' in path else path}"
 
-    if tool_name == "check_pending_actions":
-        return "$ check_pending_actions"
+    if tool_name == "lookup_skill":
+        return f"$ lookup_skill {args.get('skill_name', '')}"
 
-    # Generic
-    parts = [tool_name] + [f"{k}={v}" for k, v in list(args.items())[:2]]
+    if tool_name == "scrontab":
+        action = args.get("action", "list")
+        user = args.get("user", "")
+        return f"$ scrontab {action} {user}".strip()
+
+    if tool_name == "sjobexitmod":
+        return f"$ sjobexitmod {args.get('job_id', '')}"
+
+    if tool_name == "sbatch":
+        script = str(args.get("script", ""))[:50]
+        return f"$ sbatch {script}"
+
+    if tool_name == "scancel":
+        return f"$ scancel {args.get('job_id', '')}"
+
+    if tool_name.startswith("scontrol_"):
+        action = tool_name.replace("scontrol_", "")
+        entity = args.get("entity", args.get("job_id", ""))
+        return f"$ scontrol {action} {entity}".strip()
+
+    if tool_name.startswith("sacctmgr_"):
+        action = tool_name.replace("sacctmgr_", "")
+        entity = args.get("entity", "")
+        return f"$ sacctmgr {action} {entity}".strip()
+
+    # Generic fallback
+    parts = [tool_name] + [f"{k}={v}" for k, v in list(args.items())[:2] if v]
     return "$ " + " ".join(parts)
 
 
@@ -175,9 +174,6 @@ def brief_output_summary(output_str: str) -> str | None:
     text = output_str.strip()
     if not text or len(text) < 5:
         return None
-
-    if text.startswith("QUEUED:"):
-        return f"↳ {text[:100]}"
 
     if "SUMMARY:" in text:
         m = re.search(r"SUMMARY:\s*(.+?)(?:\n|$)", text)
@@ -194,5 +190,10 @@ def brief_output_summary(output_str: str) -> str | None:
         if pending: parts.append(f"{pending} pending")
         if failed:  parts.append(f"{failed} failed")
         return f"↳ {', '.join(parts)}"
+
+    # Fallback: show first meaningful line, truncated
+    first_line = text.split("\n")[0].strip()
+    if first_line:
+        return f"↳ {first_line[:120]}"
 
     return None

@@ -32,14 +32,14 @@ The testing environment uses a mock data approach that simulates realistic HPC c
         \hline
         \multicolumn{2}{|c|}{\textit{LLM Models}} \\
         \hline
-        Main Agent (Reasoning) & qwen3-coder:latest \\
+        Main Agent (Reasoning) & qwen3.5:9b \\
         Sub-Agents (Tool Execution) & gpt-oss:20b \\
-        LLM Judge (Evaluation) & qwen3-coder:latest \\
+        LLM Judge (Evaluation) & qwen3.5:9b \\
         \hline
     \end{tabular}
 \end{table}
 
-The agent backend uses the OpenAI Agents SDK with Ollama as the inference provider. Two different models are used: \texttt{qwen3-coder:latest} for the main agent's reasoning and the LLM-as-judge evaluation, and \texttt{gpt-oss:20b} for the specialized sub-agents that execute tools. All inference runs locally on the GPU.
+The agent backend uses the OpenAI Agents SDK with Ollama as the inference provider. Two different models are used: \texttt{qwen3.5:9b} for the main agent's reasoning and the LLM-as-judge evaluation, and \texttt{gpt-oss:20b} for the specialized sub-agents that execute tools. All inference runs locally on the GPU.
 
 \subsubsection{Mock Data System}
 

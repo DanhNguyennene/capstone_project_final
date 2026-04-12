@@ -50,7 +50,7 @@ try:
     # Use Ollama as OpenAI-compatible API
     LLM_JUDGE_AVAILABLE = True
     LLM_CLIENT = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
-    LLM_JUDGE_MODEL = "qwen3-coder:latest"  # Same model as agent uses
+    LLM_JUDGE_MODEL = "qwen3.5:9b"  # Same model as agent uses
 except ImportError:
     LLM_JUDGE_AVAILABLE = False
     LLM_CLIENT = None

@@ -103,17 +103,17 @@ USAGE EXAMPLES
 
 # Simple command generation
 from flow.slurm_structured_agent import SlurmStructuredAgent
-agent = SlurmStructuredAgent(model="qwen3-coder:latest")
+agent = SlurmStructuredAgent(model="qwen3.5:9b")
 result = await agent.plan_only("Submit a GPU job with 4 GPUs")
 
 # Full agentic planning
 from flow.agentic_planner import AgenticSlurmSystem
-system = AgenticSlurmSystem(model="qwen3-coder:latest")
+system = AgenticSlurmSystem(model="qwen3.5:9b")
 await system.run("Set up a distributed training workflow with 2 nodes")
 
 # ReAct loop
 from flow.react_agent import FullAgenticSystem
-system = FullAgenticSystem(model="qwen3-coder:latest")
+system = FullAgenticSystem(model="qwen3.5:9b")
 await system.run_react_loop("Create and validate a GPU job script")
 
 # Multi-agent with handoffs
@@ -125,7 +125,7 @@ await orchestrator.run_conversation("Explain GRES and create a GPU job")
 SUPPORTED MODELS
 ================================================================================
 
-✅ qwen3-coder:latest - Fast (3-7s), works great with structured outputs
+✅ qwen3.5:9b - Fast (3-7s), works great with structured outputs
 ✅ qwen2.5:7b         - Slower (30-60s), works with structured outputs  
 ❌ gpt-oss:20b        - Does not support structured outputs properly
 ✅ Azure OpenAI       - Full compatibility

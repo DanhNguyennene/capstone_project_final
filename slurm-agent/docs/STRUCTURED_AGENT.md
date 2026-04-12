@@ -379,7 +379,7 @@ audit_log.write({
 
 ```python
 agent = SlurmStructuredAgent(
-    model="qwen2.5:7b",       # Model to use
+    model="qwen3.5:9b",       # Model to use
     base_url="http://localhost:11434/v1",
     temperature=0.0,           # Deterministic output
     max_retries=3             # Retry on failure

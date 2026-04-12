@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import Sidebar  from './Sidebar'
 import Messages from './Messages'
 import InputBar from './InputBar'
+import TodoList from './components/TodoList'
 import { checkHealth } from './api'
-import { URL_KEY }     from './lib/storage'
+import { URL_KEY, MCP_URL_KEY } from './lib/storage'
 import { useSessions } from './hooks/useSessions'
 import { useStream }   from './hooks/useStream'
 
 export default function App() {
-  const [agentUrl,    setAgentUrl]    = useState(() => localStorage.getItem(URL_KEY) || 'http://localhost:8000')
+  const [agentUrl]    = useState(() => localStorage.getItem(URL_KEY) || 'http://localhost:8000')
+  const [mcpUrl,      setMcpUrl]      = useState(() => localStorage.getItem(MCP_URL_KEY) || 'http://localhost:3002')
   const [streaming,   setStreaming]   = useState(false)
   const [status,      setStatus]      = useState({ state: 'idle', text: 'Connecting…' })
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [todoList,    setTodoList]    = useState([])  // session-level plan
 
   const {
     sessions, setSessions, activeId, setActiveId,
@@ -25,8 +28,12 @@ export default function App() {
   activeIdRef.current = activeId
 
   const { sendMessage, handleAction, abortRef } = useStream({
-    agentUrl, activeIdRef, setSessions, setStreaming, setStatus, patchMsg, createSession,
+    agentUrl, mcpUrl, activeIdRef, setSessions, setStreaming, setStatus, patchMsg, createSession,
+    onTodoUpdate: setTodoList,
   })
+
+  // Clear plan when switching sessions
+  useEffect(() => { setTodoList([]) }, [activeId])
 
   // Bootstrap: ensure at least one session exists
   useEffect(() => {
@@ -37,10 +44,11 @@ export default function App() {
   // Ping agent on URL change
   useEffect(() => {
     localStorage.setItem(URL_KEY, agentUrl)
+    localStorage.setItem(MCP_URL_KEY, mcpUrl)
     checkHealth(agentUrl)
       .then(ok => setStatus(ok ? { state: 'online', text: 'Ready' } : { state: 'offline', text: 'Unreachable' }))
       .catch(() => setStatus({ state: 'offline', text: 'Disconnected' }))
-  }, [agentUrl])
+  }, [agentUrl, mcpUrl])
 
   return (
     <div className="app">
@@ -51,8 +59,8 @@ export default function App() {
         onNew={createSession}
         onSelect={selectSession}
         onDelete={deleteSession}
-        agentUrl={agentUrl}
-        onUrlChange={setAgentUrl}
+        mcpUrl={mcpUrl}
+        onMcpUrlChange={setMcpUrl}
       />
 
       <div className="main">
@@ -70,9 +78,10 @@ export default function App() {
           messages={currentSession?.messages || []}
           onSuggestion={sendMessage}
           onAction={handleAction}
+          todoList={todoList}
         />
 
-        <InputBar onSend={sendMessage} disabled={streaming} onStop={() => abortRef.current?.abort()} />
+        <InputBar onSend={sendMessage} disabled={streaming} onStop={() => abortRef.current?.abort()} agentUrl={agentUrl} />
       </div>
     </div>
   )

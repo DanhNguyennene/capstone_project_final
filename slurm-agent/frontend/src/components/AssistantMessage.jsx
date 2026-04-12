@@ -28,9 +28,10 @@ const MarkdownComponents = {
 }
 
 const AssistantMessage = memo(function AssistantMessage({ msg, onAction }) {
-  const hasThinking = !!msg.thinking
-  const hasContent  = !!msg.content
-  const hasSteps    = !!msg.steps?.length
+  const hasThinking  = !!msg.thinking
+  const hasContent   = !!msg.content
+  const hasSteps     = !!msg.steps?.length
+  const hasCharts    = !!msg.charts?.length
 
   return (
     <div className="row row-assistant">
@@ -53,6 +54,14 @@ const AssistantMessage = memo(function AssistantMessage({ msg, onAction }) {
             >
               {processContent(msg.content)}
             </ReactMarkdown>
+          )}
+
+          {hasCharts && (
+            <div className="chart-artifacts">
+              {msg.charts.map((code, i) => (
+                <MermaidDiagram key={i} code={code.trim()} />
+              ))}
+            </div>
           )}
 
           {msg.streaming && !hasThinking && !hasContent && !hasSteps && (

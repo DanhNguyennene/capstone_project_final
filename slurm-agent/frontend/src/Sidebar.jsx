@@ -1,5 +1,5 @@
 export default function Sidebar({
-  open, sessions, activeId, onNew, onSelect, onDelete, agentUrl, onUrlChange,
+  open, sessions, activeId, onNew, onSelect, onDelete, mcpUrl, onMcpUrlChange,
 }) {
   return (
     <nav className={`sidebar${open ? '' : ' collapsed'}`}>
@@ -38,13 +38,13 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <label className="footer-label">Agent URL</label>
+        <label className="footer-label">MCP Server</label>
         <input
           className="url-input"
           type="text"
-          value={agentUrl}
-          onChange={e => onUrlChange(e.target.value)}
-          placeholder="http://localhost:8000"
+          value={mcpUrl}
+          onChange={e => onMcpUrlChange(e.target.value)}
+          placeholder="http://localhost:3002"
           spellCheck={false}
         />
       </div>

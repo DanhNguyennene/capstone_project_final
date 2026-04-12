@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 
 import UserMessage      from './components/UserMessage'
 import AssistantMessage from './components/AssistantMessage'
+import TodoList         from './components/TodoList'
 
 const SUGGESTIONS = [
   'Show all running jobs',
@@ -13,7 +14,7 @@ const SUGGESTIONS = [
   'Show GPU resource availability',
 ]
 
-export default function Messages({ messages, onSuggestion, onAction }) {
+export default function Messages({ messages, onSuggestion, onAction, todoList }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -39,6 +40,11 @@ export default function Messages({ messages, onSuggestion, onAction }) {
 
   return (
     <div className="messages">
+      {todoList?.length > 0 && (
+        <div className="todo-panel-sticky">
+          <TodoList items={todoList} />
+        </div>
+      )}
       {messages.map(m =>
         m.role === 'user'
           ? <UserMessage      key={m.id} content={m.content} />

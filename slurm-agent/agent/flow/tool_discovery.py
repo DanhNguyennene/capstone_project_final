@@ -31,11 +31,13 @@ DANGEROUS_TOOL_NAMES: Set[str] = {
     "scontrol_requeue",
     "scontrol_create", "scontrol_delete", "scontrol_reconfigure",
     "sacctmgr_add", "sacctmgr_modify", "sacctmgr_delete",
+    "scrontab",  # can edit/remove scheduled cron jobs
 }
 
 ANALYSIS_TOOL_NAMES: Set[str] = {
     "run_analysis", "squeue", "sacct", "sinfo", "scontrol_show", "web_search",
-    "sdiag", "sprio", "sstat", "diagnose_job",
+    "sdiag", "sprio", "sstat", "diagnose_job", "read_file",
+    "sjobexitmod",  # view/modify derived exit codes (diagnostic)
 }
 
 VISUALIZATION_TOOL_NAMES: Set[str] = {"generate_chart"}

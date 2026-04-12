@@ -7,16 +7,18 @@ import { loadSessions, mkMsg } from '../lib/storage'
 
 export function useStream({
   agentUrl,
+  mcpUrl,
   activeIdRef,
   setSessions,
   setStreaming,
   setStatus,
   patchMsg,
   createSession,
+  onTodoUpdate,
 }) {
   const abortRef = useRef(null)
 
-  async function sendMessage(text) {
+  async function sendMessage(text, hitlDecision = null) {
     if (!text.trim()) return
 
     let sid = activeIdRef.current
@@ -26,17 +28,20 @@ export function useStream({
     const isFirst = (loadSessions()[sid]?.messages?.length ?? 0) === 0
     const title   = isFirst ? text.slice(0, 44) + (text.length > 44 ? '…' : '') : undefined
 
-    const userMsg = mkMsg('user', text)
+    // HITL actions don't show a user message bubble — only an assistant response
     const asstMsg = { ...mkMsg('assistant'), streaming: true }
 
     setSessions(prev => {
       const s = prev[sid] || { id: sid, title: 'New Chat', messages: [], created: Date.now() }
+      const newMsgs = hitlDecision
+        ? [...s.messages, asstMsg]
+        : [...s.messages, mkMsg('user', text), asstMsg]
       return {
         ...prev,
         [sid]: {
           ...s,
           ...(title ? { title } : {}),
-          messages: [...s.messages, userMsg, asstMsg],
+          messages: newMsgs,
         },
       }
     })
@@ -51,9 +56,10 @@ export function useStream({
       let thinking = ''
       let content  = ''
       let steps    = []
+      let charts   = []
       let inThink  = false
 
-      for await (const delta of streamChat(agentUrl, sid, text, controller.signal)) {
+      for await (const delta of streamChat(agentUrl, sid, text, controller.signal, mcpUrl, hitlDecision)) {
         // Reasoning tokens
         if (delta.reasoning_content || delta.reasoning)
           thinking += delta.reasoning_content ?? delta.reasoning
@@ -68,6 +74,16 @@ export function useStream({
         // Pending actions for confirm/cancel buttons
         if (delta.pending_actions)
           patchMsg(sid, asstMsg.id, { pendingActions: delta.pending_actions })
+
+        // Chart artifacts (mermaid code, sent separately from content)
+        if (delta.chart_artifact) {
+          charts = [...charts, delta.chart_artifact]
+        }
+
+        // Todo list updates (session-level, not per-message)
+        if (delta.todo_update) {
+          onTodoUpdate?.(delta.todo_update)
+        }
 
         // Content (with inline <think> routing)
         if (delta.content) {
@@ -96,7 +112,7 @@ export function useStream({
             [sid]: {
               ...s,
               messages: s.messages.map(m =>
-                m.id === asstMsg.id ? { ...m, thinking, content, steps } : m
+                m.id === asstMsg.id ? { ...m, thinking, content, steps, charts } : m
               ),
             },
           }
@@ -119,8 +135,27 @@ export function useStream({
     setStatus({ state: 'online', text: 'Ready' })
   }
 
-  function handleAction(actionText) {
-    sendMessage(actionText)
+  function handleAction(decision) {
+    // Clear pending-action buttons from all messages so they don't persist
+    const sid = activeIdRef.current
+    if (sid) {
+      setSessions(prev => {
+        const s = prev[sid]
+        if (!s) return prev
+        return {
+          ...prev,
+          [sid]: {
+            ...s,
+            messages: s.messages.map(m =>
+              m.pendingActions?.length ? { ...m, pendingActions: [] } : m
+            ),
+          },
+        }
+      })
+    }
+    // Send with structured HITL decision so backend doesn't need to parse text
+    const label = decision === 'approve' ? 'Confirmed' : 'Cancelled'
+    sendMessage(label, decision)
   }
 
   return { sendMessage, handleAction, abortRef }
