@@ -5,42 +5,65 @@ Skills are markdown files in the skills/ directory that teach the agent
 how to perform complex multi-step investigations.  Each skill describes
 when to use it, what steps to follow, and what output format to produce.
 
-In the handoff architecture, skills are embedded directly into the Observer
-agent's system prompt — no sub-agent indirection needed.
+Directory layout:
+  skills/          — shared read-only skills (loaded by Observer by default)
+  skills/observer/ — Observer-only analysis/investigation skills
+  skills/operator/ — Operator-only write-action skills
 
 Provides:
-  - load_skills()                     — read all .md files from skills dir
+  - load_skills(dirs)           — read all .md files from a list of dirs
+  - load_observer_skills()      — skills/ + skills/observer/
+  - load_operator_skills()      — skills/operator/ only
   - format_skills_for_instructions()  — build text block to inject into instructions
 """
 import logging
 from pathlib import Path
+from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
+OBSERVER_SKILLS_DIRS = [SKILLS_DIR, SKILLS_DIR / "observer"]
+OPERATOR_SKILLS_DIRS = [SKILLS_DIR / "operator"]
 
 
 # ── Skill loading ─────────────────────────────────────────────────────────────
 
-def load_skills() -> dict[str, str]:
-    """Load all .md skill files. Returns {name: content}."""
-    skills = {}
-    if not SKILLS_DIR.exists():
-        logger.warning(f"Skills directory not found: {SKILLS_DIR}")
-        return skills
+def load_skills(dirs: Iterable[Path] | None = None) -> dict[str, str]:
+    """Load all .md skill files from *dirs* (default: [SKILLS_DIR]).
 
-    for f in sorted(SKILLS_DIR.glob("*.md")):
-        name = f.stem
-        try:
-            content = f.read_text(encoding="utf-8").strip()
-            if content:
-                skills[name] = content
-                logger.debug(f"Loaded skill: {name}")
-        except Exception as e:
-            logger.error(f"Failed to load skill {f}: {e}")
+    Returns {name: content}.  Later dirs override earlier ones on name collision.
+    """
+    if dirs is None:
+        dirs = [SKILLS_DIR]
 
-    logger.info(f"Loaded {len(skills)} skills from {SKILLS_DIR}")
+    skills: dict[str, str] = {}
+    for directory in dirs:
+        if not directory.exists():
+            logger.debug(f"Skills directory not found (skip): {directory}")
+            continue
+        for f in sorted(directory.glob("*.md")):
+            name = f.stem
+            try:
+                content = f.read_text(encoding="utf-8").strip()
+                if content:
+                    skills[name] = content
+                    logger.debug(f"Loaded skill: {name} (from {directory.name}/)")
+            except Exception as e:
+                logger.error(f"Failed to load skill {f}: {e}")
+
+    logger.info(f"Loaded {len(skills)} skills from {[str(d) for d in dirs]}")
     return skills
+
+
+def load_observer_skills() -> dict[str, str]:
+    """Load shared + Observer-specific skills."""
+    return load_skills(OBSERVER_SKILLS_DIRS)
+
+
+def load_operator_skills() -> dict[str, str]:
+    """Load Operator-specific write-action skills."""
+    return load_skills(OPERATOR_SKILLS_DIRS)
 
 
 def _compress_skill(name: str, content: str) -> str:

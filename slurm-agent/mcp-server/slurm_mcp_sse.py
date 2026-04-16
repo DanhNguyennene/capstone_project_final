@@ -208,6 +208,99 @@ def squeue(user: str = "", state: str = "", partition: str = "") -> str:
 
 
 @mcp.tool()
+def cluster_resources() -> str:
+    """Show a concise summary of ALL cluster resources: partitions, nodes, CPUs, memory, GPUs.
+
+    Use this BEFORE submitting jobs to check what resources are actually available.
+    Returns a structured table with per-node details so you can pick correct
+    --partition, --gres, --mem, --cpus-per-task values.
+
+    No arguments needed — always returns the full cluster picture."""
+    if REAL_MODE:
+        import re as _re
+        lines = []
+
+        # ── Partition overview ──
+        raw = _run_cmd(["sinfo", "--noheader",
+                        "--format=%P|%a|%l|%D|%C|%m|%G|%T"])
+        lines.append("=== PARTITIONS ===")
+        lines.append(f"{'PARTITION':<12} {'AVAIL':<6} {'TIMELIMIT':<12} {'NODES':<6} {'CPUS(A/I/O/T)':<18} {'MEM(MB)':<10} {'GRES':<20} {'STATE'}")
+        lines.append("-" * 110)
+        for row in raw.strip().splitlines():
+            parts = row.split("|")
+            if len(parts) >= 8:
+                lines.append(
+                    f"{parts[0]:<12} {parts[1]:<6} {parts[2]:<12} {parts[3]:<6} "
+                    f"{parts[4]:<18} {parts[5]:<10} {parts[6]:<20} {parts[7]}"
+                )
+
+        # ── Per-node detail ──
+        raw_nodes = _run_cmd(["sinfo", "--Node", "--noheader",
+                              "--format=%N|%P|%T|%c|%m|%G|%O"])
+        lines.append("")
+        lines.append("=== NODES (detailed) ===")
+        lines.append(f"{'NODE':<18} {'PARTITION':<12} {'STATE':<12} {'CPUS':<6} {'MEM(MB)':<10} {'GRES':<24} {'CPU_LOAD'}")
+        lines.append("-" * 110)
+        seen = set()
+        for row in raw_nodes.strip().splitlines():
+            parts = row.split("|")
+            if len(parts) >= 7:
+                node_key = parts[0].strip()
+                if node_key in seen:
+                    continue
+                seen.add(node_key)
+                lines.append(
+                    f"{parts[0]:<18} {parts[1]:<12} {parts[2]:<12} {parts[3]:<6} "
+                    f"{parts[4]:<10} {parts[5]:<24} {parts[6]}"
+                )
+
+        # ── GRES summary (what the agent really needs) ──
+        raw_gres = _run_cmd(["sinfo", "--noheader", "--format=%N|%G"])
+        gres_map: dict[str, str] = {}
+        for row in raw_gres.strip().splitlines():
+            parts = row.split("|", 1)
+            if len(parts) == 2 and parts[1].strip() and parts[1].strip() != "(null)":
+                gres_map[parts[0].strip()] = parts[1].strip()
+
+        if gres_map:
+            lines.append("")
+            lines.append("=== GPU SUMMARY ===")
+            for node_name, gres in sorted(gres_map.items()):
+                # Parse gres string like "gpu:rtx5070ti:1" → type, count
+                for g in gres.split(","):
+                    g = g.strip()
+                    gparts = g.split(":")
+                    if len(gparts) >= 3:
+                        lines.append(f"  {node_name}: {gparts[1]} x {gparts[2]} (--gres={gparts[0]}:{gparts[2]} max)")
+                    elif len(gparts) == 2:
+                        lines.append(f"  {node_name}: gpu x {gparts[1]} (--gres=gpu:{gparts[1]} max)")
+            lines.append("")
+            lines.append("⚠ When submitting jobs, --gres count must NOT exceed the per-node max above.")
+
+        return "\n".join(lines)
+
+    # Mock mode
+    nodes = _nodes()
+    partitions: dict[str, list] = {}
+    for n in nodes:
+        p = n.get("partition", "unknown")
+        partitions.setdefault(p, []).append(n)
+
+    lines = ["=== CLUSTER RESOURCES ===", ""]
+    for pname, pnodes in sorted(partitions.items()):
+        lines.append(f"Partition: {pname}")
+        for n in pnodes:
+            cpus = n.get("cpus", "?")
+            mem = n.get("mem", "?")
+            gres = n.get("gres", "(null)")
+            lines.append(f"  {n['name']}: state={n['state']}  cpus={cpus}  mem={mem}  gres={gres}")
+        lines.append("")
+
+    lines.append("⚠ When submitting jobs, --gres count must NOT exceed per-node max.")
+    return "\n".join(lines)
+
+
+@mcp.tool()
 def sinfo(partition: str = "", node: str = "") -> str:
     """Show cluster partition and node status (allocated/idle/down counts, per-node CPUs/memory/GPUs).
     Filter: partition="gpu", node="node01"."""
@@ -353,39 +446,97 @@ def scontrol_show(entity: str = "job", id: str = "") -> str:
 
 @mcp.tool()
 def sbatch(script: str, flags: str = "") -> str:
-    """Submit one or more batch job scripts to Slurm.
-    script (REQUIRED): a single file path, OR comma-separated paths for batch submit.
-    Examples: "/tmp/slurm_uploads/job.sh" or "/tmp/a.sh,/tmp/b.sh,/tmp/c.sh".
-    flags (optional): extra sbatch flags applied to ALL scripts, like "--partition=gpu".
-    Returns submission results for each script."""
-    # Split comma-separated paths (but don't split inline scripts containing commas)
+    """Submit a SINGLE batch job script to Slurm.
+
+    script (REQUIRED): path to one .sh file, e.g. "/tmp/slurm_uploads/job.sh".
+                       Must be a single file — call sbatch once per script.
+    flags  (optional): extra #SBATCH flags for THIS script only.
+                       Use --dependency=afterok:<job_id> to chain jobs.
+                       Example: "--partition=gpu --gres=gpu:1 --dependency=afterok:1234"
+
+    To submit a pipeline, call sbatch once per stage in order:
+      1. sbatch(data_download.sh)          → job_id=1001
+      2. sbatch(preprocess.sh, "--dependency=afterok:1001")
+      3. sbatch(train.sh,      "--dependency=afterok:1002 --partition=gpu")
+      4. sbatch(evaluate.sh,   "--dependency=afterany:1003")
+
+    Returns: "Submitted batch job <job_id>" on success, or an error string."""
     raw = script.strip()
     if not raw:
-        return "sbatch: error: 'script' argument is required. Provide a file path."
+        return "sbatch: error: 'script' argument is required. Provide a single file path."
 
-    # Heuristic: if it contains newlines, it's inline content (single script)
-    # Otherwise, split on commas to support batch submission
-    if "\n" in raw:
-        scripts = [raw]
-    else:
-        scripts = [s.strip() for s in raw.split(",") if s.strip()]
+    # Reject multi-script comma lists — agent must call once per script
+    if "," in raw and "\n" not in raw:
+        paths = [s.strip() for s in raw.split(",") if s.strip()]
+        if len(paths) > 1:
+            return (
+                "sbatch: error: Only one script per call is allowed. "
+                f"Submit each script separately with its own dependency flag. "
+                f"Got {len(paths)} paths: {raw}"
+            )
 
-    if not scripts:
-        return "sbatch: error: No scripts specified."
+    return _sbatch_single(raw, flags)
 
-    results = []
-    for one_script in scripts:
-        result = _sbatch_single(one_script, flags)
-        results.append(result)
 
-    if len(results) == 1:
-        return results[0]
-    return "\n".join(f"[{i+1}/{len(results)}] {r}" for i, r in enumerate(results))
+def _sanitize_flags(flags: str, script_path: str) -> str:
+    """Remove from `flags` any options already present as #SBATCH directives in the script.
+
+    This prevents the agent from overriding (e.g.) --gres=gpu:1 in the script header
+    with --gres=gpu:2 in flags, which would cause a submission error.
+    Dependency flags (--dependency) are always kept regardless.
+    """
+    import re as _re
+
+    # Keys that must NOT be overridden by flags when they're in the script
+    _SCRIPT_WINS = {"--gres", "--mem", "--partition", "--time", "--cpus-per-task",
+                    "--ntasks", "--nodes", "--exclusive", "--mem-per-cpu"}
+
+    # Parse #SBATCH directives from the script
+    script_opts: set[str] = set()
+    try:
+        with open(script_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line.startswith("#SBATCH"):
+                    continue
+                m = _re.match(r"#SBATCH\s+(--[\w-]+)", line)
+                if m:
+                    script_opts.add(m.group(1))
+    except OSError:
+        return flags  # can't read script, leave flags unchanged
+
+    # Tokenise flags and drop any key whose long form is already in the script
+    kept = []
+    tokens = flags.split()
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        key = tok.split("=")[0]  # e.g. "--gres" from "--gres=gpu:1"
+        if key in _SCRIPT_WINS and key in script_opts:
+            # Skip this flag (and its detached value if applicable)
+            if "=" not in tok and i + 1 < len(tokens):
+                i += 2  # skip "key value"
+            else:
+                i += 1  # skip "key=value"
+        else:
+            kept.append(tok)
+            i += 1
+
+    return " ".join(kept)
 
 
 def _sbatch_single(script: str, flags: str = "") -> str:
     """Submit a single script to Slurm."""
     stripped = script.strip()
+
+    # ── Sanitise flags: drop any that duplicate #SBATCH directives in the script ──
+    is_path = (
+        (stripped.startswith("/") or stripped.startswith("~/") or stripped.startswith("./"))
+        and "\n" not in stripped
+    )
+    if flags and is_path:
+        flags = _sanitize_flags(flags, os.path.expanduser(stripped))
+
     if REAL_MODE:
         is_path = (
             (stripped.startswith("/") or stripped.startswith("~/") or stripped.startswith("./"))
@@ -1863,6 +2014,121 @@ def tool_help(name: str) -> str:
     if key in _TOOL_HELP:
         return f"=== {key} ===\n{_TOOL_HELP[key]}"
     return f"Unknown tool: '{name}'. Call list_tools() to see available tools."
+
+
+# ── Shell execution tool ──────────────────────────────────────────────────────
+
+@mcp.tool()
+def shell_exec(command: str, workdir: str = "", timeout: int = 30) -> str:
+    """Execute a shell command on the cluster and return stdout+stderr.
+
+    command  (REQUIRED): the shell command to run.
+                         Supports pipes, redirects, and shell builtins.
+                         For sudo commands, prefix with "sudo" — the user
+                         will be asked for approval before execution.
+    workdir  (optional): directory to run in (default: home directory).
+    timeout  (optional): max seconds to wait (default: 30, max: 120).
+
+    USE CASES:
+      - Debug job failures:   shell_exec("cat /path/to/slurm-12345.out")
+      - Check disk space:     shell_exec("df -h /scratch")
+      - Inspect environment:  shell_exec("module list 2>&1")
+      - Read job scripts:     shell_exec("cat /tmp/slurm_uploads/train.sh")
+      - Check GPU status:     shell_exec("nvidia-smi")
+      - View system logs:     shell_exec("sudo journalctl -u slurmctld --no-pager -n 50")
+      - Network diagnostics:  shell_exec("ss -tlnp | grep 6817")
+
+    ⚠ This tool can run ANY command. Destructive commands (rm, mkfs, dd, etc.)
+      require user approval. Always prefer specific Slurm tools (squeue, sbatch)
+      for standard operations — use shell_exec for debugging and inspection."""
+
+    if not command or not command.strip():
+        return "shell_exec: error: 'command' argument is required."
+
+    command = command.strip()
+
+    # Clamp timeout
+    timeout = max(1, min(timeout, 120))
+
+    # ── Safety: tag dangerous patterns so the display shows a clear warning ──
+    _DANGEROUS_PATTERNS = (
+        "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){ :|:",  # fork bomb
+        "> /dev/sd", "shutdown", "reboot", "init 0", "init 6",
+        "chmod -R 777 /", "chown -R", "wipefs",
+    )
+    is_dangerous = any(pat in command for pat in _DANGEROUS_PATTERNS)
+    is_sudo = command.strip().startswith("sudo")
+
+    if not REAL_MODE:
+        # Mock mode: return simulated output
+        prefix = "[sudo] " if is_sudo else ""
+        if "nvidia-smi" in command:
+            return (
+                f"{prefix}Sat Apr 12 12:00:00 2026\n"
+                "+-----------------------------------------------------------------------------+\n"
+                "| NVIDIA-SMI 550.54   Driver Version: 550.54   CUDA Version: 12.4             |\n"
+                "|-------------------------------+----------------------+----------------------+\n"
+                "| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |\n"
+                "| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |\n"
+                "|   0  RTX 5070 Ti      On      | 00000000:01:00.0 Off |                  N/A |\n"
+                "|  0%   35C    P8    15W / 300W |    128MiB / 16384MiB |      0%      Default |\n"
+                "+-------------------------------+----------------------+----------------------+\n"
+            )
+        if "df " in command:
+            return (
+                f"{prefix}Filesystem      Size  Used Avail Use% Mounted on\n"
+                "/dev/sda1       500G  120G  380G  24% /\n"
+                "/dev/sdb1       2.0T  800G  1.2T  40% /scratch\n"
+            )
+        if "module list" in command:
+            return f"{prefix}Currently loaded modules:\n  1) cuda/12.4   2) python/3.11   3) openmpi/4.1\n"
+        if "cat" in command:
+            path = command.split("cat")[-1].strip().split()[0] if "cat" in command else ""
+            return f"{prefix}(mock) Contents of {path}:\n#!/bin/bash\n#SBATCH --job-name=example\necho 'Hello from Slurm'\n"
+        return f"{prefix}(mock) $ {command}\nCommand executed successfully."
+
+    # ── Real mode ──
+    import shlex
+
+    env = os.environ.copy()
+    cwd = workdir.strip() if workdir.strip() else os.path.expanduser("~")
+
+    if not os.path.isdir(cwd):
+        return f"shell_exec: error: workdir '{cwd}' does not exist."
+
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=cwd,
+            env=env,
+        )
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+
+        parts = []
+        if stdout:
+            parts.append(stdout)
+        if stderr:
+            parts.append(f"STDERR: {stderr}")
+        if result.returncode != 0:
+            parts.append(f"(exit code {result.returncode})")
+
+        output = "\n".join(parts) if parts else "(no output)"
+
+        # Truncate very long output
+        if len(output) > 8000:
+            output = output[:8000] + f"\n... [truncated, {len(output)} chars total]"
+
+        return output
+
+    except subprocess.TimeoutExpired:
+        return f"shell_exec: error: Command timed out after {timeout}s. Try increasing timeout or simplifying the command."
+    except Exception as e:
+        return f"shell_exec: error: {e}"
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

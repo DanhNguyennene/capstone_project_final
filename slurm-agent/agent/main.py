@@ -22,6 +22,7 @@ from flow.model import DEFAULT_MODEL, OLLAMA_BASE_URL
 
 # Configuration
 MCP_SERVER_URL = "http://localhost:3002"
+AUTO_APPROVE = os.environ.get("AUTO_APPROVE", "false").lower() in ("1", "true", "yes")
 CHARTS_DIR = "/tmp/slurm_charts"
 UPLOADS_DIR = "/tmp/slurm_uploads"
 
@@ -89,7 +90,8 @@ def get_agent(session_id: str = "default", mcp_url: str | None = None) -> SlurmM
         reasoning_model=DEFAULT_MODEL,
         tool_model=DEFAULT_MODEL,
         mcp_url=effective_mcp,
-        session_id=session_id
+        session_id=session_id,
+        auto_approve=AUTO_APPROVE,
     )
     _session_agents[session_id] = (agent, effective_mcp, current_time)
     return agent
@@ -297,6 +299,8 @@ async def chat(request: ChatRequest, raw_request: Request):
                     yield f"data: {json.dumps(sc)}\n\n"
                 elif t == "thinking":
                     yield create_stream_chunk(reasoning_content=event.get("content", ""))
+                elif t == "token":
+                    yield create_stream_chunk(content=event.get("content", ""))
                 elif t == "final_answer":
                     yield create_stream_chunk(content=event.get("message", ""))
                 elif t == "chart":

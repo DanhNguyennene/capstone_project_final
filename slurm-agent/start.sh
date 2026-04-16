@@ -8,6 +8,8 @@
 # Service ports (override via env):
 #   MCP_PORT=3002  AGENT_PORT=8000  FRONTEND_PORT=4173
 #   MCP_SCENARIO=healthy   (healthy | failed | pending | mixed | debug_needed)
+#
+#   --real   — connect to the real Slurm daemons instead of mock data
 
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -27,9 +29,11 @@ MCP_SCENARIO="${MCP_SCENARIO:-healthy}"
 
 FORCE_REBUILD=0
 SKIP_REBUILD=0
+REAL_SLURM=0
 for arg in "$@"; do
   [[ "$arg" == "--rebuild" ]]    && FORCE_REBUILD=1
   [[ "$arg" == "--no-rebuild" ]] && SKIP_REBUILD=1
+  [[ "$arg" == "--real" ]]       && REAL_SLURM=1
 done
 
 # ── 1. Frontend build ──────────────────────────────────────────────────────────
@@ -93,9 +97,15 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ── 4. Start MCP server ────────────────────────────────────────────────────────
-info "Starting MCP server on port $MCP_PORT (scenario=$MCP_SCENARIO)…"
-cd "$ROOT/mcp-server"
-$PYTHON slurm_mcp_sse.py --mock "$MCP_SCENARIO" --port "$MCP_PORT" &
+if [[ $REAL_SLURM -eq 1 ]]; then
+  info "Starting MCP server on port $MCP_PORT (REAL Slurm — no mock)…"
+  cd "$ROOT/mcp-server"
+  $PYTHON slurm_mcp_sse.py --real --port "$MCP_PORT" &
+else
+  info "Starting MCP server on port $MCP_PORT (scenario=$MCP_SCENARIO)…"
+  cd "$ROOT/mcp-server"
+  $PYTHON slurm_mcp_sse.py --mock "$MCP_SCENARIO" --port "$MCP_PORT" &
+fi
 PIDS+=($!)
 cd "$ROOT"
 

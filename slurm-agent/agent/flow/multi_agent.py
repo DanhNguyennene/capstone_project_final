@@ -1320,6 +1320,9 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                     context=ctx,
                 )
 
+                _streamed_parts = []
+                _emitted_final = False
+
                 async for event in result.stream_events():
 
                     # ── Real model reasoning tokens ────────────────────────────
@@ -1340,6 +1343,11 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                                 if r:
                                     logger.debug(f"Thinking token: {r[:60]!r}")
                                     yield {"type": "thinking", "content": r}
+                            elif event_data_type == "response.output_text.delta":
+                                t = getattr(event_data, "delta", None)
+                                if t:
+                                    _streamed_parts.append(t)
+                                    yield {"type": "token", "content": t}
                         except Exception:
                             pass
                         continue
@@ -1382,6 +1390,28 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                                     full += self._wrap_chart_artifact(chart)
                                 logger.info(f"Final response length: {len(full)}")
                                 yield {"type": "final_answer", "message": full}
+                                _streamed_parts.clear()
+                                _emitted_final = True
+
+                # Fallback 1: streamed text deltas but no final_answer from message_output_item
+                if not _emitted_final and _streamed_parts:
+                    full = self._clean_hallucinated_calls("".join(_streamed_parts))
+                    if full.strip():
+                        for chart in ctx.chart_artifacts:
+                            full += self._wrap_chart_artifact(chart)
+                        logger.info(f"Fallback final_answer from streamed tokens: {len(full)} chars")
+                        yield {"type": "final_answer", "message": full}
+                        _emitted_final = True
+
+                # Fallback 2: use SDK's final_output (always populated after streaming ends)
+                if not _emitted_final:
+                    sdk_output = str(result.final_output or "")
+                    if sdk_output.strip():
+                        full = self._clean_hallucinated_calls(sdk_output)
+                        for chart in ctx.chart_artifacts:
+                            full += self._wrap_chart_artifact(chart)
+                        logger.info(f"Fallback final_answer from SDK final_output: {len(full)} chars")
+                        yield {"type": "final_answer", "message": full}
 
             yield {"type": "done", "pending_actions": ctx.get_pending_actions()}
 

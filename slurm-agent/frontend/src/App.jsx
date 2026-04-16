@@ -3,6 +3,7 @@ import Sidebar  from './Sidebar'
 import Messages from './Messages'
 import InputBar from './InputBar'
 import TodoList from './components/TodoList'
+import EvalPage from './EvalPage'
 import { checkHealth } from './api'
 import { URL_KEY, MCP_URL_KEY } from './lib/storage'
 import { useSessions } from './hooks/useSessions'
@@ -15,6 +16,7 @@ export default function App() {
   const [status,      setStatus]      = useState({ state: 'idle', text: 'Connecting…' })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [todoList,    setTodoList]    = useState([])  // session-level plan
+  const [view,        setView]        = useState('chat') // 'chat' | 'eval'
 
   const {
     sessions, setSessions, activeId, setActiveId,
@@ -61,8 +63,13 @@ export default function App() {
         onDelete={deleteSession}
         mcpUrl={mcpUrl}
         onMcpUrlChange={setMcpUrl}
+        view={view}
+        onViewChange={setView}
       />
 
+      {view === 'eval' ? (
+        <EvalPage agentUrl={agentUrl} />
+      ) : (
       <div className="main">
         <header className="topbar">
           <button className="icon-btn" onClick={() => setSidebarOpen(o => !o)} title="Toggle sidebar">☰</button>
@@ -83,6 +90,7 @@ export default function App() {
 
         <InputBar onSend={sendMessage} disabled={streaming} onStop={() => abortRef.current?.abort()} agentUrl={agentUrl} />
       </div>
+      )}
     </div>
   )
 }

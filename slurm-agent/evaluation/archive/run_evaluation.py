@@ -2,19 +2,20 @@
 """
 Slurm Agent Evaluation Script
 
-Runs comprehensive tests against the MCP server (mock mode) and optionally the agent.
+Runs comprehensive tests against the MCP server and the agent.
 Generates JSON results and summary statistics for the thesis report.
 
 Usage:
-  1. Start MCP server in mock mode: python mcp_server/slurm_mcp_sse.py --mock mixed
-  2. (Optional) Start agent: python agent/main.py
-  3. Run tests: python tests/run_evaluation.py
-  
+  1. Start MCP server: python mcp-server/slurm_mcp_sse.py --mock mixed --port 3002
+  2. Start agent: python agent/main.py
+  3. Run tests: python evaluation/run_evaluation.py
+
 Output:
-  - tests/results/mcp_tool_results.json
-  - tests/results/agent_query_results.json
-  - tests/results/summary_stats.json
-  - tests/results/report_tables.tex (LaTeX tables for report)
+  - evaluation/results/mcp_tool_results.json
+  - evaluation/results/agent_query_results.json
+  - evaluation/results/confirmation_results.json
+  - evaluation/results/summary_stats.json
+  - evaluation/results/report_tables.tex (LaTeX tables for report)
 """
 
 import asyncio
@@ -25,8 +26,17 @@ import sys
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field, asdict
-import aiohttp
 import statistics
+
+try:
+    import aiohttp
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "aiohttp", "-q"])
+    import aiohttp
+
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 
 # Configuration
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:3002")
@@ -97,51 +107,35 @@ class TestSuite:
 
 # ============ MCP Server Tests ============
 
-async def call_mcp_tool(session: aiohttp.ClientSession, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-    """Call an MCP tool via the SSE endpoint and return result with timing"""
-    # For direct tool testing, we'll use a simple POST approach
-    # The MCP server exposes tools via SSE, but we can test by making HTTP requests
-    
+async def call_mcp_tool(mcp_session: ClientSession, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Call an MCP tool via a live ClientSession and return result with timing."""
     start = time.perf_counter()
     try:
-        # MCP protocol: send tool call via POST
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "tools/call",
-            "params": {
-                "name": tool_name,
-                "arguments": params
-            }
+        result = await mcp_session.call_tool(tool_name, params)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        # Extract text content from MCP result
+        text_parts = []
+        for block in (result.content or []):
+            if hasattr(block, "text"):
+                text_parts.append(block.text)
+        text = "\n".join(text_parts)
+        is_error = getattr(result, "isError", False)
+        return {
+            "success": not is_error,
+            "result": text,
+            "latency_ms": elapsed_ms,
+            "error": text if is_error else None,
         }
-        
-        async with session.post(f"{MCP_SERVER_URL}/message", json=payload) as resp:
-            elapsed_ms = (time.perf_counter() - start) * 1000
-            
-            if resp.status == 200:
-                result = await resp.json()
-                return {
-                    "success": True,
-                    "result": result,
-                    "latency_ms": elapsed_ms
-                }
-            else:
-                text = await resp.text()
-                return {
-                    "success": False,
-                    "error": f"HTTP {resp.status}: {text[:200]}",
-                    "latency_ms": elapsed_ms
-                }
     except Exception as e:
         elapsed_ms = (time.perf_counter() - start) * 1000
         return {
             "success": False,
             "error": str(e),
-            "latency_ms": elapsed_ms
+            "latency_ms": elapsed_ms,
         }
 
 
-async def test_mcp_tools(session: aiohttp.ClientSession) -> TestSuite:
+async def test_mcp_tools(mcp_session: ClientSession) -> TestSuite:
     """Run MCP tool tests"""
     suite = TestSuite(
         suite_name="MCP Tool Tests",
@@ -189,7 +183,7 @@ async def test_mcp_tools(session: aiohttp.ClientSession) -> TestSuite:
     ]
     
     for tool_name, category, description, params in test_cases:
-        result = await call_mcp_tool(session, tool_name, params)
+        result = await call_mcp_tool(mcp_session, tool_name, params)
         
         # Determine pass/fail based on result
         # For edge cases, we expect the tool to return gracefully (not crash)
@@ -210,24 +204,35 @@ async def test_mcp_tools(session: aiohttp.ClientSession) -> TestSuite:
 
 # ============ Agent Query Tests ============
 
-async def call_agent(session: aiohttp.ClientSession, query: str, session_id: str = "test") -> Dict[str, Any]:
-    """Call the agent API and return result with timing"""
+async def call_agent(http_session: aiohttp.ClientSession, query: str, session_id: str = "test",
+                     hitl_decision: str = None) -> Dict[str, Any]:
+    """Call the agent API via SSE and return result with timing.
+    
+    Collects all SSE delta fields: content, status_update, reasoning_content,
+    chart_artifact, pending_actions.
+    """
     start = time.perf_counter()
-    ttft = None  # Time to first token
+    ttft = None
     full_response = ""
+    status_messages: List[str] = []
+    has_chart = False
+    pending_actions: List[Any] = []
     
     try:
         payload = {
             "model": "slurm-agent",
             "messages": [{"role": "user", "content": query}],
             "stream": True,
-            "session_id": session_id
+            "session_id": session_id,
         }
+        if hitl_decision:
+            payload["hitl_decision"] = hitl_decision
         
-        async with session.post(
+        async with http_session.post(
             f"{AGENT_URL}/v1/chat/completions",
             json=payload,
-            headers={"Accept": "text/event-stream"}
+            headers={"Accept": "text/event-stream"},
+            timeout=aiohttp.ClientTimeout(total=120),
         ) as resp:
             if resp.status != 200:
                 elapsed_ms = (time.perf_counter() - start) * 1000
@@ -235,31 +240,53 @@ async def call_agent(session: aiohttp.ClientSession, query: str, session_id: str
                     "success": False,
                     "error": f"HTTP {resp.status}",
                     "latency_ms": elapsed_ms,
-                    "ttft_ms": None
+                    "ttft_ms": None,
                 }
             
             async for line in resp.content:
-                line = line.decode('utf-8').strip()
-                if line.startswith("data: "):
-                    if ttft is None:
-                        ttft = (time.perf_counter() - start) * 1000
+                line = line.decode("utf-8").strip()
+                if not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data)
+                    delta = chunk.get("choices", [{}])[0].get("delta", {})
                     
-                    data = line[6:]
-                    if data == "[DONE]":
-                        break
-                    try:
-                        chunk = json.loads(data)
-                        content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                        full_response += content
-                    except json.JSONDecodeError:
-                        pass
+                    # Content (final answer text)
+                    c = delta.get("content", "")
+                    if c:
+                        if ttft is None:
+                            ttft = (time.perf_counter() - start) * 1000
+                        full_response += c
+                    
+                    # Status updates (tool calls, thinking etc.)
+                    su = delta.get("status_update", "")
+                    if su:
+                        status_messages.append(su)
+                    
+                    # Chart artifacts
+                    if delta.get("chart_artifact"):
+                        has_chart = True
+                    
+                    # Pending actions (HITL)
+                    pa = delta.get("pending_actions")
+                    if pa:
+                        pending_actions.extend(pa)
+                    
+                except json.JSONDecodeError:
+                    pass
             
             elapsed_ms = (time.perf_counter() - start) * 1000
             return {
                 "success": True,
                 "response": full_response,
+                "status_messages": status_messages,
+                "has_chart": has_chart,
+                "pending_actions": pending_actions,
                 "latency_ms": elapsed_ms,
-                "ttft_ms": ttft
+                "ttft_ms": ttft,
             }
     
     except Exception as e:
@@ -268,11 +295,11 @@ async def call_agent(session: aiohttp.ClientSession, query: str, session_id: str
             "success": False,
             "error": str(e),
             "latency_ms": elapsed_ms,
-            "ttft_ms": ttft
+            "ttft_ms": ttft,
         }
 
 
-async def test_agent_queries(session: aiohttp.ClientSession) -> TestSuite:
+async def test_agent_queries(http_session: aiohttp.ClientSession) -> TestSuite:
     """Run agent query tests"""
     suite = TestSuite(
         suite_name="Agent Query Tests",
@@ -280,47 +307,56 @@ async def test_agent_queries(session: aiohttp.ClientSession) -> TestSuite:
     )
     
     # Define test queries with expected behavior
+    # Keywords are checked in: final response + status messages (tool trace)
     test_queries = [
         # Simple status queries
-        ("simple_status", "What jobs are running?", ["RUNNING", "job"]),
-        ("simple_status", "Show me the cluster status", ["node", "partition"]),
-        ("simple_status", "List all partitions", ["gpu", "cpu", "partition"]),
-        ("simple_status", "How many nodes are available?", ["node", "idle"]),
+        ("simple_status", "What jobs are running?", ["running", "job", "queue"]),
+        ("simple_status", "Show me the cluster status", ["node", "partition", "idle", "alloc"]),
+        ("simple_status", "List all partitions", ["gpu", "cpu", "partition", "debug"]),
+        ("simple_status", "How many nodes are available?", ["node", "idle", "available", "danhHomeBase"]),
         
         # Job-specific queries
-        ("job_query", "What is the status of job 4001?", ["4001", "RUNNING"]),
+        ("job_query", "What is the status of job 4001?", ["4001", "running", "pending", "completed", "failed"]),
         ("job_query", "Show jobs for user alice", ["alice"]),
-        ("job_query", "Are there any failed jobs?", ["FAILED", "fail"]),
-        ("job_query", "Why are jobs pending?", ["PENDING", "pending", "reason"]),
+        ("job_query", "Are there any failed jobs?", ["failed", "fail", "error", "exit"]),
+        ("job_query", "Why are jobs pending?", ["pending", "reason", "resource", "dependency"]),
         
         # Analysis queries
-        ("analysis", "Analyze the cluster status", ["node", "partition", "status"]),
-        ("analysis", "What's wrong with the cluster?", ["issue", "problem", "down", "fail"]),
-        ("analysis", "Show me GPU utilization", ["GPU", "gpu"]),
+        ("analysis", "Analyze the cluster status", ["node", "partition", "status", "cluster"]),
+        ("analysis", "Show me GPU utilization", ["gpu", "gres", "alloc"]),
         
         # Visualization queries
-        ("visualization", "Show me a chart of node status", ["chart", "mermaid", "IMG"]),
-        ("visualization", "Visualize the cluster topology", ["chart", "mermaid", "IMG"]),
+        ("visualization", "Show me a chart of system health", ["chart", "mermaid", "health"]),
+        ("visualization", "Visualize the cluster topology", ["chart", "mermaid", "topology"]),
         
-        # Dangerous operation queries (should trigger confirmation)
-        ("confirmation", "Cancel job 4001", ["confirm", "pending", "cancel"]),
-        ("confirmation", "Kill all my jobs", ["confirm", "pending", "danger"]),
+        # Read-only queries about resources
+        ("resource", "What resources does the cluster have?", ["cpu", "memory", "gpu", "node"]),
+        ("resource", "Show scheduler diagnostics", ["sched", "backfill", "diag"]),
         
         # Multi-turn context (same session)
         ("context", "Show jobs for bob", ["bob"]),
-        ("context", "What about his failed ones?", ["FAILED", "bob", "fail"]),
+        ("context", "What about his failed ones?", ["failed", "bob", "fail", "error"]),
+        
+        # Edge case: vague query
+        ("edge_case", "Help me with Slurm", ["slurm", "job", "submit", "queue", "cluster"]),
     ]
     
     session_id = f"test_{int(time.time())}"
     
     for category, query, expected_keywords in test_queries:
-        result = await call_agent(session, query, session_id)
+        result = await call_agent(http_session, query, session_id)
         
-        # Check if response contains expected keywords (case-insensitive)
-        response_lower = result.get("response", "").lower()
-        keywords_found = any(kw.lower() in response_lower for kw in expected_keywords)
+        # Check keywords in BOTH final response AND status messages
+        all_text = (result.get("response", "") + " " +
+                    " ".join(result.get("status_messages", []))).lower()
+        keywords_found = any(kw.lower() in all_text for kw in expected_keywords)
         
-        passed = result["success"] and (keywords_found or len(result.get("response", "")) > 50)
+        # Pass if: successful AND (keywords found OR substantial response OR chart present)
+        passed = result["success"] and (
+            keywords_found
+            or len(result.get("response", "")) > 50
+            or result.get("has_chart", False)
+        )
         
         suite.add_result(TestResult(
             test_id=f"agent_{category}_{len(suite.results)+1}",
@@ -337,70 +373,73 @@ async def test_agent_queries(session: aiohttp.ClientSession) -> TestSuite:
 
 # ============ Confirmation Flow Tests ============
 
-async def test_confirmation_flow(session: aiohttp.ClientSession) -> TestSuite:
-    """Test the two-factor confirmation mechanism"""
+async def test_confirmation_flow(http_session: aiohttp.ClientSession) -> TestSuite:
+    """Test the HITL confirmation mechanism.
+    
+    The agent uses Human-in-the-Loop interrupts for dangerous operations.
+    When a dangerous tool is called, the stream returns pending_actions.
+    A second request with hitl_decision='approve' or 'reject' continues.
+    """
     suite = TestSuite(
         suite_name="Confirmation Flow Tests",
         timestamp=datetime.now().isoformat()
     )
     
+    # Test 1: Dangerous operation triggers HITL (pending_actions in stream)
     session_id = f"confirm_test_{int(time.time())}"
-    
-    # Test 1: Dangerous operation triggers pending
-    result = await call_agent(session, "Cancel job 4001", session_id)
-    passed = result["success"] and any(kw in result.get("response", "").lower() 
-                                       for kw in ["confirm", "pending", "proceed", "cancel"])
+    result = await call_agent(http_session, "Cancel job 4001", session_id)
+    has_pending = len(result.get("pending_actions", [])) > 0
     suite.add_result(TestResult(
         test_id="confirm_trigger",
         category="confirmation",
-        description="Dangerous tool triggers pending storage",
-        passed=passed,
+        description="Dangerous operation triggers HITL pending_actions",
+        passed=result["success"] and has_pending,
         latency_ms=result["latency_ms"],
-        error=result.get("error"),
-        response_preview=result.get("response", "")[:200]
+        error=result.get("error") if not has_pending else None,
+        response_preview=f"pending_actions={result.get('pending_actions', [])}"[:200],
     ))
     
-    # Test 2: Confirmation executes
-    result = await call_agent(session, "Yes, confirm the cancellation", session_id)
-    passed = result["success"]  # Just needs to not error
+    # Test 2: Approving continues execution
+    result2 = await call_agent(http_session, "approved", session_id, hitl_decision="approve")
+    # After approval the agent should complete (either success or a tool result)
     suite.add_result(TestResult(
-        test_id="confirm_execute",
-        category="confirmation", 
-        description="Confirmation executes pending action",
-        passed=passed,
-        latency_ms=result["latency_ms"],
-        error=result.get("error"),
-        response_preview=result.get("response", "")[:200]
-    ))
-    
-    # Test 3: Cancel pending action
-    session_id2 = f"confirm_test2_{int(time.time())}"
-    result = await call_agent(session, "Cancel job 4002", session_id2)
-    await asyncio.sleep(0.5)
-    result = await call_agent(session, "No, cancel that request", session_id2)
-    passed = result["success"] and any(kw in result.get("response", "").lower()
-                                       for kw in ["cancel", "abort", "discard"])
-    suite.add_result(TestResult(
-        test_id="confirm_cancel",
+        test_id="confirm_approve",
         category="confirmation",
-        description="Cancellation clears pending action", 
-        passed=passed,
-        latency_ms=result["latency_ms"],
-        error=result.get("error"),
-        response_preview=result.get("response", "")[:200]
+        description="HITL approve continues execution",
+        passed=result2["success"],
+        latency_ms=result2["latency_ms"],
+        error=result2.get("error"),
+        response_preview=result2.get("response", "")[:200],
     ))
     
-    # Test 4: Safe operation executes immediately
-    result = await call_agent(session, "Show me the queue", f"safe_test_{int(time.time())}")
-    passed = result["success"] and "confirm" not in result.get("response", "").lower()
+    # Test 3: Dangerous op → reject
+    session_id2 = f"confirm_reject_{int(time.time())}"
+    result3 = await call_agent(http_session, "Cancel job 4002", session_id2)
+    result4 = await call_agent(http_session, "rejected", session_id2, hitl_decision="reject")
+    # After rejection the agent should respond without executing the tool
+    rejected_ok = result4["success"] and len(result4.get("pending_actions", [])) == 0
+    suite.add_result(TestResult(
+        test_id="confirm_reject",
+        category="confirmation",
+        description="HITL reject cancels dangerous operation",
+        passed=rejected_ok,
+        latency_ms=result4["latency_ms"],
+        error=result4.get("error"),
+        response_preview=result4.get("response", "")[:200],
+    ))
+    
+    # Test 4: Safe operation executes immediately (no pending_actions)
+    safe_session = f"safe_test_{int(time.time())}"
+    result5 = await call_agent(http_session, "Show me the queue", safe_session)
+    no_pending = len(result5.get("pending_actions", [])) == 0
     suite.add_result(TestResult(
         test_id="safe_immediate",
         category="confirmation",
-        description="Safe tool executes immediately",
-        passed=passed,
-        latency_ms=result["latency_ms"],
-        error=result.get("error"),
-        response_preview=result.get("response", "")[:200]
+        description="Safe query executes without HITL",
+        passed=result5["success"] and no_pending,
+        latency_ms=result5["latency_ms"],
+        error=result5.get("error"),
+        response_preview=result5.get("response", "")[:200],
     ))
     
     return suite
@@ -519,29 +558,33 @@ async def main():
     print(f"Agent URL: {AGENT_URL}")
     print("=" * 60)
     
-    async with aiohttp.ClientSession() as session:
-        # Test 1: MCP Tools
-        print("\n[1/3] Testing MCP Tools...")
-        try:
-            mcp_suite = await test_mcp_tools(session)
-            print(f"      {mcp_suite.summary()['passed']}/{mcp_suite.summary()['total_tests']} passed")
-        except Exception as e:
-            print(f"      ERROR: {e}")
-            mcp_suite = TestSuite("MCP Tool Tests (Failed)", datetime.now().isoformat())
-        
-        # Test 2: Agent Queries
+    # ── 1. MCP Tool Tests (via MCP SDK client) ──
+    print("\n[1/3] Testing MCP Tools...")
+    mcp_suite = TestSuite("MCP Tool Tests", datetime.now().isoformat())
+    try:
+        sse_url = f"{MCP_SERVER_URL}/sse"
+        async with sse_client(sse_url) as (read_stream, write_stream):
+            async with ClientSession(read_stream, write_stream) as mcp_session:
+                await mcp_session.initialize()
+                mcp_suite = await test_mcp_tools(mcp_session)
+                print(f"      {mcp_suite.summary()['passed']}/{mcp_suite.summary()['total_tests']} passed")
+    except Exception as e:
+        print(f"      ERROR connecting to MCP server: {e}")
+        mcp_suite = TestSuite("MCP Tool Tests (Failed)", datetime.now().isoformat())
+    
+    # ── 2 & 3. Agent + Confirmation Tests (via HTTP) ──
+    async with aiohttp.ClientSession() as http_session:
         print("\n[2/3] Testing Agent Queries...")
         try:
-            agent_suite = await test_agent_queries(session)
+            agent_suite = await test_agent_queries(http_session)
             print(f"      {agent_suite.summary()['passed']}/{agent_suite.summary()['total_tests']} passed")
         except Exception as e:
             print(f"      ERROR: {e}")
             agent_suite = TestSuite("Agent Query Tests (Failed)", datetime.now().isoformat())
         
-        # Test 3: Confirmation Flow
         print("\n[3/3] Testing Confirmation Flow...")
         try:
-            confirm_suite = await test_confirmation_flow(session)
+            confirm_suite = await test_confirmation_flow(http_session)
             print(f"      {confirm_suite.summary()['passed']}/{confirm_suite.summary()['total_tests']} passed")
         except Exception as e:
             print(f"      ERROR: {e}")

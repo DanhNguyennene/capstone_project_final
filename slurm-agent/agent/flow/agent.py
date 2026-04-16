@@ -95,23 +95,29 @@ _patch_sdk_for_ollama()
 from .context import ChartFilteredSession, SlurmContext
 from .guardrails import guard_job_id  # imported so the guardrail registry is populated
 from .instructions import (
-    OPERATOR_INSTRUCTIONS,
     build_observer_instructions,
+    build_operator_instructions,
     brief_output_summary,
     format_tool_call,
 )
 from .model import (
+    ACTIVE_MODEL_SETTINGS,
     DEFAULT_MODEL,
+    LLM_PROVIDER,
     OLLAMA_BASE_URL,
-    REASONING_MODEL_SETTINGS,
-    create_ollama_model,
+    resolve_model,
 )
-from .skills import load_skills, format_skills_for_instructions
+from .skills import (
+    format_skills_for_instructions,
+    load_observer_skills,
+    load_operator_skills,
+)
 from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
     make_chart_tool,
     make_guarded_dangerous_tools,
+    make_manage_todos_tool,
     make_skill_lookup_tool,
 )
 
@@ -148,7 +154,7 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
-_OPERATOR_READ_TOOLS = {"scontrol_show"}
+_OPERATOR_READ_TOOLS = {"scontrol_show", "cluster_resources"}
 
 
 class SlurmAgentSystem:
@@ -178,11 +184,13 @@ class SlurmAgentSystem:
         base_url: str = OLLAMA_BASE_URL,
         mcp_url: str = "http://localhost:3002",
         session_id: str = "default",
+        auto_approve: bool = False,
     ):
         self.mcp_url      = mcp_url
         self.session_id   = session_id
+        self.auto_approve = auto_approve
 
-        self._reasoning_model = create_ollama_model(reasoning_model, base_url)
+        self._reasoning_model = resolve_model(reasoning_model)
 
         self._session: Optional[ChartFilteredSession] = None
         self._mcp_observer: Optional[MCPServerSse]    = None
@@ -209,10 +217,11 @@ class SlurmAgentSystem:
         # 1. Discover tools — fetch live schemas, classify
         self._catalog = await discover_tools(self.mcp_url)
 
-        # 2. Load skills for Observer instructions
-        skills = load_skills()
-        skills_text = format_skills_for_instructions(skills)
-        observer_instructions = build_observer_instructions(skills_text)
+        # 2. Load skills — separate sets per agent for efficiency
+        observer_skills = load_observer_skills()
+        operator_skills = load_operator_skills()
+        observer_instructions = build_observer_instructions(format_skills_for_instructions(observer_skills))
+        operator_instructions = build_operator_instructions(format_skills_for_instructions(operator_skills))
 
         # 3. MCP servers — Observer gets all read-only tools; Operator gets a small read subset
         observer_mcp_names = self._catalog.analysis_names | self._catalog.safe_names
@@ -238,8 +247,12 @@ class SlurmAgentSystem:
             }
         chart_tool = make_chart_tool(self.mcp_url, valid_chart_ids)
 
-        # 5b. Skill lookup tool — lazy knowledge retrieval
-        skill_lookup_tool = make_skill_lookup_tool(skills)
+        # 5b. Skill lookup tools — per agent, scoped to their own skill set
+        skill_lookup_tool = make_skill_lookup_tool(observer_skills)
+        operator_skill_lookup_tool = make_skill_lookup_tool(operator_skills) if operator_skills else None
+
+        # 5c. Shared todo management tool (same instance, both agents share the tracker)
+        manage_todos_tool = make_manage_todos_tool(self._todo)
 
         # 6. Build agents with bidirectional handoffs
         #    Create agents first (no handoffs), then wire handoffs after both exist.
@@ -247,19 +260,19 @@ class SlurmAgentSystem:
             name="Observer",
             instructions=observer_instructions,
             model=self._reasoning_model,
-            model_settings=REASONING_MODEL_SETTINGS,
+            model_settings=ACTIVE_MODEL_SETTINGS,
             mcp_servers=[self._mcp_observer],
-            tools=[chart_tool, skill_lookup_tool],
+            tools=[chart_tool, skill_lookup_tool, manage_todos_tool],
             handoffs=[],  # filled below
         )
 
         operator = Agent(
             name="Operator",
-            instructions=OPERATOR_INSTRUCTIONS,
+            instructions=operator_instructions,
             model=self._reasoning_model,
-            model_settings=REASONING_MODEL_SETTINGS,
+            model_settings=ACTIVE_MODEL_SETTINGS,
             mcp_servers=[self._mcp_operator],
-            tools=dangerous_fns,
+            tools=dangerous_fns + ([operator_skill_lookup_tool] if operator_skill_lookup_tool else []) + [manage_todos_tool],
             handoffs=[],  # filled below
         )
 
@@ -303,11 +316,11 @@ class SlurmAgentSystem:
 
         self._ready = True
         obs_tools = len(observer_mcp_names) + 2 + 1   # MCP + (chart, skill_lookup) + handoff
-        op_tools  = len(dangerous_fns) + len(operator_read_names) + 1  # dangerous + MCP + handoff
+        op_tools  = len(dangerous_fns) + len(operator_read_names) + 1 + (1 if operator_skill_lookup_tool else 0)
         logger.info(
             f"[SlurmAgentSystem] Ready — "
             f"Observer tools≈{obs_tools} Operator tools≈{op_tools} "
-            f"skills={len(skills)}"
+            f"observer_skills={len(observer_skills)} operator_skills={len(operator_skills)}"
         )
 
     # ── Session ───────────────────────────────────────────────────────────────
@@ -389,12 +402,20 @@ class SlurmAgentSystem:
         """Use a lightweight LLM call to produce a concise conversation summary."""
         from openai import AsyncOpenAI
         try:
-            client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+            if LLM_PROVIDER == "copilot":
+                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
+                _model = COPILOT_MODEL
+                _extra: dict = {}
+            else:
+                client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+                _model = DEFAULT_MODEL
+                _extra = {"think": False}
             # Truncate input to avoid overloading the summarisation call itself
             if len(conversation_text) > 6000:
                 conversation_text = conversation_text[:6000] + "\n[...truncated]"
             resp = await client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=_model,
                 messages=[
                     {"role": "system", "content": (
                         "Summarise the following Slurm HPC assistant conversation into a concise "
@@ -406,7 +427,7 @@ class SlurmAgentSystem:
                 ],
                 temperature=0.1,
                 max_tokens=500,
-                extra_body={"think": False},
+                **(({"extra_body": _extra}) if _extra else {}),
             )
             summary = (resp.choices[0].message.content or "").strip()
             if summary:
@@ -472,27 +493,46 @@ class SlurmAgentSystem:
 
     @staticmethod
     async def _classify_approval_llm(text: str) -> str:
-        """Use a lightweight LLM call to classify user intent as approve or reject."""
+        """Classify user intent as 'approve', 'reject', or 'new_instruction'.
+
+        'new_instruction' means the user sent a completely different request
+        while a HITL prompt was pending — the pending action should be dropped
+        and the new message handled as a fresh input.
+        """
         from openai import AsyncOpenAI
         try:
-            client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+            if LLM_PROVIDER == "copilot":
+                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
+                _model = COPILOT_MODEL
+                _extra2: dict = {}
+            else:
+                client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+                _model = DEFAULT_MODEL
+                _extra2 = {"think": False}
             resp = await client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=_model,
                 messages=[
                     {"role": "system", "content": (
-                        "You are a binary classifier. The user was asked to approve or reject "
-                        "a pending action. Based on their response, output EXACTLY one word: "
-                        "\"approve\" or \"reject\". Nothing else."
+                        "A Slurm HPC assistant is waiting for the user to approve or reject a pending action. "
+                        "Classify the user's message as EXACTLY one of three words:\n"
+                        "  approve — the user confirms the action (yes, ok, confirm, do it, go ahead, etc.)\n"
+                        "  reject  — the user cancels the action (no, cancel, stop, don't, abort, etc.)\n"
+                        "  new_instruction — the user is asking something unrelated or giving a brand-new command "
+                        "                    instead of responding to the approval prompt\n"
+                        "Output EXACTLY one word. Nothing else."
                     )},
                     {"role": "user", "content": text},
                 ],
                 temperature=0,
                 max_tokens=10,
-                extra_body={"think": False},
+                **(({"extra_body": _extra2}) if _extra2 else {}),
             )
             answer = (resp.choices[0].message.content or "").strip().lower()
             if "approve" in answer:
                 return "approve"
+            if "new_instruction" in answer or "new instruction" in answer:
+                return "new_instruction"
             return "reject"  # safe default
         except Exception as e:
             logger.warning(f"LLM approval classification failed: {e}")
@@ -674,27 +714,49 @@ class SlurmAgentSystem:
                     else:
                         decision = await self._classify_approval_llm(user_message)
 
-                    for item in interruptions:
-                        name = getattr(item, "name", None) or getattr(item, "tool_name", "unknown")
-                        if decision == "approve":
-                            run_state.approve(item)
-                            hitl_approved_tools.append(name)
-                            logger.info(f"Approved: {name}")
-                        else:
-                            run_state.reject(item)
-                            logger.info(f"Rejected: {name}")
+                    # ── New instruction while HITL was pending ────────────────
+                    # User sent a brand-new request instead of approving/rejecting.
+                    # Drop the pending action entirely and handle the new message
+                    # as a fresh run so the user isn't stuck in the approval loop.
+                    if decision == "new_instruction":
+                        logger.info("HITL: new instruction detected — discarding pending action, starting fresh")
+                        todo.reset()
+                        approval_data = None
+                        await todo.generate_plan(user_message)
+                        plan_snapshot = todo.get_snapshot()
+                        if plan_snapshot:
+                            yield {"type": "todo", "items": plan_snapshot}
+                        plan_text = todo.format_for_llm()
+                        augmented_message = f"{user_message}\n\n{plan_text}" if plan_text else user_message
+                        result = Runner.run_streamed(
+                            starting_agent=self.main_agent,
+                            input=augmented_message,
+                            session=session,
+                            context=ctx,
+                            max_turns=30,
+                        )
+                    else:
+                        for item in interruptions:
+                            name = getattr(item, "name", None) or getattr(item, "tool_name", "unknown")
+                            if decision == "approve":
+                                run_state.approve(item)
+                                hitl_approved_tools.append(name)
+                                logger.info(f"Approved: {name}")
+                            else:
+                                run_state.reject(item)
+                                logger.info(f"Rejected: {name}")
 
-                    # IMPORTANT: do NOT pass context= here — the RunState already
-                    # carries the context with approval records. Passing a new context
-                    # would override it and lose the approve/reject decisions.
-                    result = Runner.run_streamed(
-                        starting_agent=self.main_agent,
-                        input=run_state,
-                        session=session,
-                        max_turns=30,
-                    )
-                    # Retrieve the context that the resumed run is using
-                    ctx = run_state._context.context if run_state._context else ctx
+                        # IMPORTANT: do NOT pass context= here — the RunState already
+                        # carries the context with approval records. Passing a new context
+                        # would override it and lose the approve/reject decisions.
+                        result = Runner.run_streamed(
+                            starting_agent=self.main_agent,
+                            input=run_state,
+                            session=session,
+                            max_turns=30,
+                        )
+                        # Retrieve the context that the resumed run is using
+                        ctx = run_state._context.context if run_state._context else ctx
                 else:
                     # Inject plan into the message so the LLM follows it
                     plan_text = todo.format_for_llm()
@@ -855,11 +917,7 @@ class SlurmAgentSystem:
             # ── HITL: check if the run paused awaiting approval ──
             if result.interruptions:
                 run_state = result.to_state()
-                self._pending_approvals[self.session_id] = {
-                    "state": run_state,
-                    "interruptions": list(result.interruptions),
-                    "todo_items": todo.get_items(),
-                }
+
                 # Build pending-actions payload (same format the frontend expects)
                 actions = []
                 for item in result.interruptions:
@@ -877,31 +935,140 @@ class SlurmAgentSystem:
                         "description": full_desc,
                     })
 
-                # Build a readable summary — truncate long arg lists
-                def _short(desc):
-                    if len(desc) <= 80:
-                        return desc
-                    # Count comma-separated items in args
-                    import re as _re
-                    m = _re.match(r'(\w+)\((\w+)=(.+)\)$', desc)
-                    if m:
-                        tool, key, val = m.group(1), m.group(2), m.group(3)
-                        items = [x.strip() for x in val.split(",") if x.strip()]
-                        if len(items) > 2:
-                            return f"{tool}({key}: {len(items)} items)"
-                    return desc[:77] + "…"
+                # ── Auto-approve mode: approve and resume immediately ──
+                if self.auto_approve:
+                    desc_list_auto = ", ".join(a["description"][:60] for a in actions)
+                    logger.info(f"[auto-approve] Approving: {desc_list_auto}")
+                    yield {
+                        "type": "status",
+                        "message": f"✅ Auto-approved: {desc_list_auto[:100]}",
+                    }
+                    # Approve all interruptions and resume the streamed run
+                    for item in result.interruptions:
+                        run_state.approve(item)
+                    resumed_result = Runner.run_streamed(
+                        starting_agent=self.main_agent,
+                        input=run_state,
+                        session=session,
+                        max_turns=100,
+                    )
+                    # Re-use the context from resumed state
+                    ctx = run_state._context.context if run_state._context else ctx
 
-                desc_list = ", ".join(_short(a["description"]) for a in actions)
-                yield {
-                    "type": "final_answer",
-                    "message": f"⚠️ **Pending approval:** {desc_list}\n\nPlease confirm or cancel.",
-                }
-                # Don't mark everything done — leave the action step as in-progress
-                # so the spinner shows while the user decides to approve/reject.
-                snap = todo.get_items()
-                if snap:
-                    yield {"type": "todo", "items": snap}
-                yield {"type": "done", "pending_actions": actions}
+                    # Stream the resumed run's events
+                    async for event in resumed_result.stream_events():
+                        if hasattr(event, 'type'):
+                            if event.type == "raw_response_event":
+                                delta = getattr(event.data, "delta", None) or ""
+                                if delta:
+                                    if not state.content_streamed:
+                                        state.content_streamed = True
+                                    yield {"type": "token", "content": delta}
+                            elif event.type == "run_item_stream_event":
+                                item_ev = event.item
+                                from agents.types import (
+                                    ToolCallItem, ToolCallOutputItem,
+                                    HandoffCallItem, HandoffOutputItem,
+                                )
+                                if isinstance(item_ev, ToolCallItem):
+                                    t_name = getattr(item_ev, "raw_item", {}).get("name", "")
+                                    t_args = getattr(item_ev, "raw_item", {}).get("arguments", "{}")
+                                    try:
+                                        t_parsed = json.loads(t_args) if isinstance(t_args, str) else t_args
+                                    except Exception:
+                                        t_parsed = {}
+                                    yield {"type": "status", "message": format_tool_call(t_name, t_parsed)}
+                                elif isinstance(item_ev, ToolCallOutputItem):
+                                    out = getattr(item_ev, "output", "")
+                                    if out:
+                                        state.hitl_tool_outputs.append(out)
+                                        summary = brief_output_summary(out)
+                                        if summary:
+                                            yield {"type": "status", "message": summary}
+
+                    # Check if there are MORE interruptions after resume
+                    final_result = resumed_result
+                    while final_result.interruptions:
+                        chained_state = final_result.to_state()
+                        for chained_item in final_result.interruptions:
+                            c_name = getattr(chained_item, "name", None) or "unknown"
+                            logger.info(f"[auto-approve] Chained: {c_name}")
+                            yield {"type": "status", "message": f"✅ Auto-approved: {c_name}"}
+                            chained_state.approve(chained_item)
+                        final_result = Runner.run_streamed(
+                            starting_agent=self.main_agent,
+                            input=chained_state,
+                            session=session,
+                            max_turns=100,
+                        )
+                        async for event in final_result.stream_events():
+                            if hasattr(event, 'type') and event.type == "raw_response_event":
+                                delta = getattr(event.data, "delta", None) or ""
+                                if delta:
+                                    state.content_streamed = True
+                                    yield {"type": "token", "content": delta}
+
+                    # Done — show final output
+                    if not state.content_streamed and state.hitl_tool_outputs:
+                        yield {
+                            "type": "final_answer",
+                            "message": "\n\n".join(state.hitl_tool_outputs),
+                        }
+                    try:
+                        await self._compact_session()
+                    except Exception as e:
+                        logger.warning(f"Session compaction failed: {e}")
+                    todo.on_done()
+                    snap = todo.get_snapshot()
+                    if snap:
+                        yield {"type": "todo", "items": snap}
+                    yield {"type": "done", "pending_actions": []}
+                else:
+                    # ── Normal HITL: pause and ask user ──
+                    self._pending_approvals[self.session_id] = {
+                        "state": run_state,
+                        "interruptions": list(result.interruptions),
+                        "todo_items": todo.get_items(),
+                    }
+
+                    # Build a readable summary — truncate long arg lists
+                    def _short(desc):
+                        if len(desc) <= 80:
+                            return desc
+                        import re as _re
+                        m = _re.match(r'(\w+)\((.+)\)$', desc, _re.DOTALL)
+                        if not m:
+                            return desc[:77] + "…"
+                        tool, args_str = m.group(1), m.group(2)
+                        # Split on commas that precede a `word=` (top-level arg boundaries)
+                        parts = _re.split(r',\s*(?=\w+=)', args_str)
+                        if len(parts) == 1:
+                            # Single-arg tool — check if value is a list
+                            key_m = _re.match(r'(\w+)=(\[.+\])$', parts[0], _re.DOTALL)
+                            if key_m:
+                                items = _re.findall(r'\{[^}]+\}', key_m.group(2))
+                                if len(items) > 2:
+                                    return f"{tool}({key_m.group(1)}: {len(items)} items)"
+                            return f"{tool}({parts[0][:70]}…)"
+                        # Multi-arg tool — show first 2 args in full, then "…"
+                        shown = ", ".join(parts[:2])
+                        if len(parts) > 2:
+                            shown += ", …"
+                        if len(shown) > 77:
+                            shown = shown[:74] + "…"
+                        return f"{tool}({shown})"
+
+                    desc_list = ", ".join(_short(a["description"]) for a in actions)
+                    yield {
+                        "type": "final_answer",
+                        "message": f"⚠️ **Pending approval:** {desc_list}\n\nPlease confirm or cancel.",
+                    }
+                    # Don't mark everything done — leave the action step as in-progress
+                    # so the spinner shows while the user decides to approve/reject.
+                    snap = todo.get_items()
+                    if snap:
+                        yield {"type": "todo", "items": snap}
+                    yield {"type": "done", "pending_actions": actions}
             else:
                 # ── HITL fallback: if the Operator didn't generate a text
                 # response after executing approved tools, show the tool

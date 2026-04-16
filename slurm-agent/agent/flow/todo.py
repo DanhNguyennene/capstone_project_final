@@ -10,7 +10,7 @@ import logging
 import re
 from typing import Optional
 
-from .model import DEFAULT_MODEL, OLLAMA_BASE_URL
+from .model import DEFAULT_MODEL, LLM_PROVIDER, OLLAMA_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -64,20 +64,57 @@ class TodoTracker:
         """True if there's a plan with uncompleted steps."""
         return any(item["status"] != "completed" for item in self.items)
 
+    def reset(self) -> None:
+        """Clear all plan items (e.g. when a new instruction arrives mid-HITL)."""
+        self.items = []
+        self._active_step = None
+        self._changed = True
+
+    def set_from_tool(self, items: list[dict]) -> None:
+        """Apply an explicit LLM-provided todo list (called by the manage_todos tool).
+
+        Accepts the same schema as Copilot's manage_todo_list:
+          [{id, title, status}] where status ∈ {not-started, in-progress, completed}
+        """
+        _valid = {"not-started", "in-progress", "completed"}
+        self.items = [
+            {
+                "id": int(item.get("id", i + 1)),
+                "title": str(item.get("title", ""))[:100],
+                "status": item["status"] if item.get("status") in _valid else "not-started",
+            }
+            for i, item in enumerate(items)
+            if isinstance(item, dict) and str(item.get("title", "")).strip()
+        ]
+        self._active_step = None
+        for i, item in enumerate(self.items):
+            if item["status"] == "in-progress":
+                self._active_step = i
+                break
+        self._changed = True
+
     async def generate_plan(self, user_message: str) -> bool:
         """Generate a plan via lightweight LLM call. Returns True if successful."""
         try:
             from openai import AsyncOpenAI
-            client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+            if LLM_PROVIDER == "copilot":
+                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
+                _model = COPILOT_MODEL
+                _create_kwargs: dict = {}
+            else:
+                client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+                _model = DEFAULT_MODEL
+                _create_kwargs = {"extra_body": {"think": False}}
             resp = await client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=_model,
                 messages=[
                     {"role": "system", "content": _PLAN_SYSTEM_PROMPT},
                     {"role": "user", "content": user_message},
                 ],
                 temperature=0.1,
                 max_tokens=300,
-                extra_body={"think": False},  # No thinking for simple plan generation
+                **_create_kwargs,
             )
             raw = (resp.choices[0].message.content or "").strip()
             logger.info(f"Plan LLM raw output: {raw[:300]}")
@@ -135,6 +172,8 @@ class TodoTracker:
 
     def on_tool_start(self, tool_name: str):
         """Advance: complete current step, start next not-started one."""
+        if tool_name == "manage_todos":
+            return  # plan is set explicitly by the tool; skip auto-advance
         if not self.items:
             return
         if self._active_step is not None:

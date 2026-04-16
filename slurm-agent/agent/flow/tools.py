@@ -21,6 +21,7 @@ from agents.tool_context import ToolContext
 from agents.run_context import RunContextWrapper
 
 from .context import SlurmContext
+from .todo import TodoTracker
 from .guardrails import (
     TOOL_INPUT_GUARDRAILS,
     guard_redact_secrets,
@@ -345,6 +346,84 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
                 }
             },
             "required": ["skill_name"],
+            "additionalProperties": False,
+        },
+        on_invoke_tool=_invoke,
+        timeout_seconds=5.0,
+        timeout_behavior="error_as_result",
+    )
+
+
+# ── Task tracker tool (explicit LLM-driven todo management) ──────────────────
+
+def make_manage_todos_tool(todo: TodoTracker) -> FunctionTool:
+    """
+    FunctionTool that lets agents explicitly manage their task plan —
+    identical in schema to Copilot's manage_todo_list.
+
+    The agent passes the COMPLETE todo list every call (create/update/delete
+    all happen by replacing the list).  Schemas: each item must have:
+      id     — sequential int (1-based)
+      title  — 3-7 word action label
+      status — "not-started" | "in-progress" | "completed"
+
+    The tool calls TodoTracker.set_from_tool() which streams the new state
+    to the frontend automatically on the next get_snapshot() call.
+    """
+
+    async def _invoke(ctx, args_json: str) -> str:
+        try:
+            args = json.loads(args_json) if args_json else {}
+        except json.JSONDecodeError:
+            args = {}
+
+        todo_list = args.get("todoList", [])
+        if not isinstance(todo_list, list):
+            return "Error: todoList must be an array."
+
+        todo.set_from_tool(todo_list)
+        count = len(todo.items)
+        in_prog = sum(1 for i in todo.items if i["status"] == "in-progress")
+        done = sum(1 for i in todo.items if i["status"] == "completed")
+        return f"Todo updated: {count} items ({done} completed, {in_prog} in-progress)."
+
+    return FunctionTool(
+        name="manage_todos",
+        description=(
+            "Manage the task plan for this conversation. "
+            "Pass the COMPLETE updated todoList every call — this replaces the current list. "
+            "Use for multi-step tasks: create the plan upfront, then mark items as you work. "
+            "Skip for single-step operations."
+        ),
+        params_json_schema={
+            "type": "object",
+            "properties": {
+                "todoList": {
+                    "type": "array",
+                    "description": "Complete array of all todo items (create + existing).",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "description": "Sequential id starting from 1.",
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Concise 3-7 word action label.",
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": ["not-started", "in-progress", "completed"],
+                                "description": "not-started | in-progress (max 1) | completed.",
+                            },
+                        },
+                        "required": ["id", "title", "status"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "required": ["todoList"],
             "additionalProperties": False,
         },
         on_invoke_tool=_invoke,

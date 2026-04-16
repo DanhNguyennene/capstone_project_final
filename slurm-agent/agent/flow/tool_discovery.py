@@ -32,12 +32,14 @@ DANGEROUS_TOOL_NAMES: Set[str] = {
     "scontrol_create", "scontrol_delete", "scontrol_reconfigure",
     "sacctmgr_add", "sacctmgr_modify", "sacctmgr_delete",
     "scrontab",  # can edit/remove scheduled cron jobs
+    "shell_exec",  # arbitrary shell commands — always need approval
 }
 
 ANALYSIS_TOOL_NAMES: Set[str] = {
     "run_analysis", "squeue", "sacct", "sinfo", "scontrol_show", "web_search",
     "sdiag", "sprio", "sstat", "diagnose_job", "read_file",
     "sjobexitmod",  # view/modify derived exit codes (diagnostic)
+    "cluster_resources",  # structured cluster hardware summary (CPUs, GPUs, memory)
 }
 
 VISUALIZATION_TOOL_NAMES: Set[str] = {"generate_chart"}
