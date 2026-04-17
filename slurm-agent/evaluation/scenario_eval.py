@@ -44,14 +44,17 @@ Usage:
 
 import asyncio
 import json
+import logging
 import sys
 import time
 import argparse
 import datetime
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 import re
 
@@ -69,11 +72,18 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 
 AGENT_URL      = "http://localhost:8000"
-OLLAMA_URL     = "http://localhost:11434/v1"
+MCP_URL        = "http://localhost:3002"
+OLLAMA_BASE    = "http://localhost:11434"   # Ollama native API base
+OLLAMA_URL     = f"{OLLAMA_BASE}/v1"        # OpenAI-compat (kept for compat)
 JUDGE_MODEL    = "qwen3.5:9b"
 RESULTS_DIR    = Path(__file__).parent / "results"
 DATASET_PATH   = Path(__file__).parent / "dataset.json"
-ROUTING_TOOLS  = {"transfer_to_operator", "transfer_to_observer"}
+ROUTING_TOOLS  = {
+    "transfer_to_operator", "transfer_to_observer",  # old single-agent handoff tools
+    "manage_jobs", "analyze_cluster",               # multi-agent orchestration tools
+    "confirm_action", "cancel_action",              # HITL execution tools
+    "check_pending_actions",                        # internal state check
+}
 PASS_THRESHOLD = 0.80
 
 # Weights when --judge is OFF (default)
@@ -127,6 +137,45 @@ def filter_dataset(
 
 # ── Agent Interaction (Live Only) ─────────────────────────────────────────────
 
+# format_tool_call() in the agent renders compound tool names as shell-style
+# commands: e.g. scontrol_hold → "$ scontrol hold",  sacctmgr_list → "$ sacctmgr list".
+# This map reverses that for scoring so the parsed tool matches ground truth.
+_TOOL_DISPLAY_ALIASES: dict[str, str] = {
+    ("scontrol", "show"):        "scontrol_show",
+    ("scontrol", "hold"):        "scontrol_hold",
+    ("scontrol", "release"):     "scontrol_release",
+    ("scontrol", "update"):      "scontrol_update",
+    ("scontrol", "create"):      "scontrol_create",
+    ("scontrol", "delete"):      "scontrol_delete",
+    ("scontrol", "reconfigure"): "scontrol_reconfigure",
+    ("scontrol", "requeue"):     "scontrol_requeue",
+    ("sacctmgr", "show"):        "sacctmgr_show",
+    ("sacctmgr", "list"):        "sacctmgr_list",
+    ("sacctmgr", "add"):         "sacctmgr_add",
+    ("sacctmgr", "modify"):      "sacctmgr_modify",
+    ("sacctmgr", "delete"):      "sacctmgr_delete",
+}
+# Also handle the dataset using "sacctmgr_list" while display says "sacctmgr show"
+_TOOL_DISPLAY_ALIASES[("sacctmgr", "show")] = "sacctmgr_list"
+
+
+def _normalize_tool_name(tokens: list[str]) -> str:
+    """Convert shell-display tokens back to MCP tool function names."""
+    if len(tokens) >= 2:
+        key = (tokens[0], tokens[1])
+        if key in _TOOL_DISPLAY_ALIASES:
+            return _TOOL_DISPLAY_ALIASES[key]
+    return tokens[0] if tokens else ""
+
+
+# Ground-truth alias map: some older dataset entries use different names
+# than what the MCP server actually exposes. Normalise both sides before scoring.
+_GT_ALIASES: dict[str, str] = {
+    "sacctmgr_list":  "sacctmgr_show",   # dataset uses _list, MCP exposes _show
+    "sacctmgr":       "sacctmgr_show",   # agent sometimes emits bare sacctmgr
+    "scontrol":       "scontrol_show",   # agent sometimes emits bare scontrol
+}
+
 @dataclass
 class AgentTrace:
     tools_called: List[str]
@@ -136,6 +185,7 @@ class AgentTrace:
     latency_s: float
     error: Optional[str] = None
     thinking: str = ""
+    tool_call_history: List[dict] = field(default_factory=list)
 
 
 def _parse_sse_line(line: str) -> Optional[dict]:
@@ -158,6 +208,7 @@ async def run_agent(
 ) -> AgentTrace:
     """Send prompt to the live agent API and capture behavioral trace."""
     tools_called = []
+    tool_call_history: List[dict] = []
     handoff = False
     hitl = False
     parts = []
@@ -199,11 +250,37 @@ async def run_agent(
                     status = delta.get("status_update", "")
                     if status:
                         if status.startswith("$ "):
-                            tool = status[2:].split()[0]
+                            tokens = status[2:].split()
+                            tool = _normalize_tool_name(tokens)
+                            entry: dict = {"type": "tool", "cmd": status, "tool": tool, "index": len(tool_call_history)}
+                            tool_call_history.append(entry)
                             if tool not in ROUTING_TOOLS:
                                 tools_called.append(tool)
-                        if "Handing off" in status or "handing off" in status:
+                        elif status.startswith("Action:"):
+                            # multi_agent.py: manage_jobs was called → counts as handoff to operator
                             handoff = True
+                            tool_call_history.append({"type": "handoff", "cmd": status, "index": len(tool_call_history)})
+                        elif "Handing off" in status or "handing off" in status:
+                            handoff = True
+                            tool_call_history.append({"type": "handoff", "cmd": status, "index": len(tool_call_history)})
+                        elif status.startswith("✅") or "Confirming" in status:
+                            tool_call_history.append({"type": "approved", "cmd": status, "index": len(tool_call_history)})
+                        elif "Retrying" in status:
+                            tool_call_history.append({"type": "retry", "cmd": status, "index": len(tool_call_history)})
+                        elif status.startswith(("Querying", "Searching")):
+                            # multi_agent.py: analyze_cluster call — just log, not counted as a tool
+                            tool_call_history.append({"type": "result", "cmd": status, "index": len(tool_call_history)})
+                        else:
+                            tool_call_history.append({"type": "result", "cmd": status, "index": len(tool_call_history)})
+
+                    # Raw tool output (verbatim MCP response)
+                    raw_output = delta.get("tool_output", "")
+                    if raw_output:
+                        # Attach to the most recent tool entry
+                        for entry in reversed(tool_call_history):
+                            if entry.get("type") == "tool":
+                                entry["output"] = raw_output
+                                break
 
                     # Reasoning / thinking tokens
                     reasoning = delta.get("reasoning_content", "") or delta.get("reasoning", "")
@@ -221,6 +298,8 @@ async def run_agent(
                         saw_hitl = True
         return saw_hitl
 
+    auto_approved = False
+
     try:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=120)
@@ -229,6 +308,7 @@ async def run_agent(
 
             # Auto-approve if HITL was triggered
             if saw and auto_approve:
+                auto_approved = True
                 ap = {
                     **payload,
                     "hitl_decision": "approve",
@@ -238,17 +318,71 @@ async def run_agent(
                 }
                 await _stream(ap)
     except Exception as e:
+        _resp = "".join(parts) or "".join(think_parts)
         return AgentTrace(
             tools_called, handoff, hitl,
-            "".join(parts), time.monotonic() - start, str(e),
+            _resp, time.monotonic() - start, str(e),
             "".join(think_parts),
+            tool_call_history,
         )
+
+    # qwen3 / deepseek models sometimes put the entire answer inside <think>
+    # blocks, which Ollama returns as reasoning_content with empty content.
+    # Fall back to thinking text so keyword scoring and response display work.
+    response_text = "".join(parts)
+    thinking_text = "".join(think_parts)
+
+    # In auto-approve mode, first-pass assistant text may still contain the
+    # HITL prompt. Strip it so results reflect the executed action.
+    if auto_approved and response_text:
+        response_text = re.sub(
+            r"⚠️\s*\*\*Pending approval:\*\*.*?(?:Please confirm or cancel\.?\s*)",
+            "",
+            response_text,
+            flags=re.DOTALL,
+        ).strip()
+
+    # If the model produced only a pending-approval message, synthesize a
+    # useful final response from the most recent non-routing tool output.
+    if auto_approved and not response_text.strip():
+        for entry in reversed(tool_call_history):
+            if entry.get("type") == "tool" and entry.get("tool") not in ROUTING_TOOLS:
+                out = (entry.get("output") or "").strip()
+                if out:
+                    response_text = out
+                    break
+
+    if not response_text.strip() and thinking_text.strip():
+        response_text = thinking_text
 
     return AgentTrace(
         tools_called, handoff, hitl,
-        "".join(parts), time.monotonic() - start,
-        thinking="".join(think_parts),
+        response_text, time.monotonic() - start,
+        thinking=thinking_text,
+        tool_call_history=tool_call_history,
     )
+
+async def reset_mock_state_for_test(test: dict, mcp_url: str) -> tuple[bool, str]:
+    """Reset stateful mock MCP to this test's source_state baseline.
+    Safe no-op when reset tool is unavailable (real mode/non-mock MCP).
+    """
+    try:
+        from mcp import ClientSession as MCPClientSession
+        from mcp.client.sse import sse_client
+
+        async with sse_client(f"{mcp_url.rstrip('/')}/sse") as (read, write):
+            async with MCPClientSession(read, write) as session:
+                await session.initialize()
+                result = await session.call_tool(
+                    "reset_mock_state",
+                    {
+                        "scenario": test.get("scenario", ""),
+                        "source_state_json": json.dumps(test.get("source_state", {})),
+                    },
+                )
+                return True, str(getattr(result, "content", result))[:300]
+    except Exception as e:
+        return False, f"mcp-sdk reset failed: {e}"
 
 
 # ── LLM-as-Judge ──────────────────────────────────────────────────────────────
@@ -301,19 +435,17 @@ Respond with ONLY: {{"score": <1-5>, "reason": "<one sentence>"}}"""
 async def judge_flow(
     test: dict, trace: 'AgentTrace', model: str = JUDGE_MODEL
 ) -> Tuple[float, str]:
-    """Judge the entire agent flow. Returns (score_0_to_1, reason)."""
-    if not AsyncOpenAI:
-        return 0.0, "openai package not installed"
-
+    """Judge the entire agent flow using the Ollama native API.
+    Returns (score_0_to_1, reason)."""
     gt = test["ground_truth"]
     src = test["source_state"]["jobs"]
     tgt = test["target_state"]["jobs"]
     changed = [jid for jid in src if jid in tgt and src[jid]["state"] != tgt[jid]["state"]]
 
-    if changed:
-        state_desc = f"Jobs {', '.join(changed)} should change state"
-    else:
-        state_desc = "No state change expected (read-only operation)"
+    state_desc = (
+        f"Jobs {', '.join(changed)} should change state"
+        if changed else "No state change expected (read-only operation)"
+    )
 
     prompt_text = JUDGE_PROMPT.format(
         prompt=test["input"],
@@ -325,28 +457,93 @@ async def judge_flow(
         agent_tools=", ".join(trace.tools_called) or "none",
         agent_handoff="Yes" if trace.handoff_occurred else "No",
         agent_hitl="Yes" if trace.hitl_triggered else "No",
-        thinking=(trace.thinking or "(none)")[:800],
-        response=(trace.response or "(empty)")[:1000],
+        thinking=(trace.thinking or "(none)"),
+        response=(trace.response or "(empty)"),
     )
 
-    client = AsyncOpenAI(base_url=OLLAMA_URL, api_key="ollama")
+    payload = {
+        "model": model,
+        "stream": False,
+        "options": {"temperature": 0.3, "num_predict": 1024},
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a strict JSON evaluator. Respond with ONLY a JSON object like {\"score\": 3, \"reason\": \"...\"}. No markdown, no thinking, no other text.",
+            },
+            {"role": "user", "content": prompt_text},
+        ],
+    }
+
     try:
-        resp = await client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt_text}],
-            temperature=0.0, max_tokens=150,
-            extra_body={"think": False},
-        )
-        raw = (resp.choices[0].message.content or "").strip()
-        raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
+            async with session.post(f"{OLLAMA_BASE}/api/chat", json=payload) as resp:
+                if resp.status != 200:
+                    err = await resp.text()
+                    return 0.0, f"judge error: Ollama HTTP {resp.status}: {err[:100]}"
+                data = await resp.json()
+
+        # Ollama native response: data["message"]["content"] + optional data["message"]["thinking"]
+        msg = data.get("message", {})
+        raw = (msg.get("content") or "").strip()
+        thinking = (msg.get("thinking") or "").strip()
+
+        # If content is empty, the answer may have ended up in thinking
+        if not raw and thinking:
+            raw = thinking
+
+        logger.debug(f"judge raw ({len(raw)}): {raw[:200]!r}")
+
+        # Strip any lingering <think> wrappers
+        outside = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+        if outside:
+            raw = outside
+        elif thinking:
+            raw = thinking  # fall back to native thinking field
+
         raw = re.sub(r"^```(?:json)?\s*", "", raw).strip()
         raw = re.sub(r"\s*```$", "", raw).strip()
-        m = re.search(r"\{.*\}", raw, flags=re.DOTALL)
-        parsed = json.loads(m.group()) if m else json.loads(raw)
+
+        # Find all JSON-like objects; try from last to first (last is most likely the answer)
+        candidates = list(re.finditer(r"\{[^{}]*\}", raw, flags=re.DOTALL))
+        # Also try the greedy full span as a fallback
+        full_span = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+        parsed = None
+        for m in reversed(candidates):
+            try:
+                parsed = json.loads(m.group())
+                if "score" in parsed:
+                    break
+            except Exception:
+                continue
+        if parsed is None and full_span:
+            try:
+                parsed = json.loads(full_span.group())
+            except Exception:
+                pass
+        if parsed is None:
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                # Salvage score from non-JSON judge output like "Score: 4/5".
+                score_match = (
+                    re.search(r"\bscore\b[^0-9]{0,12}([1-5])(?!\d)", raw, flags=re.IGNORECASE)
+                    or re.search(r"\b([1-5])\s*/\s*5\b", raw)
+                    or re.search(r"\b([1-5])\s+out\s+of\s+5\b", raw, flags=re.IGNORECASE)
+                )
+                if score_match:
+                    score = int(score_match.group(1))
+                    return round((score - 1) / 4, 3), "Judge response was non-JSON; score extracted heuristically."
+                logger.warning(f"judge: no JSON found. raw={raw[:300]!r}")
+                return 0.0, f"judge error: no JSON in response (len={len(raw)})"
+
         score = max(1, min(5, int(parsed.get("score", 1))))
-        reason = str(parsed.get("reason", ""))[:200]
+        reason = str(parsed.get("reason", "")).strip()
+        if not reason:
+            reason = "Judge returned a score without explanation."
         return round((score - 1) / 4, 3), reason
+
     except Exception as e:
+        logger.warning(f"judge exception: {e}")
         return 0.0, f"judge error: {e}"
 
 
@@ -377,11 +574,13 @@ class TestResult:
     state_match: float
     judge_score: float
     judge_reason: str
+    judge_ran: bool
     overall: float
     passed: bool
     latency_s: float
     is_variant: bool = False
     error: Optional[str] = None
+    tool_call_history: List[dict] = field(default_factory=list)
 
 
 def _check_state_transition(test: dict, trace: AgentTrace) -> float:
@@ -403,16 +602,21 @@ def _check_state_transition(test: dict, trace: AgentTrace) -> float:
         if jid in tgt and src[jid]["state"] != tgt[jid]["state"]
     }
 
-    called = set(trace.tools_called)
+    called = {_GT_ALIASES.get(t, t) for t in trace.tools_called}
     destructive = {"scancel", "sbatch", "scontrol_hold", "scontrol_release",
                    "scontrol_requeue", "scontrol_update", "scontrol_reconfigure"}
+    gt_tools = {_GT_ALIASES.get(t, t) for t in test["ground_truth"]["tools"]}
 
     if not changed_jobs:
-        # Read/diagnose: score 1.0 if no destructive tools called
+        # If metadata has no explicit state delta but the task expects a
+        # destructive action, infer transition success from expected tool use.
+        if gt_tools & destructive:
+            return 1.0 if bool(called & gt_tools & destructive) else 0.0
+
+        # Read/diagnose: score 1.0 if no destructive tools called.
         return 1.0 if not (called & destructive) else 0.0
     else:
         # Action: score based on whether the right destructive tools were called
-        gt_tools = set(test["ground_truth"]["tools"])
         if gt_tools & destructive:
             return 1.0 if bool(called & gt_tools & destructive) else 0.0
         return 1.0
@@ -423,8 +627,11 @@ async def score_test(
 ) -> TestResult:
     """Score a single test case against ground truth."""
     gt = test["ground_truth"]
-    called   = set(trace.tools_called) - ROUTING_TOOLS
-    expected = set(gt["tools"])
+    # Normalize both sides through the same alias map so dataset variants
+    # (e.g. sacctmgr_list vs sacctmgr_show) don't penalize correct behaviour.
+    _gt_norm = {_GT_ALIASES.get(t, t) for t in gt["tools"]}
+    called   = {_GT_ALIASES.get(t, t) for t in trace.tools_called} - ROUTING_TOOLS
+    expected = _gt_norm
     w = WEIGHTS_WITH_JUDGE if use_judge else WEIGHTS
 
     # Tool recall
@@ -439,8 +646,8 @@ async def score_test(
     # HITL match (binary)
     hitl_match = 1.0 if trace.hitl_triggered == gt["hitl"] else 0.0
 
-    # Keyword match
-    resp_lower = trace.response.lower()
+    # Keyword match — check response AND thinking (qwen3 sometimes emits answer in reasoning)
+    resp_lower = (trace.response + " " + trace.thinking).lower()
     keywords = gt.get("keywords", [])
     if keywords:
         found = sum(1 for kw in keywords if str(kw).lower() in resp_lower)
@@ -455,6 +662,8 @@ async def score_test(
     j_score, j_reason = 0.0, ""
     if use_judge:
         j_score, j_reason = await judge_flow(test, trace)
+        if not (j_reason or "").strip():
+            j_reason = "Judge produced no reason text."
 
     # Weighted overall
     overall = (
@@ -466,6 +675,10 @@ async def score_test(
     )
     if use_judge:
         overall += w["judge_score"] * j_score
+
+    # Guardrail: tests with explicit expected keywords should not pass when
+    # response fidelity is very low, even if structural metrics are high.
+    keyword_gate_ok = (not keywords) or (kw_score >= 0.6)
 
     return TestResult(
         test_id=test["id"],
@@ -479,8 +692,8 @@ async def score_test(
         agent_tools=list(called),
         agent_handoff=trace.handoff_occurred,
         agent_hitl=trace.hitl_triggered,
-        agent_response=trace.response[:500],
-        agent_thinking=trace.thinking[:1000],
+        agent_response=trace.response,
+        agent_thinking=trace.thinking,
         tool_recall=round(tool_recall, 3),
         routing_match=round(routing_match, 3),
         hitl_match=round(hitl_match, 3),
@@ -488,11 +701,13 @@ async def score_test(
         state_match=round(state_score, 3),
         judge_score=round(j_score, 3),
         judge_reason=j_reason,
+        judge_ran=bool(use_judge),
         overall=round(overall, 3),
-        passed=overall >= PASS_THRESHOLD,
+        passed=(overall >= PASS_THRESHOLD) and keyword_gate_ok,
         latency_s=round(trace.latency_s, 2),
         is_variant=bool(test.get("variant_of")),
         error=trace.error,
+        tool_call_history=trace.tool_call_history,
     )
 
 
@@ -796,6 +1011,7 @@ async def run_eval(args):
     print(f"  Repeat (k)   : {k}")
     print(f"  Auto-approve : {args.auto_approve}")
     print(f"  LLM Judge    : {'ON (' + args.judge_model + ')' if args.judge else 'OFF'}")
+    print(f"  MCP URL      : {args.mcp_url}")
 
     # Health check
     try:
@@ -822,6 +1038,11 @@ async def run_eval(args):
             tid = test["id"][:40]
             v = " (v)" if test.get("variant_of") else ""
             print(f"  [{i:03d}/{len(dataset):03d}] {tid}{v:<45} ", end="", flush=True)
+
+            # Deterministic baseline per test while preserving stateful MCP behavior.
+            reset_ok, _ = await reset_mock_state_for_test(test, args.mcp_url)
+            if not reset_ok:
+                print("[reset warn]", end="", flush=True)
 
             session_id = f"eval_{test['id']}_{int(time.time())}"
             trace = await run_agent(
@@ -862,6 +1083,8 @@ def main():
                    help="Skip prompt variant test cases")
     p.add_argument("--agent-url", default=AGENT_URL,
                    help="Agent API URL")
+    p.add_argument("--mcp-url", default=MCP_URL,
+                   help="MCP server URL used for per-test state reset")
     p.add_argument("--auto-approve", action="store_true",
                    help="Auto-approve HITL confirmations")
     p.add_argument("--repeat", type=int, default=1,

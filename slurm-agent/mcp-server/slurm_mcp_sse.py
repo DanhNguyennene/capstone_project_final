@@ -74,13 +74,249 @@ def _run_cmd(cmd: list[str], timeout: int = 30) -> str:
         return f"Error: command timed out after {timeout}s"
 
 
+# ── Mutable in-memory cluster state (mock mode) ───────────────────────────────
+# All tools read/write _STATE so actions have real visible side-effects:
+#   scancel  → removes jobs from _STATE.jobs
+#   sbatch   → appends new job to _STATE.jobs
+#   hold/release → toggles job state between PENDING / HOLD
+#   scontrol_update → patches job fields in place
+
+import copy
+import time as _time
+
+class _ClusterState:
+    """Single shared mutable cluster state for the mock server.
+    Initialised once from MOCK_JOBS/MOCK_NODES at startup.
+    All tool functions operate on this instance.
+    """
+
+    def __init__(self):
+        self._jobs: list[dict] = []
+        self._nodes: list[dict] = []
+        self._next_id: int = 2000
+        self._log: list[str] = []    # action history for transparency
+        self._initialized = False
+
+    def _ensure_init(self):
+        if not self._initialized:
+            import copy
+            self._jobs  = copy.deepcopy(MOCK_JOBS.get(SCENARIO, []))
+            self._nodes = copy.deepcopy(MOCK_NODES.get(SCENARIO, []))
+            # Determine next job id from existing max
+            existing_ids = [int(j["job_id"]) for j in self._jobs if str(j.get("job_id","")).isdigit()]
+            self._next_id = max(existing_ids, default=1000) + 1
+            self._initialized = True
+
+    def jobs(self) -> list[dict]:
+        self._ensure_init()
+        return self._jobs
+
+    def nodes(self) -> list[dict]:
+        self._ensure_init()
+        return self._nodes
+
+    def cancel(self, ids: list[str]) -> tuple[list[str], list[str]]:
+        """Mark jobs as CANCELLED. Returns (cancelled_ids, not_found_ids)."""
+        self._ensure_init()
+        cancelled, not_found = [], []
+        for jid in ids:
+            matched = [j for j in self._jobs if str(j.get("job_id","")) == jid
+                       or str(j.get("job_id","")).split("_")[0] == jid]
+            if matched:
+                for j in matched:
+                    prev = j["state"]
+                    j["state"] = "CANCELLED"
+                    j["time"]  = j.get("time", "0:00")
+                    cancelled.append(str(j["job_id"]))
+                    self._log.append(f"[{_stamp()}] CANCEL job {j['job_id']} ({prev} → CANCELLED)")
+            else:
+                not_found.append(jid)
+        return cancelled, not_found
+
+    def hold(self, jid: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id","")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        if j["state"] not in ("PENDING",):
+            return f"scontrol: error: Job {jid} cannot be held — state is {j['state']}"
+        j["state"] = "HOLD"
+        j["reason"] = "JobHeldUser"
+        self._log.append(f"[{_stamp()}] HOLD job {jid}")
+        return f"Job {jid} held."
+
+    def release(self, jid: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id","")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        if j["state"] != "HOLD":
+            return f"scontrol: error: Job {jid} is not held — state is {j['state']}"
+        j["state"] = "PENDING"
+        j.pop("reason", None)
+        self._log.append(f"[{_stamp()}] RELEASE job {jid}")
+        return f"Job {jid} released."
+
+    def requeue(self, jid: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id","")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        prev = j["state"]
+        j["state"] = "PENDING"
+        j["time"] = "0:00"
+        j.pop("exit_code", None)
+        self._log.append(f"[{_stamp()}] REQUEUE job {jid} ({prev} → PENDING)")
+        return f"Job {jid} requeued."
+
+    def update(self, jid: str, params: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id","")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        import re as _re
+        changes = []
+        for m in _re.finditer(r"([\w]+)=(\S+)", params):
+            key, val = m.group(1).lower(), m.group(2)
+            if key in ("timelimit", "time"):
+                j["time"] = val; changes.append(f"TimeLimit={val}")
+            elif key in ("partition",):
+                j["partition"] = val; changes.append(f"Partition={val}")
+            elif key in ("numcpus", "cpus"):
+                j["cpus"] = val; changes.append(f"NumCPUs={val}")
+            elif key in ("minmemorynode", "mem"):
+                j["mem"] = val; changes.append(f"MinMemory={val}")
+            elif key in ("numnodes", "nodes"):
+                j["nodes"] = val; changes.append(f"NumNodes={val}")
+        self._log.append(f"[{_stamp()}] UPDATE job {jid}: {params}")
+        return f"Job {jid} updated: {', '.join(changes) or params}"
+
+    def submit(self, script_name: str, flags: str = "", user: str = "user") -> str:
+        self._ensure_init()
+        import re as _re
+        jid = str(self._next_id)
+        self._next_id += 1
+        partition = "cpu"
+        m = _re.search(r"--partition[= ](\S+)", flags)
+        if m: partition = m.group(1)
+        cpus = "4"
+        m = _re.search(r"--cpus-per-task[= ](\d+)", flags)
+        if m: cpus = m.group(1)
+        mem = "4G"
+        m = _re.search(r"--mem[= ](\S+)", flags)
+        if m: mem = m.group(1)
+        nodes = "1"
+        m = _re.search(r"--nodes[= ](\d+)", flags)
+        if m: nodes = m.group(1)
+        array_suffix = ""
+        m = _re.search(r"--array[= ](\S+)", flags)
+        if m: array_suffix = f"_[{m.group(1)}]"; jid = f"{jid}{array_suffix}"
+        job = {
+            "job_id": jid,
+            "name":   os.path.basename(script_name).replace(".sh",""),
+            "user":   user,
+            "state":  "PENDING",
+            "time":   "0:00",
+            "nodes":  nodes,
+            "cpus":   cpus,
+            "mem":    mem,
+            "partition": partition,
+            "reason": "Priority",
+        }
+        dep_m = _re.search(r"--dependency[= ](\S+)", flags)
+        if dep_m: job["reason"] = f"Dependency:{dep_m.group(1)}"
+        self._jobs.append(job)
+        self._log.append(f"[{_stamp()}] SUBMIT {script_name} → job {jid} (PENDING, {partition})")
+        return f"Submitted batch job {jid}"
+
+    def history(self) -> str:
+        return "\n".join(self._log[-50:]) if self._log else "(no actions taken yet)"
+
+    def reset(self, scenario: str, source_state: dict | None = None) -> str:
+        """Reset mock state to scenario defaults, optionally overridden by source_state.
+        source_state follows evaluation dataset shape: {jobs:{...}, nodes:{...}}.
+        """
+        global SCENARIO
+        SCENARIO = scenario
+
+        # Start from scenario templates
+        tmpl_jobs = copy.deepcopy(MOCK_JOBS.get(scenario, []))
+        tmpl_nodes = copy.deepcopy(MOCK_NODES.get(scenario, []))
+
+        if source_state:
+            src_jobs = source_state.get("jobs", {}) or {}
+            src_nodes = source_state.get("nodes", {}) or {}
+
+            # Build index from templates so we keep realistic defaults
+            t_jobs_by_id = {str(j.get("job_id")): j for j in tmpl_jobs}
+            t_nodes_by_name = {str(n.get("name")): n for n in tmpl_nodes}
+
+            jobs = []
+            for jid, spec in src_jobs.items():
+                base = copy.deepcopy(t_jobs_by_id.get(str(jid), {
+                    "job_id": str(jid),
+                    "name": f"job_{jid}",
+                    "user": "user",
+                    "state": "PENDING",
+                    "time": "0:00",
+                    "nodes": 1,
+                    "cpus": 1,
+                    "mem": "1G",
+                    "partition": "cpu",
+                }))
+                base["job_id"] = str(jid)
+                for k, v in spec.items():
+                    base[k] = v
+                jobs.append(base)
+
+            nodes = []
+            for name, spec in src_nodes.items():
+                base = copy.deepcopy(t_nodes_by_name.get(str(name), {
+                    "name": str(name),
+                    "state": "idle",
+                    "cpus": "0/32",
+                    "mem": "0/128G",
+                    "partition": "cpu",
+                    "gres": "",
+                }))
+                base["name"] = str(name)
+                for k, v in spec.items():
+                    base[k] = v
+                nodes.append(base)
+
+            self._jobs = jobs
+            self._nodes = nodes
+        else:
+            self._jobs = tmpl_jobs
+            self._nodes = tmpl_nodes
+
+        existing_ids = [int(j["job_id"]) for j in self._jobs if str(j.get("job_id", "")).isdigit()]
+        self._next_id = max(existing_ids, default=1000) + 1
+        self._initialized = True
+        self._log.append(f"[{_stamp()}] RESET state to scenario={scenario} jobs={len(self._jobs)} nodes={len(self._nodes)}")
+        return f"reset done: scenario={scenario}, jobs={len(self._jobs)}, nodes={len(self._nodes)}"
+
+
+def _stamp() -> str:
+    import datetime
+    return datetime.datetime.now().strftime("%H:%M:%S")
+
+
+# Single shared instance
+_STATE = _ClusterState()
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _jobs():
-    return MOCK_JOBS.get(SCENARIO, [])
+    return _STATE.jobs()
 
 def _nodes():
-    return MOCK_NODES.get(SCENARIO, [])
+    return _STATE.nodes()
 
 
 def _real_jobs() -> list[dict]:
@@ -566,22 +802,8 @@ def _sbatch_single(script: str, flags: str = "") -> str:
             os.unlink(tmp_path)
         return result
 
-    import random
-    job_id = random.randint(9000, 9999)
-    script_name = os.path.basename(stripped) if stripped else "job"
-    _mock_submitted.append({
-        "job_id": str(job_id),
-        "name": script_name.replace(".sh", ""),
-        "user": "user",
-        "state": "PENDING",
-        "time": "0:00",
-        "nodes": 1,
-        "cpus": 4,
-        "mem": "4G",
-        "partition": "cpu",
-        "reason": "Priority",
-    })
-    return f"Submitted batch job {job_id}"
+    # Mock mode: real stateful submission
+    return _STATE.submit(stripped, flags)
 
 
 @mcp.tool()
@@ -605,26 +827,8 @@ def scancel(job_id: str, user: str = "") -> str:
             return f"Jobs {', '.join(ids)} cancelled successfully."
         return result
 
-    # ── Mock mode: match exact IDs OR parent array IDs ──
-    jobs = _jobs()
-    cancelled = []
-    not_found = []
-    for one_id in ids:
-        # Exact match
-        exact = [j for j in jobs if str(j.get("job_id", "")) == one_id]
-        if exact:
-            cancelled.append(one_id)
-            continue
-        # Parent ID match: "7" should match "7_[1-5]", "7_1", etc.
-        parent_matches = [
-            j for j in jobs
-            if str(j.get("job_id", "")).split("_")[0] == one_id
-        ]
-        if parent_matches:
-            cancelled.extend(str(j["job_id"]) for j in parent_matches)
-            continue
-        not_found.append(one_id)
-
+    # Mock mode: stateful cancel — jobs are actually marked CANCELLED
+    cancelled, not_found = _STATE.cancel(ids)
     parts = []
     if cancelled:
         parts.append(f"Jobs {', '.join(cancelled)} cancelled successfully.")
@@ -642,7 +846,7 @@ def scontrol_hold(job_id: str) -> str:
         if "error" not in result.lower():
             return f"Job {job_id} held."
         return result
-    return f"Job {job_id} held."
+    return _STATE.hold(job_id)
 
 
 @mcp.tool()
@@ -654,7 +858,7 @@ def scontrol_release(job_id: str) -> str:
         if "error" not in result.lower():
             return f"Job {job_id} released."
         return result
-    return f"Job {job_id} released."
+    return _STATE.release(job_id)
 
 
 @mcp.tool()
@@ -1560,7 +1764,9 @@ def scontrol_update(entity: str, id: str, params: str) -> str:
     if REAL_MODE:
         cmd = ["scontrol", "update", f"{entity}={id}"] + params.split()
         return _run_cmd(cmd)
-    return f"scontrol update {entity} {entity}={id} {params} — applied (mock)."
+    if entity.lower() == "job":
+        return _STATE.update(id, params)
+    return f"scontrol update {entity} {id}: {params} — applied."
 
 @mcp.tool()
 def scontrol_create(entity: str, params: str) -> str:
@@ -1593,13 +1799,7 @@ def scontrol_requeue(job_id: str) -> str:
         if "error" not in result.lower():
             return f"Job {job_id} requeued."
         return result
-    jobs = _jobs()
-    match = next((j for j in jobs if str(j.get("job_id", "")) == str(job_id)), None)
-    if not match:
-        return f"scontrol: error: Invalid job id {job_id}"
-    if match.get("state") == "RUNNING":
-        return f"scontrol: error: Job {job_id} is RUNNING — cancel it first."
-    return f"Job {job_id} ({match.get('name', '?')}) requeued. New state: PENDING."
+    return _STATE.requeue(str(job_id))
 
 @mcp.tool()
 def sacctmgr_show(entity: str = "user", params: str = "") -> str:
@@ -1635,6 +1835,40 @@ def sacctmgr_delete(entity: str, params: str) -> str:
     if REAL_MODE:
         return _run_cmd(["sacctmgr", "delete", entity] + params.split() + ["--immediate"])
     return f"sacctmgr delete {entity}: {params} — deleted (mock)."
+
+@mcp.tool()
+def cluster_history() -> str:
+    """Show the action history log for this session — every scancel, sbatch, hold, release, update, requeue.
+    Useful for auditing what the agent has done so far in this conversation."""
+    if REAL_MODE:
+        return "cluster_history: not available in real mode (use slurmdbd/sacct)."
+    return "=== Cluster Action History ===\n" + _STATE.history()
+
+
+@mcp.tool()
+def reset_mock_state(scenario: str = "", source_state_json: str = "") -> str:
+    """Reset mock cluster state.
+    - scenario: healthy|failed|pending|mixed|debug_needed (defaults to current SCENARIO)
+    - source_state_json: optional JSON string matching dataset source_state
+      shape: {"jobs": {"1001": {...}}, "nodes": {"node1": {...}}}
+    Use this before each evaluation test to keep deterministic baselines.
+    """
+    if REAL_MODE:
+        return "reset_mock_state: unavailable in real mode"
+
+    target = scenario.strip() or SCENARIO
+    if target not in MOCK_JOBS:
+        return f"reset_mock_state: invalid scenario '{target}'"
+
+    source_state = None
+    if source_state_json.strip():
+        try:
+            source_state = json.loads(source_state_json)
+        except Exception as e:
+            return f"reset_mock_state: invalid source_state_json: {e}"
+
+    return _STATE.reset(target, source_state)
+
 
 @mcp.tool()
 def sreport(report_type: str = "cluster", params: str = "") -> str:

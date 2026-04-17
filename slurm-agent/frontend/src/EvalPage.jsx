@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 const EVAL_URL = 'http://10.0.0.1:8080'
+const LS_OPTS_KEY = 'evalPage.opts.v1'
+const LS_FILTERS_KEY = 'evalPage.filters.v1'
 
 export default function EvalPage({ agentUrl }) {
   const [dataset, setDataset]     = useState([])
@@ -10,9 +12,22 @@ export default function EvalPage({ agentUrl }) {
   const [detail, setDetail]       = useState(null) // { test, result }
   const [running, setRunning]     = useState(false)
   const [progress, setProgress]   = useState(0)
-  const [filters, setFilters]     = useState({ scenario: '', category: '', status: '' })
-  const [opts, setOpts]           = useState({ approve: true, judge: false, noVariants: false })
+  const [filters, setFilters]     = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_FILTERS_KEY)
+      if (raw) return { scenario: '', category: '', status: '', ...JSON.parse(raw) }
+    } catch {}
+    return { scenario: '', category: '', status: '' }
+  })
+  const [opts, setOpts]           = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_OPTS_KEY)
+      if (raw) return { approve: true, judge: false, noVariants: false, ...JSON.parse(raw) }
+    } catch {}
+    return { approve: true, judge: false, noVariants: false }
+  })
   const abortRef = useRef(null)
+  const runTotalRef = useRef(0)
   const activeIdRef = useRef(activeId)
   activeIdRef.current = activeId
 
@@ -30,9 +45,21 @@ export default function EvalPage({ agentUrl }) {
     } catch { /* eval server not running */ }
   }, [filters.scenario, filters.category, opts.noVariants])
 
+  const _syncResultsFromServer = async () => {
+    const rr = await fetch(`${EVAL_URL}/api/results`)
+    const rd = await rr.json()
+    if (rd.results?.length) {
+      const rm = {}
+      for (const res of rd.results) rm[res.test_id] = res
+      setResults(rm)
+      if (rd.metrics?.n_tests) setMetrics(rd.metrics)
+    }
+  }
+
   const loadDefault = async () => {
     await fetch(`${EVAL_URL}/api/load-default-dataset`, { method: 'POST' })
     await refreshDataset()
+    await _syncResultsFromServer()   // bring back preserved results
   }
 
   const uploadFile = async (e) => {
@@ -43,6 +70,7 @@ export default function EvalPage({ agentUrl }) {
     await fetch(`${EVAL_URL}/api/upload-dataset`, { method: 'POST', body: fd })
     e.target.value = ''
     await refreshDataset()
+    await _syncResultsFromServer()
   }
 
   const loadTestDetail = async (id) => {
@@ -54,7 +82,62 @@ export default function EvalPage({ agentUrl }) {
 
   // ── Run all via SSE ──────────────────────────────────────────
 
+  const consumeRunStream = useCallback(async (resp, totalHint = 0) => {
+    if (!resp?.ok || !resp.body) return
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+    runTotalRef.current = totalHint || runTotalRef.current || 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+
+      while (true) {
+        const end = buf.indexOf('\n\n')
+        if (end === -1) break
+        const frame = buf.slice(0, end)
+        buf = buf.slice(end + 2)
+
+        let evt = '', data = ''
+        for (const ln of frame.split('\n')) {
+          if (ln.startsWith('event: ')) evt = ln.slice(7)
+          else if (ln.startsWith('data: ')) data = ln.slice(6)
+        }
+        if (!data) continue
+        try {
+          const parsed = JSON.parse(data)
+          if (evt === 'start') {
+            if (typeof parsed.total === 'number') runTotalRef.current = parsed.total
+          } else if (evt === 'test_start') {
+            const denom = runTotalRef.current || dataset.length || 1
+            setProgress((parsed.index / denom) * 100)
+            setDataset(prev => prev.map(t =>
+              t.id === parsed.id ? { ...t, status: 'running' } : t))
+          } else if (evt === 'test_done') {
+            setResults(prev => ({ ...prev, [parsed.id]: parsed.result }))
+            setDataset(prev => prev.map(t =>
+              t.id === parsed.id ? { ...t, status: parsed.result.passed ? 'passed' : 'failed' } : t))
+            const denom = runTotalRef.current || dataset.length || 1
+            setProgress(((parsed.index + 1) / denom) * 100)
+            if (activeIdRef.current === parsed.id) {
+              setDetail(d => d ? { ...d, result: parsed.result } : d)
+            }
+          } else if (evt === 'complete') {
+            setMetrics(parsed.metrics)
+            setProgress(100)
+            setRunning(false)
+          } else if (evt === 'stopped' || evt === 'error') {
+            setRunning(false)
+          }
+        } catch {}
+      }
+    }
+  }, [dataset.length])
+
   const runAll = async () => {
+    if (running) return
     const ctrl = new AbortController()
     abortRef.current = ctrl
     setRunning(true)
@@ -70,52 +153,18 @@ export default function EvalPage({ agentUrl }) {
     if (filters.category) p.set('category', filters.category)
 
     try {
-      const resp = await fetch(`${EVAL_URL}/api/run?${p}`, {
+      let resp = await fetch(`${EVAL_URL}/api/run?${p}`, {
         method: 'POST', signal: ctrl.signal,
       })
-      const reader = resp.body.getReader()
-      const decoder = new TextDecoder()
-      let buf = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buf += decoder.decode(value, { stream: true })
-
-        while (true) {
-          const end = buf.indexOf('\n\n')
-          if (end === -1) break
-          const frame = buf.slice(0, end)
-          buf = buf.slice(end + 2)
-
-          let evt = '', data = ''
-          for (const ln of frame.split('\n')) {
-            if (ln.startsWith('event: ')) evt = ln.slice(7)
-            else if (ln.startsWith('data: ')) data = ln.slice(6)
-          }
-          if (!data) continue
-          try {
-            const parsed = JSON.parse(data)
-            if (evt === 'test_start') {
-              setProgress((parsed.index / dataset.length) * 100)
-              setDataset(prev => prev.map(t =>
-                t.id === parsed.id ? { ...t, status: 'running' } : t))
-            } else if (evt === 'test_done') {
-              setResults(prev => ({ ...prev, [parsed.id]: parsed.result }))
-              setDataset(prev => prev.map(t =>
-                t.id === parsed.id ? { ...t, status: parsed.result.passed ? 'passed' : 'failed' } : t))
-              setProgress(((parsed.index + 1) / dataset.length) * 100)
-              // Use ref to get current activeId (not stale closure)
-              if (activeIdRef.current === parsed.id) {
-                setDetail(d => d ? { ...d, result: parsed.result } : d)
-              }
-            } else if (evt === 'complete') {
-              setMetrics(parsed.metrics)
-              setProgress(100)
-            }
-          } catch {}
-        }
+      // If server thinks a run is already active (stale state), force-reset and retry once
+      if (resp.status === 409) {
+        await fetch(`${EVAL_URL}/api/stop`, { method: 'POST' })
+        p.set('force', 'true')
+        resp = await fetch(`${EVAL_URL}/api/run?${p}`, {
+          method: 'POST', signal: ctrl.signal,
+        })
       }
+      await consumeRunStream(resp, dataset.length)
     } catch (e) {
       if (e.name !== 'AbortError') console.error(e)
     }
@@ -135,7 +184,11 @@ export default function EvalPage({ agentUrl }) {
     if (activeId === id) setDetail(prev => prev ? { ...prev, result: d.result } : prev)
   }
 
-  const stopEval = () => { abortRef.current?.abort(); setRunning(false) }
+  const stopEval = async () => {
+    abortRef.current?.abort()
+    setRunning(false)
+    try { await fetch(`${EVAL_URL}/api/stop`, { method: 'POST' }) } catch {}
+  }
 
   const clearResults = async () => {
     await fetch(`${EVAL_URL}/api/clear-results`, { method: 'POST' })
@@ -150,12 +203,25 @@ export default function EvalPage({ agentUrl }) {
   // Refresh on filter change
   useEffect(() => { if (dataset.length > 0) refreshDataset() }, [refreshDataset])
 
+  // Persist UI selections so "ticks" survive reload/return.
+  useEffect(() => {
+    try { localStorage.setItem(LS_OPTS_KEY, JSON.stringify(opts)) } catch {}
+  }, [opts])
+  useEffect(() => {
+    try { localStorage.setItem(LS_FILTERS_KEY, JSON.stringify(filters)) } catch {}
+  }, [filters])
+
   // Init — check if eval server has data already
   useEffect(() => {
     (async () => {
       try {
         const r = await fetch(`${EVAL_URL}/api/status`)
         const s = await r.json()
+        runTotalRef.current = s.total || 0
+        setRunning(!!s.running)
+        if (typeof s.progress === 'number' && (s.total || 0) > 0) {
+          setProgress((s.progress / s.total) * 100)
+        }
         if (s.dataset_loaded) {
           await refreshDataset()
           const rr = await fetch(`${EVAL_URL}/api/results`)
@@ -165,9 +231,24 @@ export default function EvalPage({ agentUrl }) {
           setResults(rm)
           if (rd.metrics?.n_tests) setMetrics(rd.metrics)
         }
+
+        // If a run is still active when user returns, re-attach stream so UI
+        // continues updating live without restarting the run.
+        if (s.running) {
+          const p = new URLSearchParams({
+            agent_url: agentUrl,
+            auto_approve: opts.approve,
+            use_judge: opts.judge,
+            no_variants: opts.noVariants,
+          })
+          if (filters.scenario) p.set('scenario', filters.scenario)
+          if (filters.category) p.set('category', filters.category)
+          const attachResp = await fetch(`${EVAL_URL}/api/run?${p}`, { method: 'POST' })
+          await consumeRunStream(attachResp, s.total || dataset.length)
+        }
       } catch {}
     })()
-  }, []) // eslint-disable-line
+  }, [agentUrl, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream])
 
   // ── Keyboard nav ─────────────────────────────────────────────
 
@@ -333,7 +414,7 @@ export default function EvalPage({ agentUrl }) {
                 ['Route', metrics.avg_routing_match],
                 ['HITL', metrics.avg_hitl_match],
                 ['Overall', metrics.avg_overall],
-                ...(metrics.avg_judge_score > 0 ? [['Judge', metrics.avg_judge_score]] : []),
+                ...(metrics.avg_judge_score != null && opts.judge ? [['Judge', metrics.avg_judge_score]] : []),
               ].map(([label, val]) => (
                 <div className="eval-metric" key={label}>
                   <div className={`eval-metric-val ${val >= 0.8 ? 'good' : val < 0.5 ? 'bad' : 'mid'}`}>
@@ -355,6 +436,7 @@ export default function EvalPage({ agentUrl }) {
           onNav={loadTestDetail}
           onRun={runSingle}
           pct={pct}
+          judgeEnabled={opts.judge}
         /> : (
           <div className="eval-empty">
             <div className="eval-empty-icon">📋</div>
@@ -368,12 +450,18 @@ export default function EvalPage({ agentUrl }) {
 
 // ── Test detail sub-component ──────────────────────────────────────
 
-function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct }) {
+function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeEnabled }) {
   if (!test) return null
   const gt = test.ground_truth
   const idx = dataset.findIndex(t => t.id === test.id)
   const prevId = idx > 0 ? dataset[idx - 1].id : null
   const nextId = idx < dataset.length - 1 ? dataset[idx + 1].id : null
+
+  // judge ran only when backend says so; fallback supports older result files.
+  const judgeRan = (result?.judge_ran === true) || (!!result?.judge_reason)
+  const judgeReasonText = (result?.judge_reason || '').trim()
+    || (result?.error || '').trim()
+    || 'Judge returned a score without explanation. Please rerun this test with Judge enabled.'
 
   const dims = [
     { key: 'tool_recall',    label: 'Tool Recall', w: '30%' },
@@ -382,7 +470,7 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct }) {
     { key: 'keyword_score',  label: 'Keywords',    w: '10%' },
     { key: 'state_match',    label: 'State',       w: '10%' },
   ]
-  if (result?.judge_score > 0) dims.push({ key: 'judge_score', label: 'Judge', w: '15%' })
+  if (judgeRan) dims.push({ key: 'judge_score', label: 'Judge (15%)', w: '15%' })
 
   // State transitions
   const src = test.source_state?.jobs || {}
@@ -463,6 +551,84 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct }) {
         </div>
       )}
 
+      {/* Tool Call History */}
+      {result && (
+        <div className="eval-section">
+          <h3 className="eval-section-title">Tool Call History</h3>
+          <div className="eval-terminal">
+            <div className="eval-terminal-bar">
+              <span className="eval-terminal-dot" style={{background:'#ff5f56'}}/>
+              <span className="eval-terminal-dot" style={{background:'#ffbd2e'}}/>
+              <span className="eval-terminal-dot" style={{background:'#27c93f'}}/>
+              <span className="eval-terminal-title">slurm-mcp-agent — bash</span>
+            </div>
+            <div className="eval-terminal-body">
+              {(() => {
+                const history = result.tool_call_history || [];
+                const gtSet   = new Set(gt.tools);
+                if (history.length === 0 && (!result.agent_tools || result.agent_tools.length === 0)) {
+                  return <span className="eval-term-empty">No tool calls recorded for this test</span>;
+                }
+                const lines = history.length > 0
+                  ? history
+                  : result.agent_tools.map((t, i) => ({ type: 'tool', cmd: `$ ${t}`, tool: t, index: i }));
+
+                return lines.map((entry, i) => {
+                  const cmd = entry.cmd || '';
+                  if (entry.type === 'tool') {
+                    const toolName = entry.tool || cmd.replace(/^\$ /, '').split(/\s+/)[0];
+                    const isExtra  = !gtSet.has(toolName);
+                    const cmdBody  = cmd.replace(/^\$ /, '');
+                    return (
+                      <div key={i} className="eval-term-block">
+                        <div className="eval-term-cmdline">
+                          <span className="eval-term-ps1">slurm@hpc:~$&nbsp;</span>
+                          <span className={`eval-term-cmd${isExtra ? ' eval-term-cmd-extra' : ''}`}>{cmdBody}</span>
+                          {isExtra
+                            ? <span className="eval-term-annotation eval-term-extra">&nbsp;&nbsp;# unexpected</span>
+                            : <span className="eval-term-annotation eval-term-ok">&nbsp;&nbsp;# ✓ expected</span>}
+                        </div>
+                        {entry.output && (
+                          <pre className="eval-term-output">{entry.output}</pre>
+                        )}
+                      </div>
+                    );
+                  }
+                  if (entry.type === 'handoff') {
+                    return (
+                      <div key={i} className="eval-term-sys">
+                        <span className="eval-term-sys-icon">↪</span>
+                        {cmd}
+                      </div>
+                    );
+                  }
+                  if (entry.type === 'approved') {
+                    return (
+                      <div key={i} className="eval-term-sys eval-term-sys-ok">
+                        {cmd}
+                      </div>
+                    );
+                  }
+                  if (entry.type === 'retry') {
+                    return (
+                      <div key={i} className="eval-term-sys eval-term-sys-warn">
+                        {cmd}
+                      </div>
+                    );
+                  }
+                  /* type === 'result' — old summary line, skip (output now on tool entry) */
+                  return null;
+                });
+              })()}
+              <div className="eval-term-cmdline eval-term-idle">
+                <span className="eval-term-ps1">slurm@hpc:~$&nbsp;</span>
+                <span className="eval-term-cursor">█</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* State transitions */}
       <div className="eval-section">
         <h3 className="eval-section-title">State Transition</h3>
@@ -478,12 +644,20 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct }) {
       </div>
 
       {/* Judge */}
-      {result?.judge_score > 0 && (
+      {judgeRan && (
         <div className="eval-section">
           <h3 className="eval-section-title">LLM Judge</h3>
           <div className="eval-judge">
-            <span className="eval-judge-score">{Math.round(result.judge_score * 4 + 1)}/5 ({pct(result.judge_score)})</span>
-            {result.judge_reason && <p className="eval-judge-reason">{result.judge_reason}</p>}
+            <div className="eval-judge-header">
+              {(result && typeof result.judge_score === 'number')
+                ? <span className="eval-judge-score">{Math.round(result.judge_score * 4 + 1)}/5 ({pct(result.judge_score)})</span>
+                : <span className="eval-judge-score eval-judge-error">Score unavailable</span>
+              }
+            </div>
+            {result?.judge_reason
+              ? <pre className="eval-judge-text">{result.judge_reason}</pre>
+              : <p className="eval-judge-reason" style={{ fontStyle: 'italic' }}>{judgeReasonText}</p>
+            }
           </div>
         </div>
       )}

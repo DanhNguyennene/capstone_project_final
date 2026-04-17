@@ -304,7 +304,7 @@ def score(trace: AgentTrace, tc: TestCase) -> EvalResult:
         a_tools=list(called),
         a_handoff=trace.handoff_occurred,
         a_hitl=trace.hitl_triggered,
-        a_response=trace.response[:400],   # truncate for storage
+        a_response=trace.response,
         a_error=trace.error,
         latency_s=round(trace.latency_s, 2),
         # scores

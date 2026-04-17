@@ -90,9 +90,22 @@ def _make_case(
     handoff: bool,
     hitl: bool,
     keywords: List[str],
+    source_job_changes: Optional[Dict[str, Dict[str, str]]] = None,
+    source_node_changes: Optional[Dict[str, Dict[str, str]]] = None,
 ) -> dict:
     src_jobs = _jobs_snapshot(jobs)
     src_nodes = _nodes_snapshot(nodes)
+
+    # Optional source-state overrides (used by some action tests that need
+    # a precondition like HOLD -> PENDING for release).
+    source_job_changes = source_job_changes or {}
+    source_node_changes = source_node_changes or {}
+    for jid, changes in source_job_changes.items():
+        if jid in src_jobs:
+            src_jobs[jid].update(changes)
+    for nid, changes in source_node_changes.items():
+        if nid in src_nodes:
+            src_nodes[nid].update(changes)
 
     # Build target state: copy source, apply changes
     tgt_jobs = {jid: {**fields} for jid, fields in src_jobs.items()}
@@ -258,7 +271,7 @@ def gen_diagnose_tests(scenario: str, jobs: list, nodes: list) -> List[dict]:
     failed = [j for j in jobs if j["state"] in ("FAILED", "TIMEOUT")]
     if failed:
         j = failed[0]
-        kws = [j["job_id"]]
+        kws = [j["job_id"], "FAILED"]
         if j.get("reason"):
             kws.append(j["reason"])
         if j.get("exit_code"):
@@ -345,7 +358,7 @@ def gen_action_tests(scenario: str, jobs: list, nodes: list) -> List[dict]:
             f"action_hold_{j['job_id']}_{scenario}", "action", scenario,
             f"Hold job {j['job_id']}",
             jobs, nodes,
-            {j["job_id"]: {"state": "PENDING"}}, {},
+            {j["job_id"]: {"state": "HOLD"}}, {},
             tools=["scontrol_hold"], handoff=True, hitl=True,
             keywords=[j["job_id"], "hold"],
         ))
@@ -358,6 +371,7 @@ def gen_action_tests(scenario: str, jobs: list, nodes: list) -> List[dict]:
             {j["job_id"]: {"state": "PENDING"}}, {},
             tools=["scontrol_release"], handoff=True, hitl=True,
             keywords=[j["job_id"], "release"],
+            source_job_changes={j["job_id"]: {"state": "HOLD"}},
         ))
 
     # Requeue a failed job

@@ -297,6 +297,16 @@ async def chat(request: ChatRequest, raw_request: Request):
                                      "delta": {"status_update": event.get("message", "")}}],
                     }
                     yield f"data: {json.dumps(sc)}\n\n"
+                elif t == "tool_output":
+                    to_chunk = {
+                        "id": f"slurm-{uuid.uuid4()}",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": "slurm-agent",
+                        "choices": [{"index": 0, "finish_reason": None,
+                                     "delta": {"tool_output": event.get("output", "")}}],
+                    }
+                    yield f"data: {json.dumps(to_chunk)}\n\n"
                 elif t == "thinking":
                     yield create_stream_chunk(reasoning_content=event.get("content", ""))
                 elif t == "token":

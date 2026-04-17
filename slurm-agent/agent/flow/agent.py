@@ -633,6 +633,8 @@ class SlurmAgentSystem:
                 summary = brief_output_summary(out)
                 if summary:
                     yield {"type": "status", "message": summary}
+                if out.strip():
+                    yield {"type": "tool_output", "output": out.strip()}
                 # Track HITL-approved tool outputs for fallback display
                 if approval_data and _completed_name in hitl_tools and out.strip():
                     state.hitl_tool_outputs.append(out.strip())

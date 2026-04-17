@@ -4,6 +4,8 @@
 #   ./start.sh              — auto-rebuild when src/ is newer than dist/
 #   ./start.sh --rebuild    — force a clean rebuild
 #   ./start.sh --no-rebuild — skip build check entirely
+#   ./start.sh --screen     — run detached in screen session (survives logout)
+#   ./start.sh --screen-status | --screen-attach | --screen-stop
 #
 # Service ports (override via env):
 #   MCP_PORT=3002  AGENT_PORT=8000  FRONTEND_PORT=4173
@@ -30,11 +32,79 @@ MCP_SCENARIO="${MCP_SCENARIO:-healthy}"
 FORCE_REBUILD=0
 SKIP_REBUILD=0
 REAL_SLURM=0
+SCREEN_MODE=0
+SCREEN_STATUS=0
+SCREEN_ATTACH=0
+SCREEN_STOP=0
+SCREEN_NAME="${SCREEN_NAME:-slurm-agent-stack}"
+SCREEN_LOG="${SCREEN_LOG:-$ROOT/logs/screen-stack.log}"
+FORWARD_ARGS=()
 for arg in "$@"; do
-  [[ "$arg" == "--rebuild" ]]    && FORCE_REBUILD=1
-  [[ "$arg" == "--no-rebuild" ]] && SKIP_REBUILD=1
-  [[ "$arg" == "--real" ]]       && REAL_SLURM=1
+  case "$arg" in
+    --rebuild)        FORCE_REBUILD=1; FORWARD_ARGS+=("$arg") ;;
+    --no-rebuild)     SKIP_REBUILD=1;  FORWARD_ARGS+=("$arg") ;;
+    --real)           REAL_SLURM=1;    FORWARD_ARGS+=("$arg") ;;
+    --screen)         SCREEN_MODE=1 ;;
+    --screen-status)  SCREEN_STATUS=1 ;;
+    --screen-attach)  SCREEN_ATTACH=1 ;;
+    --screen-stop)    SCREEN_STOP=1 ;;
+    --screen-name=*)  SCREEN_NAME="${arg#*=}" ;;
+    --screen-log=*)   SCREEN_LOG="${arg#*=}" ;;
+    *)                FORWARD_ARGS+=("$arg") ;;
+  esac
 done
+
+# ── Detached screen controls ──────────────────────────────────────────────────
+if [[ $SCREEN_STATUS -eq 1 || $SCREEN_ATTACH -eq 1 || $SCREEN_STOP -eq 1 || $SCREEN_MODE -eq 1 ]]; then
+  command -v screen >/dev/null 2>&1 || die "'screen' is not installed. Install it first (e.g. apt install screen)."
+fi
+
+if [[ $SCREEN_STATUS -eq 1 ]]; then
+  if screen -list | grep -q "[.]${SCREEN_NAME}[[:space:]]"; then
+    ok "screen session '${SCREEN_NAME}' is running"
+    [[ -f "$SCREEN_LOG" ]] && tail -n 20 "$SCREEN_LOG"
+  else
+    warn "screen session '${SCREEN_NAME}' is not running"
+  fi
+  exit 0
+fi
+
+if [[ $SCREEN_ATTACH -eq 1 ]]; then
+  exec screen -r "$SCREEN_NAME"
+fi
+
+if [[ $SCREEN_STOP -eq 1 ]]; then
+  if screen -list | grep -q "[.]${SCREEN_NAME}[[:space:]]"; then
+    screen -S "$SCREEN_NAME" -X quit || true
+    ok "stopped screen session '${SCREEN_NAME}'"
+  else
+    warn "screen session '${SCREEN_NAME}' is not running"
+  fi
+  exit 0
+fi
+
+if [[ $SCREEN_MODE -eq 1 ]]; then
+  mkdir -p "$(dirname "$SCREEN_LOG")"
+  if screen -list | grep -q "[.]${SCREEN_NAME}[[:space:]]"; then
+    die "screen session '${SCREEN_NAME}' is already running. Use --screen-status or --screen-stop first."
+  fi
+
+  # Relaunch this script in foreground mode inside detached screen.
+  cmd=("$ROOT/start.sh" "${FORWARD_ARGS[@]}")
+  qcmd=""
+  for token in "${cmd[@]}"; do
+    qcmd+="$(printf '%q' "$token") "
+  done
+
+  info "Starting detached screen session '${SCREEN_NAME}'…"
+  screen -dmS "$SCREEN_NAME" bash -lc "cd $(printf '%q' "$ROOT") && ${qcmd} >> $(printf '%q' "$SCREEN_LOG") 2>&1"
+  ok "Started in screen."
+  echo "  status: ./start.sh --screen-status"
+  echo "  attach: ./start.sh --screen-attach"
+  echo "  stop:   ./start.sh --screen-stop"
+  echo "  logs:   tail -f $SCREEN_LOG"
+  exit 0
+fi
 
 # ── 1. Frontend build ──────────────────────────────────────────────────────────
 FE_DIR="$ROOT/frontend"

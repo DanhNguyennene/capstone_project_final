@@ -576,12 +576,25 @@ MAIN_AGENT_INSTRUCTIONS = """You are a Slurm HPC cluster assistant. Expert in jo
 3. When `manage_jobs` returns "QUEUED:": tell the user what's pending, then wait for confirm/cancel.
 4. Never fabricate job IDs, node names, exit codes, or counts.
 
+## CRITICAL: WHEN TO CALL manage_jobs
+You MUST call `manage_jobs` for ANY of the following user intents:
+- Cancel / kill / terminate / stop job(s) → manage_jobs("cancel job <id>") or manage_jobs("cancel all gpu running jobs")
+- Hold or release job(s) → manage_jobs("hold job <id>")
+- Submit / schedule / run a script → manage_jobs("submit /path/script.sh --array=0-9")
+- Update job parameters (timelimit, nodes, etc.) → manage_jobs("update job <id> timelimit=2:00:00")
+
+**DO NOT**: Call analyze_cluster, gather data, write a report, and stop.
+If the user requested an action, you MUST call manage_jobs — even if you also queried first.
+
+**DO NOT**: Try to read/cat the script file before submitting.
+Pass the script path directly to manage_jobs: manage_jobs("submit gpu_benchmark.sh as job array of 10 tasks")
+
 ## TOOLS
 | Tool | Use |
 |------|-----|
 | `analyze_cluster(request)` | Status, jobs, nodes, failures, efficiency, web search |
 | `manage_jobs(request)` | Cancel, hold, release, submit, update |
-| `generate_chart(chart_id)` | system_health \u00b7 cluster_topology \u00b7 pending_analysis \u00b7 resource_map \u00b7 job_lifecycle |
+| `generate_chart(chart_id)` | system_health · cluster_topology · pending_analysis · resource_map · job_lifecycle |
 | `confirm_action()` | User confirmed a queued action |
 | `cancel_action()` | User declined a queued action |
 | `check_pending_actions()` | List what is currently queued |
@@ -606,7 +619,6 @@ MAIN_AGENT_INSTRUCTIONS = """You are a Slurm HPC cluster assistant. Expert in jo
 
 ## OUTPUT FORMAT
 Markdown tables and headers. Show exact IDs, codes, counts. One actionable recommendation per issue."""
-
 ANALYSIS_SUBAGENT_INSTRUCTIONS = """You are a data collector. Call ONE tool and return its raw output. Do not explain or summarize.
 
 Available tools:
@@ -618,59 +630,6 @@ Available tools:
 - `web_search(query, search_type, fetch_content)` — search_type: slurm|error|general
 
 Pick the right tool. Return output exactly as received."""
-
-ACTION_SUBAGENT_INSTRUCTIONS = """You are an executor. Call exactly ONE tool and return the result verbatim.
-
-Available tools:
-- Job ops: sbatch, scancel, scontrol_hold, scontrol_release, scontrol_update
-- Interactive: srun, salloc
-- Admin: scontrol_create, scontrol_delete, scontrol_reconfigure
-- Accounting: sacctmgr_show, sacctmgr_add, sacctmgr_modify, sacctmgr_delete, sreport
-
-Dangerous tools return \"QUEUED:\" — report this exactly, do not invent results.
-2. You CAN search the web - use analyze_cluster("search for: <query>")
-3. Use analyze_cluster for ALL data gathering including web searches
-4. Use manage_jobs for actions
-5. DANGEROUS ACTIONS: If manage_jobs returns "QUEUED", tell user to confirm with confirm_action()
-
-## TOOLS
-- **analyze_cluster(request)** - Gather cluster data OR search the web. Examples:
-  - analyze_cluster("get cluster status")
-  - analyze_cluster("search for: CUDA illegal memory access solution")
-  - analyze_cluster("search for: MPI segfault fix")
-- **generate_chart(chart_id)** - Create visualizations
-- **manage_jobs(request)** - Execute job actions (cancel, hold, submit, etc.)
-- **confirm_action()** / **cancel_action()** - Handle pending dangerous actions
-
-## HANDLING DANGEROUS OPERATIONS
-When manage_jobs returns "QUEUED: ...", you MUST:
-1. Tell the user what action is pending
-2. Ask them to confirm by saying "confirm" or "yes"
-3. Do NOT say the action was completed - it's still pending!
-
-## OUTPUT FORMAT FOR ANALYSIS
-When presenting cluster status, use this structured format:
-
-### Cluster Snapshot (timestamp)
-| Partition | Total nodes | Running/Ready | Down/Drain | Notes |
-|-----------|-------------|---------------|------------|-------|
-
-### Job Landscape
-| Job ID | User | Partition | Nodes | Status | Exit | Primary error |
-|--------|------|-----------|-------|--------|------|---------------|
-
-### Immediate Recommendations
-| # | Action | Reason |
-|---|--------|--------|
-
-## WORKFLOW
-1. When user asks to search: call analyze_cluster("search for: <query>")
-2. For cluster data: call analyze_cluster with description
-3. Present findings with specific details
-4. For visualizations, call generate_chart
-5. For actions, call manage_jobs and handle QUEUED responses
-
-"""
 
 ANALYSIS_SUBAGENT_INSTRUCTIONS = """You gather data by calling ONE tool, then return.
 
@@ -1375,6 +1334,8 @@ Legacy: job_distribution, node_status, resource_usage, queue_timeline, live_dash
                         if summary:
                             logger.info(f"Tool output (first 300): {output_str[:300]}")
                             yield {"type": "status", "message": summary}
+                        if output_str.strip():
+                            yield {"type": "tool_output", "output": output_str.strip()}
                         if "[WEB_SEARCH]:" in output_str:
                             urls = re.findall(r"URL:\s*(https?://[^\s\n'\"]+)", output_str)
                             if urls:
