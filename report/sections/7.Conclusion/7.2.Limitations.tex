@@ -1,48 +1,56 @@
 \section{Limitations}
 \label{sec:limitations}
 
-While the Slurm Agent demonstrates the feasibility of natural language interfaces for HPC management, several limitations constrain its current capabilities and deployment scope. This section identifies these limitations to provide context for the system's applicability and inform future development efforts.
+The current Slurm Agent demonstrates promising behavior, but several limitations remain before production-grade deployment.
 
-\subsection{Evaluation Limitations}
+\subsection{Evaluation Realism Limitations}
 
-\textbf{Mock Data Testing}: The primary evaluation was conducted using mock data rather than a live production cluster. While the mock data simulates realistic scenarios, it cannot capture the full complexity and unpredictability of real HPC environments with dynamic job queues, varying loads, and diverse user behaviors.
+\textbf{Mock-state dominance.} The benchmark primarily uses deterministic mock scenarios. This is valuable for reproducibility, but does not fully capture live cluster volatility, scheduler dynamics, and user concurrency.
 
-\textbf{Single-Node Testing}: Evaluation was conducted on a single-node Slurm configuration. Performance characteristics, scalability, and behavior on production-scale clusters with hundreds or thousands of nodes remain unexplored.
+\textbf{Single benchmark snapshot emphasis.} Current reporting centers on the latest full snapshot. Broader confidence intervals across repeated full runs are not yet fully reported in the thesis body.
 
-\textbf{Automated Scoring Only}: The current evaluation relies on automated metrics (tool matching, fact extraction, LLM-as-judge). No formal human evaluation or user studies have been conducted to validate that the system meets actual user needs and expectations.
+\textbf{Limited human-subject evaluation.} Automated scoring is comprehensive, but formal user studies with HPC practitioners are still missing.
 
-\textbf{Limited User Feedback}: The system has not been tested with real HPC users in their daily workflows. User acceptance, learning curves, and long-term satisfaction remain unmeasured.
+\subsection{Behavioral Reliability Limitations}
 
-\subsection{Scope Limitations}
+The latest 367-case results expose reliability gaps in specific categories:
 
-\textbf{Read-Focused Operations}: The current implementation emphasizes read operations (queries, status checks, accounting retrieval) over write operations (job submission, configuration changes). While dangerous operations like job cancellation are supported with confirmation, full job lifecycle management is limited.
-
-\textbf{Limited Job Types}: Testing focused on typical batch job scenarios. Specialized job types (array jobs, GPU workloads, MPI applications, interactive sessions) may require additional tool support and agent training.
-
-\subsection{Technical Limitations}
-
-\textbf{LLM Dependency}: The system relies on LLM inference (either local Ollama or remote API), introducing:
 \begin{itemize}
-    \item Computational resource requirements for local deployment
-    \item API cost considerations for cloud-based inference
-    \item Latency from model inference time
-    \item Data privacy considerations for cluster information
+    \item \textbf{multi\_step}: 0\% pass in the latest snapshot,
+    \item \textbf{safety}: 53\% pass,
+    \item \textbf{submission}: 51\% pass.
 \end{itemize}
 
-\textbf{Context Window Constraints}: Large Slurm outputs may exceed LLM context limits, requiring truncation or summarization that could lose important details. Very large clusters with extensive job queues may challenge effective response generation.
+These failures are predominantly structural (tool/routing/HITL/state mismatches) rather than simple response-text issues.
 
-\textbf{Hallucination Risk}: Despite tool grounding, LLMs may occasionally generate incorrect information not derived from tool outputs. While testing showed high accuracy, the risk of hallucination cannot be eliminated.
+\subsection{Operational Scope Limitations}
 
-\subsection{Security Limitations}
+\textbf{Read-heavy maturity.} Read and account workflows are stronger than mutation-heavy workflows. Complex write operations still require additional hardening and policy controls.
 
-\textbf{Authentication and Authorization}: The current implementation does not include user authentication or authorization. All users have equivalent access to cluster information, which may not align with HPC security policies requiring user-specific access controls.
+\textbf{Narrow deployment validation.} The current system is validated mainly in development-style environments; multi-cluster and production HPC integration is incomplete.
 
-\textbf{Audit Logging}: The system lacks comprehensive audit logging for compliance and security monitoring purposes. Commands executed and information accessed are not durably logged.
+\subsection{Security and Governance Limitations}
 
-\subsection{Performance Limitations}
+\textbf{Authentication and authorization are incomplete.} Fine-grained user permissions and tenant isolation are not yet fully integrated into the primary agent path.
 
-\textbf{Response Latency}: While streaming provides immediate feedback, complete responses for complex queries may take several seconds. Users accustomed to instant command-line responses may perceive this as slow.
+\textbf{Auditability needs extension.} While traces are captured for evaluation, production-grade audit logging and compliance workflows are not fully specified.
 
-\textbf{Concurrent User Scalability}: The system has not been tested for concurrent multi-user load. Resource contention and performance under load remain unexplored.
+\subsection{Performance and Scalability Limitations}
 
-Understanding these limitations is essential for appropriate deployment decisions and prioritization of future development work.
+\textbf{Latency variability persists.} Average latency is acceptable for conversational assistance, but higher-latency categories (submission/safety/multi-step) remain noticeable.
+
+\textbf{Concurrent-load behavior is under-tested.} Throughput and stability under many simultaneous users have not been comprehensively benchmarked.
+
+\subsection{Model and Scoring Limitations}
+
+\textbf{Model sensitivity.} Behavioral performance depends on model/provider selection and prompt tuning. Transferability of exact metrics to different model stacks is not guaranteed.
+
+\textbf{Judge dependence.} Some quality dimensions rely on LLM-as-judge scoring, which introduces model-dependent variance and potential evaluator bias.
+
+\subsection{TODO for Limitation Mitigation}
+
+\begin{itemize}
+    \item Add repeated full-run statistics (pass\textasciicircum{}k and confidence intervals) under fixed model/provider settings.
+    \item Execute controlled live-cluster pilot tests with strict permission boundaries.
+    \item Add production-oriented authz/audit requirements and verification checklist.
+\end{itemize}

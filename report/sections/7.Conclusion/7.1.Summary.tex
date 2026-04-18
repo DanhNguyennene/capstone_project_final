@@ -1,58 +1,80 @@
 \section{Summary}
 \label{sec:summary}
 
-This thesis presented the design and implementation of the Slurm Agent, an intelligent conversational interface for High-Performance Computing cluster management. The system leverages Large Language Models combined with the Model Context Protocol to enable natural language interaction with Slurm workload managers, addressing the usability challenges that create barriers for HPC users.
+This project developed and evaluated a stateful Slurm Agent that enables natural-language interaction for HPC cluster monitoring and control. The final system combines a FastAPI backend, OpenAI Agents SDK orchestration, an MCP-based tool layer, and a React + Vite frontend with integrated chat and evaluation modes.
 
 \subsection{Research Contributions}
 
-This research makes several contributions to the fields of HPC usability and AI-assisted system management:
+This work contributes the following practical outcomes:
 
-\textbf{1. Natural Language Interface for Slurm.} The Slurm Agent demonstrates that complex HPC cluster operations can be effectively accessed through conversational natural language queries. Users can retrieve cluster status, job information, and resource availability without memorizing command syntax or understanding complex parameter options.
+\textbf{1. Scenario-Grid Evaluation for Agentic Slurm Workflows.} The project introduces a dataset-driven evaluation design (367 cases) that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, and response quality.
 
-\textbf{2. MCP-Based HPC Tool Integration.} This work contributes an MCP server implementation for Slurm operations, extending the Model Context Protocol ecosystem into the HPC domain. The server provides reusable tool definitions that can be leveraged by other AI applications requiring Slurm integration.
+\textbf{2. Stateful MCP-Centered Integration.} Slurm interactions are exposed through MCP tools and exercised in deterministic mock scenarios with per-test reset, enabling reproducible behavioral testing.
 
-\textbf{3. Multi-Agent Architecture for Specialized Tasks.} The implemented multi-agent architecture with handoff mechanisms demonstrates an effective pattern for combining general-purpose and specialized agents. This approach balances the flexibility of LLM reasoning with the focused capabilities of domain-specific processing.
+\textbf{3. Multi-Agent Reasoning and Safety Flow.} Observer/operator delegation and confirmation workflows are integrated into a single runtime, including explicit pending-action management.
 
-\textbf{4. Integrated Visualization Pipeline.} The system's ability to generate data visualizations within the conversational flow provides a model for embedding rich media in agent responses. The streaming delivery of base64-encoded images through SSE demonstrates practical techniques for real-time visual feedback.
+\textbf{4. Structured Streaming Interface.} The backend emits structured SSE deltas (reasoning, tool output, content, pending actions, chart artifacts), allowing richer frontend rendering and traceability.
 
-\textbf{5. Real-Time Streaming Implementation.} The end-to-end streaming architecture from LLM generation through frontend rendering provides a reference implementation for responsive AI-assisted interfaces.
+\textbf{5. Integrated Evaluation UI.} Evaluation is available as a first-class frontend mode, reducing friction between implementation changes and benchmark validation.
 
-\subsection{Achievement of Project Goals}
+\subsection{Achievement Against Project Goals}
 
-The project successfully achieved its stated objectives:
+\textbf{Goal 1 (Natural language access to Slurm):} Achieved for read-oriented and account-oriented workflows, with strong category-level performance.
 
-\textbf{Goal 1 (Natural Language Interface)}: Users can query cluster state, job information, and resource availability using natural language. The agent correctly interprets varied phrasings and provides accurate responses.
+\textbf{Goal 2 (Multi-agent orchestration):} Achieved. Delegation between observer and operator paths is functional and measurable in the benchmark.
 
-\textbf{Goal 2 (Multi-Agent Architecture)}: The system implements specialized agents for different task types with seamless handoff mechanisms preserving conversation context.
+\textbf{Goal 3 (MCP standardization):} Achieved. Tool interfaces are separated from agent reasoning and can be extended independently.
 
-\textbf{Goal 3 (MCP Integration)}: The MCP server exposes Slurm functionality through standardized tool interfaces, enabling clean separation between AI logic and system operations.
+\textbf{Goal 4 (Safety for dangerous operations):} Partially achieved. HITL flow is implemented and active, but benchmark safety metrics indicate additional hardening is needed.
 
-\textbf{Goal 4 (Visualization)}: The chart generation tool produces appropriate visualizations based on user requests, with charts rendered inline in the conversation interface.
+\textbf{Goal 5 (Realtime UX and web interface):} Achieved with structured streaming in the React frontend and integrated evaluation controls.
 
-\textbf{Goal 5 (Real-Time Streaming)}: Responses stream in real-time using SSE, providing immediate visual feedback as tokens are generated. Average response times range from 24-53 seconds depending on query complexity.
+\subsection{Key Quantitative Outcomes}
 
-\textbf{Goal 6 (Web Interface)}: The frontend provides an intuitive chat interface with markdown rendering, syntax highlighting, and inline image display.
+\begin{table}[H]
+    \centering
+    \caption{Final Snapshot Highlights}
+    \label{tab:summary-highlights}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Metric} & \textbf{Value} \\
+        \hline
+        Dataset size & 367 tests \\
+        Pass rate ($\geq 0.80$) & 64.6\% (237/367) \\
+        Average overall score & 0.775 \\
+        BAR & 0.684 \\
+        SVR & 0.359 \\
+        CSR & 0.825 \\
+        Average latency & 12.92s \\
+        \hline
+    \end{tabular}
+\end{table}
 
-\subsection{Key Findings}
+These results show strong capability in read/account workflows and acceptable cross-scenario stability, while also exposing clear weaknesses in multi-step and safety-sensitive categories.
 
-The development and evaluation of the Slurm Agent revealed several key findings:
+\subsection{Main Findings}
 
-\textbf{LLM Capability for System Operations}: Modern LLMs effectively interpret user intent and translate natural language into appropriate tool invocations. The models demonstrate understanding of domain concepts and can reason about multi-step operations.
+\textbf{Architecture-aware metrics are necessary.} Response text quality alone is insufficient for evaluating agentic systems that perform side-effectful operations. Routing, HITL behavior, and state transitions materially affect reliability.
 
-\textbf{Protocol Standardization Benefits}: The MCP approach provides significant advantages in modularity and maintainability. Tool implementations can evolve independently of agent logic, and the same tools can potentially serve multiple agent implementations.
+\textbf{Deterministic state reset improves evaluation quality.} Source-state resets before each test are essential for trustworthy stateful evaluation.
 
-\textbf{Streaming Importance for UX}: Real-time streaming significantly improves perceived responsiveness. Users receive immediate feedback during processing, eliminating the perception of system unresponsiveness even for complex queries.
+\textbf{Frontend-integrated evaluation improves iteration speed.} Embedding the evaluation workflow in the main UI shortens the feedback loop for feature changes.
 
-\textbf{Specialization Trade-offs}: While agent specialization improves task handling, handoff overhead introduces latency. The balance between specialization depth and transition cost requires careful consideration.
-
-The Slurm Agent demonstrates the viability of LLM-based interfaces for complex system management, providing a foundation for continued research and development in AI-assisted HPC operations.
+\textbf{Safety remains a hard problem.} Even with confirmation mechanisms, mismatch rates in safety-related categories show that stronger guarantees are still required before production use.
 
 \subsection{Source Code Availability}
 
-The complete source code for the Slurm Agent system is publicly available on GitHub to enable reproducibility and encourage further research:
+The complete source code is publicly available:
 
 \begin{center}
     \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
 \end{center}
 
-The repository includes the agent backend implementation, MCP server with Slurm tool definitions, SvelteKit frontend, automated evaluation framework, test cases with mock data scenarios, and evaluation results.
+The repository contains the backend, MCP server, React frontend, evaluation framework, dataset artifacts, and reproducible result snapshots.
+
+\subsection{TODO for Final Thesis Freeze}
+
+\begin{itemize}
+    \item Freeze one final benchmark snapshot under pinned model/provider versions and update all chapter references to that single run.
+    \item Add one concise reliability paragraph interpreting pass\textasciicircum{}k once repeat-run data is finalized.
+\end{itemize}

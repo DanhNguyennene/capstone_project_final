@@ -1,0 +1,89 @@
+---
+config:
+  look: neo
+  theme: base
+  themeVariables:
+    primaryColor: "#e3f2fd"
+    primaryBorderColor: "#1976d2"
+    secondaryColor: "#fff3e0"
+    secondaryBorderColor: "#f57c00"
+    tertiaryColor: "#f3e5f5"
+    tertiaryBorderColor: "#7b1fa2"
+    actorBkg: "#e8f5e9"
+    actorBorder: "#388e3c"
+    actorTextColor: "#1b5e20"
+    signalColor: "#424242"
+    signalTextColor: "#212121"
+    labelBoxBkgColor: "#fce4ec"
+    labelBoxBorderColor: "#c2185b"
+    noteBkgColor: "#fff8e1"
+    noteBorderColor: "#ffa000"
+    activationBkgColor: "#e3f2fd"
+    activationBorderColor: "#1976d2"
+---
+sequenceDiagram
+    autonumber
+    actor User
+    participant Web as Web Interface
+    participant Agent as Main Agent
+    participant Action as Action Sub-Agent
+    participant Store as SQLite Store
+    participant MCP as MCP Server
+    participant Slurm as Slurm Cluster
+
+    rect rgb(227, 242, 253)
+        Note over User,Web: Input Phase
+        User->>Web: "Cancel job 12345"
+        Web->>Agent: Forward request
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Agent,Action: Think & Act Phase
+        Agent->>Action: manage_jobs("cancel job 12345")
+        Note over Action: Detects dangerous operation
+        Action->>MCP: scancel(job_id=12345)
+    end
+    
+    rect rgb(255, 235, 238)
+        Note over MCP: DANGEROUS TOOL INTERCEPTED
+        MCP-->>Action: Operation requires confirmation
+        Action->>Store: Store pending action<br/>(tool, args, description)
+        Store-->>Action: Action ID generated
+    end
+
+    rect rgb(243, 229, 245)
+        Note over Action,Web: Observe Phase
+        Action-->>Agent: "Pending: Cancel job 12345"
+        Agent-)Web: Stream confirmation request
+        Web-)User: Display confirmation prompt
+    end
+    
+    alt User Confirms
+        rect rgb(232, 245, 233)
+            User->>Web: "yes" / "confirm"
+            Web->>Agent: Forward confirmation
+            Agent->>Store: Retrieve pending action
+            Store-->>Agent: Return stored action
+            Agent->>MCP: Execute scancel(12345)
+            MCP->>Slurm: scancel 12345
+            Slurm-->>MCP: Job cancelled
+            MCP-->>Agent: Success result
+            Agent->>Store: Clear pending action
+            Agent-)Web: Stream success response
+            Web-)User: "Job 12345 cancelled"
+        end
+    else User Cancels
+        rect rgb(252, 228, 236)
+            User->>Web: "no" / "cancel"
+            Web->>Agent: Forward cancellation
+            Agent->>Store: Clear pending action
+            Store-->>Agent: Action discarded
+            Agent-)Web: Stream cancellation response
+            Web-)User: "Action cancelled"
+        end
+    else Timeout (1 hour)
+        rect rgb(255, 243, 224)
+            Note over Store: Auto-expire pending action
+            Store->>Store: Delete expired action
+        end
+    end

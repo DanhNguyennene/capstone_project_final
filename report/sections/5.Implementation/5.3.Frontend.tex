@@ -1,134 +1,132 @@
 \section{Frontend Implementation}
 \label{sec:frontend}
 
-This section describes the frontend architecture that provides the user interface for interacting with the Slurm Agent system. Rather than building a custom interface from scratch, this implementation integrates with Open WebUI, an established open-source AI chat platform, through a middleware architecture that bridges the platform to the custom agent backend.
+This section describes the current frontend architecture for interacting with the Slurm Agent system. The active implementation is a custom React + Vite web application with two integrated modes: a chat interface and an evaluation dashboard. An Open WebUI bridge remains available as an optional compatibility deployment path.
 
 \subsection{Architecture Overview}
 
-The frontend implementation follows a three-tier architecture as illustrated in Figure~\ref{fig:frontend-architecture}:
+The frontend stack can be used in two modes:
 
 \begin{enumerate}
-    \item \textbf{Open WebUI}: The user-facing chat interface that provides a production-ready web application with conversation management, user authentication, and streaming display capabilities
-    \item \textbf{FastAPI Middleware Router}: A custom router integrated into Open WebUI's backend that intercepts chat requests and forwards them to the agent service
-    \item \textbf{Agent FastAPI Service}: A standalone service that implements the multi-agent system and exposes OpenAI-compatible API endpoints
+    \item \textbf{Primary mode (used in this report)}: React + Vite frontend (chat + evaluation views) communicating directly with the agent API and evaluation API.
+    \item \textbf{Compatibility mode}: Open WebUI + middleware router forwarding to the same agent API.
 \end{enumerate}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{images/frontend_integration_architecture.png}
+    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated frontend integration architecture (React UI, agent API, evaluation API, SSE stream handling, optional Open WebUI bridge).]}}}
     \caption{Frontend Integration Architecture}
     \label{fig:frontend-architecture}
 \end{figure}
 
 \subsection{Technology Stack}
 
-The frontend leverages Open WebUI\footnote{\url{https://github.com/open-webui/open-webui}}, an extensible, self-hosted AI platform that provides comprehensive features for LLM interaction. Key technologies include:
+The active frontend uses the following stack:
 
 \begin{itemize}
-    \item \textbf{Open WebUI}: Production-ready chat interface with user management, conversation history, and multi-model support
-    \item \textbf{SvelteKit} \cite{svelte2024}: The framework underlying Open WebUI, providing reactive UI components and efficient rendering
-    \item \textbf{FastAPI} \cite{fastapi2024}: Both the middleware router (integrated into Open WebUI) and the standalone agent service
-    \item \textbf{Docker \& Docker Compose}: Containerized deployment orchestrating Open WebUI, the agent service, and supporting infrastructure
-    \item \textbf{aiohttp}: Asynchronous HTTP client for streaming communication between middleware and agent service
+    \item \textbf{React 18 + Vite}: client rendering and build tooling
+    \item \textbf{FastAPI} \cite{fastapi2024}: agent backend and evaluation backend APIs
+    \item \textbf{SSE over Fetch Streams}: incremental rendering of reasoning, status, and answer tokens
+    \item \textbf{Mermaid}: inline chart rendering in chat/evaluation artifacts
+    \item \textbf{LocalStorage-based session state}: frontend conversation persistence
 \end{itemize}
 
-\subsection{Middleware Router Implementation}
+\subsection{Primary Frontend Structure (React Application)}
 
-The middleware router (\texttt{open\_agent.py}) is integrated as a custom router within Open WebUI's FastAPI backend. Its primary responsibilities include:
+The primary application is composed of modular React components:
 
-\subsubsection{Request Interception}
+\begin{itemize}
+    \item \textbf{App shell}: top-level layout and view switching (Chat/Eval)
+    \item \textbf{Sidebar}: sessions, server settings, and mode toggle
+    \item \textbf{Messages/Input components}: conversational interaction and HITL action buttons
+    \item \textbf{Eval view}: dataset loading, run controls, live progress, per-test trace inspection
+\end{itemize}
 
-When users send messages through the Open WebUI chat interface, the \texttt{/chat/completions} endpoint intercepts these requests. The router extracts relevant metadata including the chat session identifier and user information:
+The integrated evaluation view allows end-to-end testing without leaving the primary UI. It displays per-test status, model traces, and aggregate metrics in real time.
 
-\begin{verbatim}
-chat_id = metadata.get("chat_id")  # Session continuity
-user_id = user.id                   # User tracking
-task = metadata.get("task", "chat") # Operation type
-\end{verbatim}
+\subsection{Streaming Response Flow}
 
-\subsubsection{Request Forwarding}
+The frontend consumes OpenAI-compatible SSE chunks from the backend. Key delta fields include:
 
-The middleware forwards requests to the standalone agent service running on a configurable endpoint. The forwarding preserves the streaming nature of the response, enabling real-time display of agent output as it is generated:
+\begin{itemize}
+    \item \texttt{status\_update}
+    \item \texttt{tool\_output}
+    \item \texttt{reasoning\_content}
+    \item \texttt{content}
+    \item \texttt{chart\_artifact}
+    \item \texttt{todo\_update}
+    \item \texttt{pending\_actions}
+\end{itemize}
 
-\begin{verbatim}
-AGENT_SERVICE_URL = "http://10.0.0.1:20000"
-async with session.post(
-    f"{AGENT_SERVICE_URL}/v1/chat/completions",
-    data=payload,
-    headers={"Accept": "text/event-stream"}
-) as response:
-    async for chunk in response.content:
-        yield chunk
-\end{verbatim}
+This structured stream enables independent rendering of tool traces, model thinking, final answer content, and user confirmation controls.
 
-\subsubsection{Session Propagation}
+\subsection{Evaluation UI Integration}
 
-Critical to multi-turn conversation support, the middleware forwards the \texttt{chat\_id} from Open WebUI's metadata to the agent service. This enables the agent to maintain conversation history and context across multiple exchanges within the same chat session.
+The evaluation interface is now a first-class frontend mode. It provides:
+
+\begin{itemize}
+    \item dataset load/upload and filtering,
+    \item run-all and run-single controls,
+    \item real-time test progression with pass/fail states,
+    \item per-test drill-down for tools, routing, HITL, response, thinking, and judge output,
+    \item aggregate metrics display.
+\end{itemize}
+
+This integration shortens the iteration loop between feature development and behavioral evaluation.
+
+\subsection{Optional Open WebUI Integration Path}
+
+Open WebUI integration remains available for environments requiring Open WebUI ecosystem features (organizational deployment, existing plugin stack). In this mode, a middleware router forwards chat requests to the same agent backend. This path is considered optional in the current implementation baseline.
 
 \subsection{Agent Service API}
 
-The standalone agent service (\texttt{agent/main.py}) implements an OpenAI-compatible API that the middleware router consumes. Key endpoints include:
+The frontend communicates with OpenAI-compatible endpoints exposed by \texttt{agent/main.py}. Key endpoints include:
 
 \begin{itemize}
-    \item \textbf{\texttt{GET /v1/models}}: Returns the available model list, enabling Open WebUI to display ``slurm-agent'' as a selectable model
+    \item \textbf{\texttt{GET /v1/models}}: model list exposure
     \item \textbf{\texttt{POST /v1/chat/completions}}: The primary chat endpoint that processes user queries through the multi-agent system and streams responses
     \item \textbf{\texttt{GET /health}}: Health check endpoint for container orchestration
 \end{itemize}
 
-The service maintains session-based agent instances with automatic cleanup of expired sessions (default timeout: one hour). Each session preserves conversation history through the SQLite-backed session store.
+The dedicated evaluation backend (\texttt{evaluation/eval\_server.py}) exposes additional endpoints for dataset loading, test execution, stopping, and persistent result snapshots.
 
-\subsection{Streaming Response Flow}
+\subsection{Current User-Facing Capabilities}
 
-The streaming implementation uses Server-Sent Events (SSE) throughout the entire pipeline:
-
-\begin{enumerate}
-    \item User submits query through Open WebUI chat interface
-    \item Open WebUI sends request to middleware router
-    \item Middleware establishes SSE connection to agent service
-    \item Agent service streams response chunks as processing occurs
-    \item Middleware forwards chunks to Open WebUI
-    \item Open WebUI renders content incrementally in the chat interface
-\end{enumerate}
-
-Each SSE chunk follows the OpenAI chat completion format for compatibility:
-
-\begin{verbatim}
-data: {"id":"slurm-uuid","object":"chat.completion.chunk",
-       "choices":[{"delta":{"content":"..."}}]}
-\end{verbatim}
-
-Special markers within the content field signal tool invocations (\texttt{[TOOL:name]}), agent handoffs (\texttt{[HANDOFF:agent]}), and embedded images (\texttt{[IMG]...[/IMG]}).
-
-\subsection{Open WebUI Features Leveraged}
-
-By building on Open WebUI rather than creating a custom interface, the implementation gains several production-ready capabilities:
+The frontend currently supports:
 
 \begin{itemize}
-    \item \textbf{User Authentication}: Built-in user management with role-based access control
-    \item \textbf{Conversation History}: Persistent chat sessions with search and organization
-    \item \textbf{Markdown Rendering}: Rich text formatting including code blocks with syntax highlighting
-    \item \textbf{Responsive Design}: Mobile-friendly interface that adapts to various screen sizes
-    \item \textbf{Model Selection}: Users can switch between the Slurm Agent and other configured models
-    \item \textbf{File Upload}: Infrastructure for future extensions involving job script uploads
+    \item live chat with streaming responses,
+    \item HITL confirmation/cancellation controls,
+    \item inline markdown and Mermaid rendering,
+    \item multi-session navigation,
+    \item integrated evaluation workflow in a dedicated tab.
 \end{itemize}
 
-Figure~\ref{fig:frontend-demo} shows the Open WebUI interface with the Slurm Agent model selected, demonstrating the chat interface used for interacting with the HPC cluster.
+Figure~\ref{fig:frontend-demo} shows the current web interface.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/front_end_demo.png}
+    \fbox{\parbox{0.85\textwidth}{\centering \textit{[Placeholder: Updated frontend screenshot showing chat mode, integrated Eval tab, live status stream, and HITL action controls.]}}}
     \caption{Frontend Demo Interface}
     \label{fig:frontend-demo}
 \end{figure}
 
 \subsection{Deployment Configuration}
 
-The complete system is deployed using Docker Compose, which orchestrates multiple services:
+The project includes script-based startup for local development:
 
 \begin{itemize}
-    \item \textbf{open-webui}: The main frontend container with the integrated middleware router
-    \item \textbf{slurm-agent}: The standalone agent service container
-    \item \textbf{ollama} (optional): Local model inference for non-Slurm queries
+    \item \textbf{start.sh}: launches MCP server, agent API, and built frontend preview
+    \item \textbf{start\_eval\_server.sh}: launches standalone evaluation backend
+    \item \textbf{MCP scenario switching}: allows deterministic evaluation in healthy/failed/pending/mixed/debug\_needed states
 \end{itemize}
 
-Environment variables configure the connection between components, including the agent service URL and authentication settings. The containerized deployment ensures consistent behavior across development and production environments.
+Containerized and Open WebUI-based deployments remain possible, but are not the only deployment model.
+
+\subsection{TODO for Final Thesis Freeze}
+
+\begin{itemize}
+    \item Add one updated screenshot of the integrated Eval tab (current figure set is chat-heavy).
+    \item Add a sequence diagram for chat mode vs eval mode request paths.
+    \item Document exact frontend build/version hash used for final experiments.
+\end{itemize}

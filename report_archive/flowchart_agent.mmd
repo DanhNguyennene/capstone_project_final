@@ -1,0 +1,77 @@
+---
+config:
+  layout: fixed
+  look: neo
+  theme: base
+  themeVariables:
+    primaryColor: "#e3f2fd"
+    primaryBorderColor: "#1976d2"
+    secondaryColor: "#fff3e0"
+    secondaryBorderColor: "#f57c00"
+    tertiaryColor: "#f3e5f5"
+    tertiaryBorderColor: "#7b1fa2"
+---
+flowchart LR
+ subgraph Input["Input"]
+        A(("Start"))
+        A1["User submits query"]
+  end
+ subgraph Think["Think"]
+        B["ReAct Agent<br>reasons"]
+        B1["Determine<br>actions"]
+  end
+ subgraph Act["Act"]
+        C["Select Action"]
+        C1["Analysis<br>Sub-Agent"]
+        C2["Action<br>Sub-Agent"]
+        C3["Chart Tool"]
+        D["Protocol Layer"]
+        E["Cluster Cmds"]
+  end
+ subgraph Observe["Observe"]
+        F["Process results"]
+        G{"Dangerous?"}
+        H["Queue confirm"]
+        H1{"Confirmed?"}
+  end
+ subgraph Response["Response"]
+        I["Generate NL"]
+        J{"Visualize needed?"}
+        K["Render chart"]
+        L["Stream to UI"]
+  end
+ subgraph Context["Context"]
+        M{"Follow-up query?"}
+        N["Preserve"]
+  end
+    A --> A1
+    A1 --> B
+    B --> B1
+    B1 --> C
+    C --> C1 & C2 & C3
+    C1 --> D
+    C2 --> D
+    C3 --> D
+    D --> E
+    E --> F
+    F --> G
+    G -- Yes --> H
+    H --> H1
+    H1 -- Yes --> I
+    H1 -- No --> O(("End"))
+    G -- No --> I
+    I --> J
+    J -- Yes --> K
+    K --> L
+    J -- No --> L
+    L --> M
+    M -- Yes --> N
+    N --> A1
+    M -- No --> O
+
+    style Input fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Think fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Act fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Observe fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style Response fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Context fill:#fce4ec,stroke:#c2185b,stroke-width:2px

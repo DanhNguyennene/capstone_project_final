@@ -1,0 +1,53 @@
+---
+query: >-
+  Query processing workflow showing the Think-Act-Observe loop,
+  sub-agent invocation, confirmation handling, and chart generation flow.
+generationTime: 2025-12-21T05:21:32.460Z
+---
+sequenceDiagram
+    autonumber
+    actor User
+    participant Web as Web Interface
+    participant Agent as Main ReAct Agent
+    participant Sub as Sub-Agents
+    participant MCP as MCP Tools
+    participant Slurm as Slurm Cluster
+
+    User->>Web: Submit natural language query
+    Web->>Agent: Forward query
+    
+    Note over Agent: THINK PHASE
+    Agent->>Agent: Reason about query intent
+    
+    Note over Agent: ACT PHASE
+    Agent->>Sub: Invoke appropriate sub-agent
+    Sub->>MCP: Call MCP tools
+    MCP->>Slurm: Execute Slurm commands
+    Slurm-->>MCP: Return command results
+    
+    Note over Agent: OBSERVE PHASE
+    MCP-->>Sub: Return tool results
+    Sub-->>Agent: Process and format results
+    
+    alt Dangerous Operation
+        Agent->>Web: Queue action for confirmation
+        Web->>User: Request confirmation
+        User->>Web: Confirm or reject
+        Web->>Agent: User decision
+    end
+    
+    Agent->>Agent: Generate natural language response
+    
+    opt Visualization Requested
+        Agent->>MCP: Call chart generation tool
+        MCP-->>Agent: Return chart data (stored in context)
+    end
+    
+    Agent-)Web: Stream formatted response
+    Web-)User: Display results with inline charts
+    
+    loop Follow-up Queries
+        Note over Web,Agent: Context preserved
+        User->>Web: Submit follow-up query
+        Web->>Agent: Forward with context
+    end

@@ -1,0 +1,52 @@
+\section{Text-to-SQL Concept}
+\label{sec:text-to-sql}
+
+Text-to-SQL is the task of translating natural language questions into executable SQL queries over a given database schema. In recent years, it has become a representative benchmark for grounded semantic parsing because the output is formally structured, directly executable, and easy to verify by execution results \cite{zhong2017seq2sql, yu2018spider}.
+
+\subsection{Problem Formulation}
+
+Given a user question $q$ and schema context $S$ (tables, columns, and relations), the model predicts an SQL query $y$:
+
+\begin{equation}
+\hat{y} = \arg\max_y P(y \mid q, S)
+\end{equation}
+
+Unlike free-form text generation, valid output must satisfy SQL grammar and schema constraints. Therefore, many systems combine language understanding with structural constraints during decoding.
+
+\subsection{Typical Text-to-SQL Pipeline}
+
+A practical Text-to-SQL pipeline usually contains four steps:
+
+\begin{itemize}
+    \item \textbf{Schema linking}: map question mentions (e.g., ``running jobs'', ``gpu partition'') to schema elements.
+    \item \textbf{Intent and operator inference}: determine filters, aggregations, joins, ordering, and grouping.
+    \item \textbf{Constrained decoding}: generate SQL under grammar/schema constraints.
+    \item \textbf{Execution validation}: run query and check whether output is plausible and non-empty when expected.
+\end{itemize}
+
+Modern approaches improve this process with relation-aware schema encoding and stronger schema-question alignment \cite{wang2020ratsql}.
+
+\subsection{Core Challenges}
+
+Text-to-SQL remains difficult due to:
+
+\begin{itemize}
+    \item \textbf{Ambiguity}: natural language can under-specify filters or aggregation intent.
+    \item \textbf{Schema scale}: large schemas increase linking and join complexity.
+    \item \textbf{Compositional queries}: nested logic and multi-table reasoning are error-prone.
+    \item \textbf{Execution risk}: syntactically valid SQL may still be semantically wrong.
+\end{itemize}
+
+For this reason, evaluation usually combines exact-match metrics with execution-based correctness.
+
+\subsection{Relevance to This Project}
+
+Although the Slurm Agent does not directly generate SQL for end users, Text-to-SQL provides an important conceptual analogue: \textbf{mapping natural language into constrained, executable system operations}. The same principles are reused here:
+
+\begin{itemize}
+    \item structured grounding against an explicit tool/schema interface,
+    \item constrained action generation,
+    \item execution-time validation and safety checks.
+\end{itemize}
+
+In this thesis, these ideas appear as tool-schema grounding, routing constraints, and human-in-the-loop confirmation for dangerous operations.

@@ -1,3 +1,37 @@
 \section{Related Works}
+\label{sec:related-works-compact}
+
+This section summarizes the most relevant prior work categories that informed this project, with focus on practical comparison rather than exhaustive survey detail.
+
+\subsection{HPC Management Interfaces}
+
+Traditional Slurm interaction remains command-line centric (e.g., \texttt{squeue}, \texttt{sacct}, \texttt{sinfo}, \texttt{sbatch}) and highly expressive, but it requires substantial syntax knowledge and operational experience. Existing web portals improve accessibility for standard workflows, yet they still depend on users understanding scheduler concepts and parameter structures.
+
+The gap addressed by this project is not raw command coverage, but intent translation: converting natural-language operational requests into safe, structured scheduler interactions.
+
+\subsection{LLM Agent Frameworks}
+
+Recent agent frameworks demonstrate that tool-augmented LLMs can perform multi-step reasoning and external action execution. Patterns such as ReAct and multi-agent delegation are particularly relevant to operational domains where a single response may require multiple tool calls and intermediate state checks.
+
+For HPC usage, this motivates splitting responsibilities between read-oriented diagnosis and mutation-oriented operation execution, then evaluating both through architecture-aware metrics rather than text-only quality.
+
+\subsection{MCP Ecosystem and Relevance}
+
+The Model Context Protocol provides a standard interface layer between agent logic and external tools. Prior MCP work shows clear benefits for modularity and portability: tool servers can evolve independently of agent prompts and runtime orchestration.
+
+In this project, MCP is used to expose Slurm-oriented tools and deterministic scenario resets for reproducible evaluation. The practical contribution is an HPC-focused, state-aware MCP usage pattern integrated with a streaming, multi-agent runtime.
+
+\subsection{Positioning of This Work}
+
+Compared with existing interfaces and generic agent demos, this project contributes a tighter integration of:
+
+\begin{itemize}
+	\item natural-language Slurm assistance,
+	\item explicit HITL safeguards for dangerous actions,
+	\item state-resettable scenario-grid evaluation,
+	\item frontend-integrated benchmarking workflow.
+\end{itemize}
+
+This positioning emphasizes reliable operational behavior under repeatable test conditions, which is critical for HPC assistant credibility.
 
 

@@ -1,0 +1,17 @@
+\section{Goals}
+
+The primary goal of this thesis is to develop an intelligent agent system that simplifies the interaction between users and Slurm-managed HPC clusters. Specifically, the objectives are:
+
+\begin{itemize}
+    \item \textbf{Natural Language Interface.} Design and implement a conversational interface that allows users to query cluster status, submit jobs, and troubleshoot errors using natural language instead of memorizing complex command syntax.
+    
+    \item \textbf{Multi-Agent Architecture.} Develop a modular multi-agent system where specialized subagents handle distinct tasks such as cluster analysis, chart generation, and web search, orchestrated by a main reasoning agent.
+    
+    \item \textbf{MCP Integration.} Implement Model Context Protocol (MCP) servers that expose Slurm operations as tools, enabling seamless integration between LLM reasoning and HPC system commands.
+    
+    \item \textbf{Dynamic Visualization.} Create a visualization pipeline that automatically generates charts and dashboards for cluster metrics including GPU utilization, job queue status, and resource allocation trends.
+    
+    \item \textbf{Automated Troubleshooting.} Integrate web search capabilities to automatically retrieve solutions for error messages, reducing the time users spend debugging failed jobs.
+    
+    \item \textbf{Real-time Streaming.} Implement Server-Sent Events (SSE) for streaming agent responses, providing immediate feedback during long-running operations.
+\end{itemize}

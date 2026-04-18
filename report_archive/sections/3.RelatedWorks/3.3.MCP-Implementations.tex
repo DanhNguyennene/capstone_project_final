@@ -1,0 +1,68 @@
+\section{MCP Implementations and Applications}
+\label{sec:mcp-implementations}
+
+Since its introduction, the Model Context Protocol has seen growing adoption across the AI development community. This section reviews notable MCP implementations and applications, examining how the protocol is being used to connect AI agents with external systems.
+
+\subsection{Reference Implementations}
+
+Anthropic has released reference implementations and SDKs to facilitate MCP adoption:
+
+\textbf{Python MCP SDK} provides a comprehensive library for building MCP servers and clients in Python. The SDK handles protocol details including transport management, message serialization, and connection lifecycle. It offers decorators for defining tools, resources, and prompts with minimal boilerplate.
+
+\textbf{TypeScript MCP SDK} provides equivalent functionality for JavaScript/TypeScript environments. This enables building MCP servers as Node.js applications and integrating MCP clients into web and desktop applications.
+
+These SDKs significantly reduce the effort required to implement MCP integrations, enabling developers to focus on capability logic rather than protocol mechanics.
+
+\subsection{Server Ecosystem}
+
+A growing ecosystem of MCP servers exposes various system capabilities:
+
+\textbf{Filesystem servers} provide access to local or remote file systems, enabling agents to read, write, and navigate files. These servers implement appropriate sandboxing to control what paths agents can access.
+
+\textbf{Database servers} expose database query and manipulation capabilities. Servers have been developed for PostgreSQL, SQLite, and other database systems, allowing agents to retrieve data and perform operations.
+
+\textbf{API integration servers} connect agents to external services. Examples include servers for GitHub (repository management), Slack (messaging), and various cloud platforms. These servers translate MCP tool calls into appropriate API requests.
+
+\textbf{Development tool servers} integrate with software development workflows. Servers exist for code search, test execution, and build systems, enabling AI-assisted software development.
+
+% Placeholder: MCP ecosystem diagram
+% \begin{figure}[H]
+%     \centering
+%     \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram showing the MCP server ecosystem with various categories of integrations]}}}
+%     \caption{Model Context Protocol Server Ecosystem}
+%     \label{fig:mcp-ecosystem}
+% \end{figure}
+
+\subsection{Host Applications}
+
+Several applications have integrated MCP client capabilities:
+
+\textbf{Claude Desktop} application natively supports MCP, enabling users to connect Claude to local and remote MCP servers. This demonstrates the end-user experience of MCP-enabled AI assistants.
+
+\textbf{Development environments} are integrating MCP for AI-assisted coding. IDE extensions and editor plugins can leverage MCP servers to provide contextual assistance based on project files and developer tools.
+
+\textbf{Custom applications} built using MCP client libraries can connect to any compatible server. This flexibility enables domain-specific AI applications that leverage shared tool ecosystems.
+
+\subsection{Design Patterns in Practice}
+
+Analysis of existing MCP implementations reveals common design patterns:
+
+\textbf{Wrapper pattern}: Many servers wrap existing command-line tools or APIs. The server parses tool inputs, executes underlying commands, and formats outputs for consumption by language models. This pattern enables rapid integration of existing functionality.
+
+\textbf{Composition pattern}: Servers may compose multiple underlying capabilities into coherent tool sets. For example, a development server might combine file access, Git operations, and build commands into a unified interface.
+
+\textbf{Filtering pattern}: Servers implement filtering to control what information is exposed to agents. Database servers may limit queryable tables; filesystem servers may restrict accessible paths. This pattern addresses security and scope concerns.
+
+\textbf{Formatting pattern}: Outputs are formatted to be LLM-friendly, often using markdown or structured formats that models can effectively interpret. Clear, consistent output formatting improves agent reliability.
+
+\subsection{Gaps and Opportunities}
+
+Despite the growing ecosystem, several gaps remain:
+
+\textbf{HPC domain}: Prior to this research, no MCP servers specifically targeted HPC workload management. The complexity and specialized nature of systems like Slurm require domain-specific tool design.
+
+\textbf{Visualization}: While servers can return data, few integrate visualization generation capabilities that enable rich information display within agent interfaces.
+
+\textbf{Multi-agent coordination}: Most MCP applications use single-agent architectures. Patterns for using MCP tools across multi-agent systems remain underexplored.
+
+The Slurm Agent addresses these gaps by implementing an MCP server tailored for HPC management, integrating visualization capabilities, and demonstrating multi-agent architectures with MCP-based tool access. This contribution extends the MCP ecosystem into the high-performance computing domain.

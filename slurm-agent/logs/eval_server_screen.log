@@ -1601,3 +1601,9 @@ INFO:     10.0.0.1:34026 - "GET /api/test/edge_guidance_debug_needed_v2 HTTP/1.1
 INFO:     10.0.0.1:39278 - "GET /api/test/read_all_debug_needed_v2 HTTP/1.1" 200 OK
 INFO:     10.0.0.1:39292 - "GET /api/test/safety_cancel_all_failed_v2 HTTP/1.1" 200 OK
 INFO:     10.0.0.1:39292 - "GET /api/test/read_util_healthy HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51578 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51578 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51578 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51586 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51578 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:51578 - "GET /api/results HTTP/1.1" 200 OK

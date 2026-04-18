@@ -1,34 +1,21 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of HPC Management Tools}}{28}{table.caption.22}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Requirements Traceability to Project Goals}}{42}{table.caption.26}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces Agent Tool Access Matrix}}{51}{table.caption.34}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces MCP Server Tool Reference}}{63}{table.caption.48}%
-\contentsline {table}{\numberline {5.3}{\ignorespaces Predefined Analysis Scripts}}{65}{table.caption.52}%
-\contentsline {table}{\numberline {5.4}{\ignorespaces Predefined Chart Visualizations}}{66}{table.caption.54}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{31}{table.caption.23}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Predefined Analysis Scripts}}{33}{table.caption.27}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Predefined Chart Visualizations}}{34}{table.caption.29}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{76}{table.caption.74}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Mock Data Scenarios}}{77}{table.caption.76}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Test Case Distribution by Mode}}{79}{table.caption.79}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Representative Test Cases}}{82}{table.caption.82}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Overall Evaluation Results}}{86}{table.caption.88}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Results by Category}}{86}{table.caption.90}%
-\contentsline {table}{\numberline {6.7}{\ignorespaces Selected Test Case Results}}{89}{table.caption.95}%
-\contentsline {table}{\numberline {6.8}{\ignorespaces MCP Tool Test Results}}{90}{table.caption.100}%
-\contentsline {table}{\numberline {6.9}{\ignorespaces Confirmation Mechanism Test Results}}{91}{table.caption.102}%
-\contentsline {table}{\numberline {6.10}{\ignorespaces Response Latency Measurements}}{91}{table.caption.103}%
-\contentsline {table}{\numberline {6.11}{\ignorespaces Visualization Quality Metrics}}{93}{table.caption.105}%
-\contentsline {table}{\numberline {6.12}{\ignorespaces Example LLM-as-Judge Feedback}}{96}{table.caption.111}%
-\contentsline {table}{\numberline {6.13}{\ignorespaces Common Failure Patterns}}{98}{table.caption.114}%
-\contentsline {table}{\numberline {6.14}{\ignorespaces Web Search Tool Call Analysis}}{99}{table.caption.116}%
-\contentsline {table}{\numberline {6.15}{\ignorespaces Summary of Key Results}}{101}{table.caption.118}%
-\contentsline {table}{\numberline {6.16}{\ignorespaces Task Completion: Agent vs Manual CLI}}{102}{table.caption.119}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{44}{table.caption.46}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Mock Data Scenarios}}{45}{table.caption.48}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Current Dataset Distribution (367 Cases)}}{46}{table.caption.49}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Evaluation Run Configuration (Latest Snapshot)}}{49}{table.caption.55}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Overall Metrics (367-Case Snapshot)}}{50}{table.caption.56}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Average Component Scores}}{50}{table.caption.57}%
+\contentsline {table}{\numberline {6.7}{\ignorespaces Category-Level Results (Latest Snapshot)}}{51}{table.caption.58}%
+\contentsline {table}{\numberline {6.8}{\ignorespaces Scenario-Level Robustness}}{51}{table.caption.59}%
+\contentsline {table}{\numberline {6.9}{\ignorespaces Mismatch Counts Across 367 Cases}}{52}{table.caption.60}%
+\contentsline {table}{\numberline {6.10}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{53}{table.caption.61}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces 15-Week Thesis Development Plan}}{112}{table.caption.120}%
-\addvspace {10\p@ }
-\contentsline {table}{\numberline {8.1}{\ignorespaces Complete Test Case List with Queries}}{116}{table.8.1}%
-\contentsline {table}{\numberline {8.2}{\ignorespaces Complete Component Scores for All Test Cases}}{118}{table.8.2}%
-\contentsline {table}{\numberline {8.3}{\ignorespaces Failed Test Cases Summary}}{120}{table.caption.122}%
+\contentsline {table}{\numberline {7.1}{\ignorespaces Final Snapshot Highlights}}{56}{table.caption.62}%

@@ -62,6 +62,7 @@
       \field{note}{Accessed: 2024}
       \field{title}{Model Context Protocol Specification}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{bai2022constitutional}{article}{}
       \true{moreauthor}
@@ -131,6 +132,7 @@
       \field{journaltitle}{arXiv preprint arXiv:2212.08073}
       \field{title}{Constitutional AI: Harmlessness from AI feedback}
       \field{year}{2022}
+      \true{nocite}
     \endentry
     \entry{brown2020language}{article}{}
       \true{moreauthor}
@@ -302,6 +304,7 @@
       \field{note}{Accessed: 2024}
       \field{title}{Server-Sent Events (SSE)}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{mermaid2024}{misc}{}
       \name{author}{1}{}{%
@@ -345,6 +348,7 @@
       \field{note}{Accessed: 2024}
       \field{title}{Ollama: Get up and running with large language models locally}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{openai2023gpt4}{article}{}
       \name{author}{1}{}{%
@@ -388,6 +392,7 @@
       \field{note}{Accessed: 2024}
       \field{title}{OpenAI Agents SDK}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{fastapi2024}{misc}{}
       \name{author}{1}{}{%
@@ -438,6 +443,7 @@
       \field{journaltitle}{arXiv preprint arXiv:1908.10084}
       \field{title}{Sentence-BERT: Sentence embeddings using Siamese BERT-networks}
       \field{year}{2019}
+      \true{nocite}
     \endentry
     \entry{sabin2020hpc}{article}{}
       \name{author}{2}{}{%
@@ -577,6 +583,7 @@
       \field{note}{Accessed: 2024}
       \field{title}{Svelte: Cybernetically enhanced web apps}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{touvron2023llama}{article}{}
       \true{moreauthor}
@@ -647,6 +654,50 @@
       \field{title}{Llama 2: Open foundation and fine-tuned chat models}
       \field{year}{2023}
       \true{nocite}
+    \endentry
+    \entry{wang2020ratsql}{inproceedings}{}
+      \name{author}{5}{}{%
+        {{hash=35b7ef3646fef661cf0e3e1e5965038d}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Bailin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=62a630ac09a1d16f2dfa91459b5fbb03}{%
+           family={Shin},
+           familyi={S\bibinitperiod},
+           given={Richard},
+           giveni={R\bibinitperiod}}}%
+        {{hash=b881686cdf68b52745dbcb6374b8008b}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Xiaodong},
+           giveni={X\bibinitperiod}}}%
+        {{hash=21029155fee7b53a534e92b5dca700ba}{%
+           family={Polozov},
+           familyi={P\bibinitperiod},
+           given={Oleksandr},
+           giveni={O\bibinitperiod}}}%
+        {{hash=f96c5999895363061e2fe84b4cd057df}{%
+           family={Richardson},
+           familyi={R\bibinitperiod},
+           given={Matthew},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{e8551e29e04ae5b63231052d79600892}
+      \strng{fullhash}{c763529bf4e2991dbb93ecfb67cf6db4}
+      \strng{bibnamehash}{e8551e29e04ae5b63231052d79600892}
+      \strng{authorbibnamehash}{e8551e29e04ae5b63231052d79600892}
+      \strng{authornamehash}{e8551e29e04ae5b63231052d79600892}
+      \strng{authorfullhash}{c763529bf4e2991dbb93ecfb67cf6db4}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics}
+      \field{title}{RAT-SQL: Relation-Aware Schema Encoding and Linking for Text-to-SQL Parsers}
+      \field{year}{2020}
+      \field{pages}{7567\bibrangedash 7578}
+      \range{pages}{12}
     \endentry
     \entry{wooldridge2009introduction}{article}{}
       \name{author}{1}{}{%
@@ -741,6 +792,7 @@
       \field{journaltitle}{arXiv preprint arXiv:2308.08155}
       \field{title}{AutoGen: Enabling next-gen LLM applications via multi-agent conversation}
       \field{year}{2023}
+      \true{nocite}
     \endentry
     \entry{xi2023rise}{article}{}
       \true{moreauthor}
@@ -900,6 +952,77 @@
       \field{pages}{44\bibrangedash 60}
       \range{pages}{17}
     \endentry
+    \entry{yu2018spider}{inproceedings}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{10}{}{%
+        {{hash=fe5435f0fc61cb65658815c3b6163c49}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Tao},
+           giveni={T\bibinitperiod}}}%
+        {{hash=0672466dc7c3a8cec050e5ac091fd0ac}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Rui},
+           giveni={R\bibinitperiod}}}%
+        {{hash=c871c5250af09b016c00fe46d50ee9bf}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Kai},
+           giveni={K\bibinitperiod}}}%
+        {{hash=f95714ad66afcfa71b317b3bec07d01d}{%
+           family={Yasunaga},
+           familyi={Y\bibinitperiod},
+           given={Michihiro},
+           giveni={M\bibinitperiod}}}%
+        {{hash=56fa142335f3740bbec29325abecf07a}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Dongxu},
+           giveni={D\bibinitperiod}}}%
+        {{hash=fc4cc9e369143d7d75a725c6ba169f5d}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Zifan},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=89d111c0104411649741a27c2a40a9ba}{%
+           family={Ma},
+           familyi={M\bibinitperiod},
+           given={James},
+           giveni={J\bibinitperiod}}}%
+        {{hash=949b1b777fd0c2e6a252e3bd2030ee01}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Irene},
+           giveni={I\bibinitperiod}}}%
+        {{hash=10e52ada0abf6d183bab0632b495d7d9}{%
+           family={Yao},
+           familyi={Y\bibinitperiod},
+           given={Qingning},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=dbf9a609c827e0de7080776832e0f51a}{%
+           family={Roman},
+           familyi={R\bibinitperiod},
+           given={Shanelle},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{e29a2331dcb29ec368396a689685f751}
+      \strng{fullhash}{f2b3cd9aa678addbcf81aeac9c06718b}
+      \strng{bibnamehash}{e29a2331dcb29ec368396a689685f751}
+      \strng{authorbibnamehash}{e29a2331dcb29ec368396a689685f751}
+      \strng{authornamehash}{e29a2331dcb29ec368396a689685f751}
+      \strng{authorfullhash}{f2b3cd9aa678addbcf81aeac9c06718b}
+      \field{sortinit}{Y}
+      \field{sortinithash}{fd67ad5a9ef0f7456bdd9aab10fe1495}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing}
+      \field{title}{Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task}
+      \field{year}{2018}
+      \field{pages}{3911\bibrangedash 3921}
+      \range{pages}{11}
+    \endentry
     \entry{zheng2023judging}{article}{}
       \true{moreauthor}
       \true{morelabelname}
@@ -969,6 +1092,39 @@
       \field{title}{Judging LLM-as-a-judge with MT-bench and chatbot arena}
       \field{volume}{36}
       \field{year}{2023}
+      \true{nocite}
+    \endentry
+    \entry{zhong2017seq2sql}{article}{}
+      \name{author}{3}{}{%
+        {{hash=b9e3c1ea1561174dcce1d2598b711a6d}{%
+           family={Zhong},
+           familyi={Z\bibinitperiod},
+           given={Victor},
+           giveni={V\bibinitperiod}}}%
+        {{hash=1fa4dfdd5ecf049d39575fe7ba1ec9f3}{%
+           family={Xiong},
+           familyi={X\bibinitperiod},
+           given={Caiming},
+           giveni={C\bibinitperiod}}}%
+        {{hash=d5670b2600fea169724521e252d9d09d}{%
+           family={Socher},
+           familyi={S\bibinitperiod},
+           given={Richard},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \strng{fullhash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \strng{bibnamehash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \strng{authorbibnamehash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \strng{authornamehash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \strng{authorfullhash}{d880fbd54e9e3f810d48dfa7cbe6c396}
+      \field{sortinit}{Z}
+      \field{sortinithash}{96892c0b0a36bb8557c40c49813d48b3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{arXiv preprint arXiv:1709.00103}
+      \field{title}{Seq2SQL: Generating Structured Queries from Natural Language using Reinforcement Learning}
+      \field{year}{2017}
     \endentry
   \enddatalist
 \endrefsection

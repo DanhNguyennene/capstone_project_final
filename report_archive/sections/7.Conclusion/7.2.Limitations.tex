@@ -1,0 +1,48 @@
+\section{Limitations}
+\label{sec:limitations}
+
+While the Slurm Agent demonstrates the feasibility of natural language interfaces for HPC management, several limitations constrain its current capabilities and deployment scope. This section identifies these limitations to provide context for the system's applicability and inform future development efforts.
+
+\subsection{Evaluation Limitations}
+
+\textbf{Mock Data Testing}: The primary evaluation was conducted using mock data rather than a live production cluster. While the mock data simulates realistic scenarios, it cannot capture the full complexity and unpredictability of real HPC environments with dynamic job queues, varying loads, and diverse user behaviors.
+
+\textbf{Single-Node Testing}: Evaluation was conducted on a single-node Slurm configuration. Performance characteristics, scalability, and behavior on production-scale clusters with hundreds or thousands of nodes remain unexplored.
+
+\textbf{Automated Scoring Only}: The current evaluation relies on automated metrics (tool matching, fact extraction, LLM-as-judge). No formal human evaluation or user studies have been conducted to validate that the system meets actual user needs and expectations.
+
+\textbf{Limited User Feedback}: The system has not been tested with real HPC users in their daily workflows. User acceptance, learning curves, and long-term satisfaction remain unmeasured.
+
+\subsection{Scope Limitations}
+
+\textbf{Read-Focused Operations}: The current implementation emphasizes read operations (queries, status checks, accounting retrieval) over write operations (job submission, configuration changes). While dangerous operations like job cancellation are supported with confirmation, full job lifecycle management is limited.
+
+\textbf{Limited Job Types}: Testing focused on typical batch job scenarios. Specialized job types (array jobs, GPU workloads, MPI applications, interactive sessions) may require additional tool support and agent training.
+
+\subsection{Technical Limitations}
+
+\textbf{LLM Dependency}: The system relies on LLM inference (either local Ollama or remote API), introducing:
+\begin{itemize}
+    \item Computational resource requirements for local deployment
+    \item API cost considerations for cloud-based inference
+    \item Latency from model inference time
+    \item Data privacy considerations for cluster information
+\end{itemize}
+
+\textbf{Context Window Constraints}: Large Slurm outputs may exceed LLM context limits, requiring truncation or summarization that could lose important details. Very large clusters with extensive job queues may challenge effective response generation.
+
+\textbf{Hallucination Risk}: Despite tool grounding, LLMs may occasionally generate incorrect information not derived from tool outputs. While testing showed high accuracy, the risk of hallucination cannot be eliminated.
+
+\subsection{Security Limitations}
+
+\textbf{Authentication and Authorization}: The current implementation does not include user authentication or authorization. All users have equivalent access to cluster information, which may not align with HPC security policies requiring user-specific access controls.
+
+\textbf{Audit Logging}: The system lacks comprehensive audit logging for compliance and security monitoring purposes. Commands executed and information accessed are not durably logged.
+
+\subsection{Performance Limitations}
+
+\textbf{Response Latency}: While streaming provides immediate feedback, complete responses for complex queries may take several seconds. Users accustomed to instant command-line responses may perceive this as slow.
+
+\textbf{Concurrent User Scalability}: The system has not been tested for concurrent multi-user load. Resource contention and performance under load remain unexplored.
+
+Understanding these limitations is essential for appropriate deployment decisions and prioritization of future development work.

@@ -27,7 +27,7 @@ The development of an LLM-based agent for Slurm cluster management presents seve
 
 \textbf{Challenge Description:} LLM inference and Slurm command execution can introduce noticeable latency, potentially leading to poor user experience. Users may perceive the system as unresponsive during processing, particularly for complex queries that require multiple tool invocations or lengthy computations.
 
-\textbf{Solution Approach:} We implement Server-Sent Events (SSE) for real-time streaming of partial responses in OpenWebUI-compatible format. The backend generates SSE chunks containing incremental content, and the frontend displays updates as the agent generates responses. Chart artifacts are streamed separately and appended at stream end, enabling inline rendering within the conversation interface.
+\textbf{Solution Approach:} We implement Server-Sent Events (SSE) with structured delta fields so the frontend can render partial results incrementally. The stream separates status updates, tool output, reasoning text, final content, chart artifacts, and pending-action metadata. This design powers the primary React frontend and remains compatible with optional middleware/OpenWebUI deployment paths.
 
 \subsection{Challenge 4: Secure Tool Execution}
 

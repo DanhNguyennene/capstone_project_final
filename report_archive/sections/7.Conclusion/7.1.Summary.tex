@@ -1,0 +1,58 @@
+\section{Summary}
+\label{sec:summary}
+
+This thesis presented the design and implementation of the Slurm Agent, an intelligent conversational interface for High-Performance Computing cluster management. The system leverages Large Language Models combined with the Model Context Protocol to enable natural language interaction with Slurm workload managers, addressing the usability challenges that create barriers for HPC users.
+
+\subsection{Research Contributions}
+
+This research makes several contributions to the fields of HPC usability and AI-assisted system management:
+
+\textbf{1. Natural Language Interface for Slurm.} The Slurm Agent demonstrates that complex HPC cluster operations can be effectively accessed through conversational natural language queries. Users can retrieve cluster status, job information, and resource availability without memorizing command syntax or understanding complex parameter options.
+
+\textbf{2. MCP-Based HPC Tool Integration.} This work contributes an MCP server implementation for Slurm operations, extending the Model Context Protocol ecosystem into the HPC domain. The server provides reusable tool definitions that can be leveraged by other AI applications requiring Slurm integration.
+
+\textbf{3. Multi-Agent Architecture for Specialized Tasks.} The implemented multi-agent architecture with handoff mechanisms demonstrates an effective pattern for combining general-purpose and specialized agents. This approach balances the flexibility of LLM reasoning with the focused capabilities of domain-specific processing.
+
+\textbf{4. Integrated Visualization Pipeline.} The system's ability to generate data visualizations within the conversational flow provides a model for embedding rich media in agent responses. The streaming delivery of base64-encoded images through SSE demonstrates practical techniques for real-time visual feedback.
+
+\textbf{5. Real-Time Streaming Implementation.} The end-to-end streaming architecture from LLM generation through frontend rendering provides a reference implementation for responsive AI-assisted interfaces.
+
+\subsection{Achievement of Project Goals}
+
+The project successfully achieved its stated objectives:
+
+\textbf{Goal 1 (Natural Language Interface)}: Users can query cluster state, job information, and resource availability using natural language. The agent correctly interprets varied phrasings and provides accurate responses.
+
+\textbf{Goal 2 (Multi-Agent Architecture)}: The system implements specialized agents for different task types with seamless handoff mechanisms preserving conversation context.
+
+\textbf{Goal 3 (MCP Integration)}: The MCP server exposes Slurm functionality through standardized tool interfaces, enabling clean separation between AI logic and system operations.
+
+\textbf{Goal 4 (Visualization)}: The chart generation tool produces appropriate visualizations based on user requests, with charts rendered inline in the conversation interface.
+
+\textbf{Goal 5 (Real-Time Streaming)}: Responses stream in real-time using SSE, providing immediate visual feedback as tokens are generated. Average response times range from 24-53 seconds depending on query complexity.
+
+\textbf{Goal 6 (Web Interface)}: The frontend provides an intuitive chat interface with markdown rendering, syntax highlighting, and inline image display.
+
+\subsection{Key Findings}
+
+The development and evaluation of the Slurm Agent revealed several key findings:
+
+\textbf{LLM Capability for System Operations}: Modern LLMs effectively interpret user intent and translate natural language into appropriate tool invocations. The models demonstrate understanding of domain concepts and can reason about multi-step operations.
+
+\textbf{Protocol Standardization Benefits}: The MCP approach provides significant advantages in modularity and maintainability. Tool implementations can evolve independently of agent logic, and the same tools can potentially serve multiple agent implementations.
+
+\textbf{Streaming Importance for UX}: Real-time streaming significantly improves perceived responsiveness. Users receive immediate feedback during processing, eliminating the perception of system unresponsiveness even for complex queries.
+
+\textbf{Specialization Trade-offs}: While agent specialization improves task handling, handoff overhead introduces latency. The balance between specialization depth and transition cost requires careful consideration.
+
+The Slurm Agent demonstrates the viability of LLM-based interfaces for complex system management, providing a foundation for continued research and development in AI-assisted HPC operations.
+
+\subsection{Source Code Availability}
+
+The complete source code for the Slurm Agent system is publicly available on GitHub to enable reproducibility and encourage further research:
+
+\begin{center}
+    \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
+\end{center}
+
+The repository includes the agent backend implementation, MCP server with Slurm tool definitions, SvelteKit frontend, automated evaluation framework, test cases with mock data scenarios, and evaluation results.

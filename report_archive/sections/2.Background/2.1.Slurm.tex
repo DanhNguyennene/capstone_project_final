@@ -1,0 +1,68 @@
+\section{Slurm Workload Manager}
+\label{sec:slurm}
+
+Slurm (Simple Linux Utility for Resource Management) is an open-source, highly scalable cluster management and job scheduling system designed for Linux clusters \cite{yoo2003slurm}. Originally developed at Lawrence Livermore National Laboratory, Slurm has become the predominant workload manager in the HPC industry, deployed on approximately 60\% of the world's top 500 supercomputers. This section provides an overview of Slurm's architecture, core concepts, and operational mechanisms.
+
+\subsection{Architecture Overview}
+
+Slurm employs a centralized controller architecture with distributed compute node daemons. The system consists of three primary daemon components that work together to manage cluster resources and execute user workloads.
+
+The \textbf{slurmctld} daemon serves as the central management controller, running on a dedicated management node. This daemon maintains the global state of the cluster, including information about nodes, partitions, jobs, and resource allocations. The controller is responsible for accepting job submissions, making scheduling decisions, and dispatching work to compute nodes. For high availability, Slurm supports backup controller configurations where a secondary slurmctld can assume control if the primary fails.
+
+% Placeholder: Slurm architecture diagram
+\begin{figure}[H]
+    \centering
+    % \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Slurm architecture diagram showing slurmctld, slurmd, and slurmdbd components]}}}
+    \includegraphics[width=0.8\textwidth]{images/slurm_architecture.png}
+    \caption{Slurm System Architecture}
+    \label{fig:slurm-architecture}
+\end{figure}
+
+The \textbf{slurmd} daemon runs on each compute node in the cluster, acting as a remote execution agent. Each slurmd is responsible for launching, monitoring, and terminating jobs on its local node. The daemon reports node state and resource availability to the central controller and receives job execution requests. Slurmd ensures proper resource isolation for running jobs and handles signal propagation for job control.
+
+The \textbf{slurmdbd} daemon (Slurm Database Daemon) provides an optional but commonly used accounting interface. This daemon manages connections to a backend database (typically MySQL or MariaDB) where job accounting records, resource usage statistics, and user associations are stored. The database daemon enables administrators to track resource consumption, generate usage reports, and implement fair-share scheduling policies.
+
+\subsection{Core Concepts}
+
+Understanding Slurm requires familiarity with several fundamental concepts that define how resources are organized and allocated.
+
+\textbf{Nodes} represent individual compute servers in the cluster. Each node has defined resources including CPUs (or cores), memory, GPUs, and potentially other generic resources. Nodes can be in various states: idle (available), allocated (running jobs), down (unavailable), or drained (not accepting new work). Node features and constraints allow jobs to request specific hardware characteristics.
+
+\textbf{Partitions} serve as logical groupings of nodes, functioning similarly to queues in other scheduling systems. Partitions define access controls, resource limits, and scheduling policies for different user groups or job types. A single node can belong to multiple partitions, and users submit jobs to specific partitions based on their requirements and permissions.
+
+\textbf{Jobs} are resource allocation requests submitted by users. A job specification includes resource requirements (nodes, CPUs, memory, time limit), the program to execute, input/output file locations, and various optional parameters. Jobs progress through states including pending, running, completing, and completed (or failed/cancelled).
+
+\textbf{Steps} are discrete execution units within a job. While a job represents the overall resource allocation, steps allow multiple parallel or sequential programs to execute within that allocation. Each step can use a subset of the job's allocated resources.
+
+\subsection{Command-Line Interface}
+
+Slurm provides a comprehensive suite of command-line utilities for cluster interaction:
+
+\begin{itemize}
+    \item \texttt{sinfo}: Displays information about nodes and partitions, including their state, resources, and availability
+    \item \texttt{squeue}: Shows the queue of pending and running jobs, with details about resource allocation and status
+    \item \texttt{sbatch}: Submits batch job scripts for later execution
+    \item \texttt{srun}: Launches parallel jobs, either as standalone commands or within existing allocations
+    \item \texttt{salloc}: Allocates resources for interactive use
+    \item \texttt{scancel}: Cancels pending or running jobs
+    \item \texttt{scontrol}: Administrative command for querying and modifying cluster configuration
+    \item \texttt{sacct}: Retrieves accounting data for completed jobs
+\end{itemize}
+
+Each command supports numerous options and output format specifications, contributing to the system's flexibility but also its complexity. Understanding the full capabilities of these tools requires significant learning investment, motivating the development of more accessible interfaces.
+
+\subsection{Job Submission and Scheduling}
+
+Job submission in Slurm typically involves creating a batch script that specifies resource requirements and execution commands. The script uses special comment directives (prefixed with \texttt{\#SBATCH}) to declare parameters such as partition, time limit, node count, and resource constraints.
+
+Slurm's scheduler evaluates pending jobs and available resources to make allocation decisions. The default scheduler uses a priority-based algorithm with backfill optimization, where smaller jobs can be scheduled in gaps left by larger pending jobs. Administrators can configure various priority factors including job age, fair-share usage, job size, and quality-of-service levels.
+
+The scheduling system supports advanced features including:
+\begin{itemize}
+    \item Job arrays for submitting multiple similar jobs efficiently
+    \item Job dependencies for defining execution order relationships
+    \item Preemption policies for priority-based job interruption
+    \item Resource reservations for guaranteed future allocations
+\end{itemize}
+
+These capabilities make Slurm suitable for complex workflows but increase the knowledge required for effective utilization.
