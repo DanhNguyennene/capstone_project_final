@@ -117,12 +117,12 @@ def resolve_model(model_name: str | None = None) -> OpenAIChatCompletionsModel:
 
 # ── Sampling settings ─────────────────────────────────────────────────────────
 
-# Ollama: thinking enabled, large context window, sequential tool calls
+# Ollama: deterministic, tool-focused responses (no explicit reasoning stream)
 REASONING_MODEL_SETTINGS = ModelSettings(
-    temperature=0.3,
-    top_p=0.7,
+    temperature=0.1,
+    top_p=0.9,
     parallel_tool_calls=False,
-    extra_body={"think": True, "options": {"num_ctx": 16384}},
+    extra_body={"think": False, "options": {"num_ctx": 16384}},
 )
 
 # Copilot/Claude: no Ollama-specific extras; Claude handles thinking natively

@@ -4,6 +4,15 @@ const EVAL_URL = 'http://10.0.0.1:8080'
 const LS_OPTS_KEY = 'evalPage.opts.v1'
 const LS_FILTERS_KEY = 'evalPage.filters.v1'
 
+function isPlaceholderJudgeReason(reason) {
+  const txt = (reason || '').trim()
+  if (!txt) return true
+  if (txt === '...' || txt === '…' || txt === '-' || txt === '--') return true
+  const squashed = txt.replace(/[\s.,;:\-_!?/\\]+/g, '').toLowerCase()
+  if (['na', 'none', 'null', 'tbd', 'unknown', 'noreason'].includes(squashed)) return true
+  return squashed.length < 10
+}
+
 export default function EvalPage({ agentUrl }) {
   const [dataset, setDataset]     = useState([])
   const [results, setResults]     = useState({})
@@ -459,9 +468,14 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
 
   // judge ran only when backend says so; fallback supports older result files.
   const judgeRan = (result?.judge_ran === true) || (!!result?.judge_reason)
-  const judgeReasonText = (result?.judge_reason || '').trim()
-    || (result?.error || '').trim()
-    || 'Judge returned a score without explanation. Please rerun this test with Judge enabled.'
+  const rawJudgeReason = (result?.judge_reason || '').trim()
+  const hasConcreteJudgeReason = !!rawJudgeReason && !isPlaceholderJudgeReason(rawJudgeReason)
+  const judgeReasonText = hasConcreteJudgeReason
+    ? rawJudgeReason
+    : (
+      (result?.error || '').trim()
+      || 'Judge output was low-quality/placeholder. Please rerun this test with Judge enabled.'
+    )
 
   const dims = [
     { key: 'tool_recall',    label: 'Tool Recall', w: '30%' },
@@ -654,8 +668,8 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
                 : <span className="eval-judge-score eval-judge-error">Score unavailable</span>
               }
             </div>
-            {result?.judge_reason
-              ? <pre className="eval-judge-text">{result.judge_reason}</pre>
+            {hasConcreteJudgeReason
+              ? <pre className="eval-judge-text">{rawJudgeReason}</pre>
               : <p className="eval-judge-reason" style={{ fontStyle: 'italic' }}>{judgeReasonText}</p>
             }
           </div>

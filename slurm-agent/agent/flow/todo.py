@@ -221,17 +221,23 @@ class TodoTracker:
         if not self.items:
             return ""
         lines = ["[PLAN] You MUST follow these steps in order:"]
-        has_handoff = False
         for item in self.items:
             marker = "✓" if item["status"] == "completed" else "→" if item["status"] == "in-progress" else " "
             lines.append(f"  [{marker}] {item['id']}. {item['title']}")
-            if "hand off" in item["title"].lower() or "operator" in item["title"].lower():
-                has_handoff = True
-        if has_handoff:
-            lines.append("IMPORTANT: Step 1 requires transfer_to_operator. Do it NOW. Do NOT run read-only tools first.")
+
+        # Only inject the operator-handoff urgency when the FIRST non-completed step
+        # explicitly requires it — avoids triggering on later operator steps.
+        first_pending = next(
+            (item for item in self.items if item["status"] != "completed"), None
+        )
+        first_needs_handoff = first_pending and (
+            "hand off" in first_pending["title"].lower()
+            or ("operator" in first_pending["title"].lower() and "hand off" in first_pending["title"].lower())
+        )
+        if first_needs_handoff:
+            lines.append("IMPORTANT: The next step requires transfer_to_operator. Do it NOW. Do NOT run read-only tools first.")
         else:
-            lines.append("Execute each step by calling tools. Do NOT skip steps.")
-        lines.append("Execute each step by calling tools. Do NOT skip steps. Do NOT repeat completed steps.")
+            lines.append("Execute each step by calling tools. Do NOT skip steps. Do NOT repeat completed steps.")
         return "\n".join(lines)
 
     def get_snapshot(self) -> Optional[list[dict]]:

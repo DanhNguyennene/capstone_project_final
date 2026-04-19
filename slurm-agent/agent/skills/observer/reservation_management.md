@@ -19,7 +19,7 @@ Columns to highlight: `ReservationName`, `StartTime`, `EndTime`, `Nodes`, `Users
 
 ### Show reservation utilization (requires accounting)
 ```
-sacctmgr_show(entity="reservation", params="cluster=<cluster> start=<date> end=<date>")
+sacctmgr_list(entity="reservation", params="cluster=<cluster> start=<date> end=<date>")
 ```
 
 ### Check if a job is blocked by a reservation

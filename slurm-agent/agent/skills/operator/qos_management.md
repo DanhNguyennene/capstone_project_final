@@ -71,7 +71,7 @@ sacctmgr_modify(entity="account", where="name=<acct>", params="QosLevel+=<qos_na
 ```
 scontrol_show(entity="assoc_mgr", id="qos=<name>")
 ```
-Or list all QOS: `sacctmgr_show(entity="qos", params="format=Name,Priority,MaxTRESPJ,MaxWall,GrpTRES")`
+Or list all QOS: `sacctmgr_list(entity="qos", params="format=Name,Priority,MaxTRESPJ,MaxWall,GrpTRES")`
 
 ## After Actions
 Report: QOS | Parameter | Old → New — markdown table.

@@ -394,6 +394,14 @@ function stopEval() {
 // ── Rendering ──────────────────────────────────────────────────────────────
 
 function pct(v) { return Math.round(v * 100) + '%'; }
+function isPlaceholderJudgeReason(text) {
+  const t = (text || '').trim();
+  if (!t) return true;
+  if (t === '...' || t === '…' || t === '-' || t === '--') return true;
+  const squashed = t.replace(/[\s.,;:\-_!?/\\]+/g, '').toLowerCase();
+  if (['na', 'none', 'null', 'tbd', 'unknown', 'noreason'].includes(squashed)) return true;
+  return squashed.length < 10;
+}
 function chk(v) { return v >= 1.0 ? '✓' : '✗'; }
 
 function renderTestList() {
@@ -531,10 +539,12 @@ function renderDetail(test, result) {
   let judgeHtml = '';
   if (hasResult && result.judge_score > 0) {
     const raw = Math.round(result.judge_score * 4 + 1);
+    const jr = (result.judge_reason || '').trim();
+    const jrText = (!isPlaceholderJudgeReason(jr) ? jr : 'Judge output was placeholder/invalid. Please rerun this test with Judge enabled.');
     judgeHtml = `<div class="section"><h3>LLM Judge</h3>
       <div class="judge-box">
         <div class="judge-score">${raw}/5 (${pct(result.judge_score)})</div>
-        <div class="judge-reason">${result.judge_reason || ''}</div>
+        <div class="judge-reason">${escHtml(jrText)}</div>
       </div></div>`;
   }
 

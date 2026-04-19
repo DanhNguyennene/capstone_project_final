@@ -29,20 +29,15 @@ logger = logging.getLogger(__name__)
 DANGEROUS_TOOL_NAMES: Set[str] = {
     "scancel", "scontrol_hold", "scontrol_release", "scontrol_update", "sbatch",
     "scontrol_requeue",
-    "scontrol_create", "scontrol_delete", "scontrol_reconfigure",
+    "scontrol_reconfigure",
     "sacctmgr_add", "sacctmgr_modify", "sacctmgr_delete",
-    "scrontab",  # can edit/remove scheduled cron jobs
-    "shell_exec",  # arbitrary shell commands — always need approval
 }
 
 ANALYSIS_TOOL_NAMES: Set[str] = {
-    "run_analysis", "squeue", "sacct", "sinfo", "scontrol_show", "web_search",
-    "sdiag", "sprio", "sstat", "diagnose_job", "read_file",
-    "sjobexitmod",  # view/modify derived exit codes (diagnostic)
-    "cluster_resources",  # structured cluster hardware summary (CPUs, GPUs, memory)
+    "squeue", "sacct", "sinfo", "scontrol_show",
+    "sacctmgr_list",  # read-only listing of accounting entities
+    "sdiag", "sprio", "sstat", "read_file", "web_search",
 }
-
-VISUALIZATION_TOOL_NAMES: Set[str] = {"generate_chart"}
 
 # Everything else discovered on the MCP server is treated as safe.
 
@@ -54,7 +49,7 @@ class DiscoveredTool:
     name: str
     description: str
     schema: Dict        # JSON Schema dict from MCP tools/list
-    category: str       # "analysis" | "safe" | "dangerous" | "visualization" | "other"
+    category: str       # "analysis" | "safe" | "dangerous" | "other"
 
 
 @dataclass
@@ -63,7 +58,6 @@ class ToolCatalog:
     analysis:      List[DiscoveredTool] = field(default_factory=list)
     safe:          List[DiscoveredTool] = field(default_factory=list)
     dangerous:     List[DiscoveredTool] = field(default_factory=list)
-    visualization: List[DiscoveredTool] = field(default_factory=list)
     other:         List[DiscoveredTool] = field(default_factory=list)
 
     # Convenience name sets for MCP tool filters
@@ -80,7 +74,7 @@ class ToolCatalog:
         return {t.name for t in self.dangerous}
 
     def by_name(self, name: str) -> DiscoveredTool | None:
-        for bucket in (self.analysis, self.safe, self.dangerous, self.visualization, self.other):
+        for bucket in (self.analysis, self.safe, self.dangerous, self.other):
             for tool in bucket:
                 if tool.name == name:
                     return tool
@@ -117,8 +111,6 @@ async def discover_tools(mcp_url: str) -> ToolCatalog:
             category = "dangerous"
         elif name in ANALYSIS_TOOL_NAMES:
             category = "analysis"
-        elif name in VISUALIZATION_TOOL_NAMES:
-            category = "visualization"
         else:
             # Heuristic for unknown tools: scan description for danger verbs
             desc_lower = desc.lower()
@@ -133,6 +125,6 @@ async def discover_tools(mcp_url: str) -> ToolCatalog:
 
     logger.info(
         f"Catalog — analysis:{len(catalog.analysis)} safe:{len(catalog.safe)} "
-        f"dangerous:{len(catalog.dangerous)} viz:{len(catalog.visualization)} other:{len(catalog.other)}"
+        f"dangerous:{len(catalog.dangerous)} other:{len(catalog.other)}"
     )
     return catalog

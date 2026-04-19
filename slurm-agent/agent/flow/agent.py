@@ -2,7 +2,7 @@
 SlurmAgentSystem — two-agent handoff orchestrator.
 
 Architecture:
-  Observer  — entry point, all read-only MCP tools + charts + skills
+  Observer  — entry point, read-only MCP tools + optional skill lookup
   Operator  — dangerous-action FunctionTools (HITL) + minimal read tools
 
 The Observer handles monitoring / analysis / diagnosis (~80 % of requests).
@@ -108,14 +108,11 @@ from .model import (
     resolve_model,
 )
 from .skills import (
-    format_skills_for_instructions,
     load_observer_skills,
-    load_operator_skills,
 )
 from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
-    make_chart_tool,
     make_guarded_dangerous_tools,
     make_manage_todos_tool,
     make_skill_lookup_tool,
@@ -132,6 +129,8 @@ class _StreamState:
     content_streamed: bool = False
     charts_emitted: int = 0
     hitl_tool_outputs: List[str] = field(default_factory=list)
+    saw_transfer_to_operator: bool = False
+    last_handoff_message: str = ""  # message sent to Operator via transfer_to_operator
     _is_first_agent_event: bool = True
 
 
@@ -154,7 +153,8 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
-_OPERATOR_READ_TOOLS = {"scontrol_show", "cluster_resources"}
+_OPERATOR_READ_TOOLS = {"scontrol_show"}
+_OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
 
 
 class SlurmAgentSystem:
@@ -162,7 +162,7 @@ class SlurmAgentSystem:
     Two-agent handoff system for Slurm HPC clusters.
 
     Observer (entry point):
-        Read-only MCP tools (analysis + safe) + chart FunctionTool + skills.
+        Read-only MCP tools (analysis + safe) + optional skill lookup tool.
         Handles monitoring, diagnosis, and analysis. Hands off to Operator
         when an action is required.
 
@@ -173,15 +173,13 @@ class SlurmAgentSystem:
 
     First call to run_streaming / run performs lazy init:
       1. discover_tools() — one HTTP call to MCP, builds ToolCatalog
-      2. Loads skills from agent/skills/*.md
+      2. Loads Observer skill guides from agent/skills/*
       3. Builds Observer + Operator agents with bidirectional handoffs
     """
 
     def __init__(
         self,
         reasoning_model: str = DEFAULT_MODEL,
-        tool_model: str = DEFAULT_MODEL,
-        base_url: str = OLLAMA_BASE_URL,
         mcp_url: str = "http://localhost:3002",
         session_id: str = "default",
         auto_approve: bool = False,
@@ -197,6 +195,7 @@ class SlurmAgentSystem:
         self._mcp_operator: Optional[MCPServerSse]    = None
 
         self.main_agent      = None   # entry-point agent (Observer)
+        self.operator_agent  = None   # direct retry target
         self._catalog: Optional[ToolCatalog] = None
         self._ready          = False
 
@@ -217,52 +216,40 @@ class SlurmAgentSystem:
         # 1. Discover tools — fetch live schemas, classify
         self._catalog = await discover_tools(self.mcp_url)
 
-        # 2. Load skills — separate sets per agent for efficiency
-        observer_skills = load_observer_skills()
-        operator_skills = load_operator_skills()
-        observer_instructions = build_observer_instructions(format_skills_for_instructions(observer_skills))
-        operator_instructions = build_operator_instructions(format_skills_for_instructions(operator_skills))
+        # 2. Build instructions
+        observer_instructions = build_observer_instructions()
+        operator_instructions = build_operator_instructions()
 
-        # 3. MCP servers — Observer gets all read-only tools; Operator gets a small read subset
-        observer_mcp_names = self._catalog.analysis_names | self._catalog.safe_names
+        # 3. Load Observer-only skill lookup tool (local markdown runbooks)
+        observer_skills = load_observer_skills()
+        skill_lookup_tool = make_skill_lookup_tool(observer_skills) if observer_skills else None
+
+        # 4. MCP servers — Observer gets read-only tools minus internal control tools
+        observer_mcp_names = (self._catalog.analysis_names | self._catalog.safe_names) - _OBSERVER_HIDDEN_MCP_TOOLS
         self._mcp_observer = _make_mcp_server(self.mcp_url, observer_mcp_names, "slurm-observer-mcp")
 
         operator_read_names = _OPERATOR_READ_TOOLS & (self._catalog.analysis_names | self._catalog.safe_names)
         self._mcp_operator = _make_mcp_server(self.mcp_url, operator_read_names, "slurm-operator-mcp")
 
-        # 4. Guarded dangerous FunctionTools (HITL: needs_approval=True)
+        # 5. Guarded dangerous FunctionTools (HITL: needs_approval=True)
         dangerous_fns = make_guarded_dangerous_tools(self.mcp_url, self._catalog.dangerous)
 
-        # 5. Chart tool — discover valid IDs from MCP-provided schema enum
-        viz_tool = self._catalog.by_name("generate_chart")
-        if viz_tool:
-            chart_id_schema = viz_tool.schema.get("properties", {}).get("chart_id", {})
-            valid_chart_ids = set(chart_id_schema.get("enum", []))
-        else:
-            valid_chart_ids = set()
-        if not valid_chart_ids:
-            valid_chart_ids = {
-                "system_health", "cluster_topology", "pending_analysis",
-                "resource_map", "job_lifecycle",
-            }
-        chart_tool = make_chart_tool(self.mcp_url, valid_chart_ids)
-
-        # 5b. Skill lookup tools — per agent, scoped to their own skill set
-        skill_lookup_tool = make_skill_lookup_tool(observer_skills)
-        operator_skill_lookup_tool = make_skill_lookup_tool(operator_skills) if operator_skills else None
-
-        # 5c. Shared todo management tool (same instance, both agents share the tracker)
+        # 6. Shared todo management tool (same instance, both agents share the tracker)
         manage_todos_tool = make_manage_todos_tool(self._todo)
 
-        # 6. Build agents with bidirectional handoffs
+        # 7. Build agents with bidirectional handoffs
         #    Create agents first (no handoffs), then wire handoffs after both exist.
+        _observer_tools = [manage_todos_tool]
+        if skill_lookup_tool:
+            _observer_tools.append(skill_lookup_tool)
+
         observer = Agent(
             name="Observer",
             instructions=observer_instructions,
             model=self._reasoning_model,
             model_settings=ACTIVE_MODEL_SETTINGS,
             mcp_servers=[self._mcp_observer],
-            tools=[chart_tool, skill_lookup_tool, manage_todos_tool],
+            tools=_observer_tools,
             handoffs=[],  # filled below
         )
 
@@ -272,7 +259,7 @@ class SlurmAgentSystem:
             model=self._reasoning_model,
             model_settings=ACTIVE_MODEL_SETTINGS,
             mcp_servers=[self._mcp_operator],
-            tools=dangerous_fns + ([operator_skill_lookup_tool] if operator_skill_lookup_tool else []) + [manage_todos_tool],
+            tools=dangerous_fns + [manage_todos_tool],
             handoffs=[],  # filled below
         )
 
@@ -312,15 +299,16 @@ class SlurmAgentSystem:
             ),
         ]
 
-        self.main_agent = observer  # entry point
+        self.main_agent    = observer  # entry point
+        self.operator_agent = operator  # direct retry target
 
         self._ready = True
-        obs_tools = len(observer_mcp_names) + 2 + 1   # MCP + (chart, skill_lookup) + handoff
-        op_tools  = len(dangerous_fns) + len(operator_read_names) + 1 + (1 if operator_skill_lookup_tool else 0)
+        obs_tools = len(observer_mcp_names) + len(_observer_tools)   # MCP + function tools
+        op_tools  = len(dangerous_fns) + len(operator_read_names) + 1  # dangerous + read MCP + manage_todos
         logger.info(
             f"[SlurmAgentSystem] Ready — "
             f"Observer tools≈{obs_tools} Operator tools≈{op_tools} "
-            f"observer_skills={len(observer_skills)} operator_skills={len(operator_skills)}"
+            f"observer_skills={len(observer_skills)}"
         )
 
     # ── Session ───────────────────────────────────────────────────────────────
@@ -549,6 +537,7 @@ class SlurmAgentSystem:
         ctx: "SlurmContext",
         approval_data: dict | None = None,
         hitl_approved_tools: List[str] | None = None,
+        augmented_message: str = "",
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Process streaming events from a Runner result and yield UI events.
 
@@ -605,6 +594,9 @@ class SlurmAgentSystem:
                 except Exception:
                     args = {}
                 if name:
+                    if name == "transfer_to_operator":
+                        state.saw_transfer_to_operator = True
+                        state.last_handoff_message = args.get("message", augmented_message)
                     yield {"type": "status", "message": format_tool_call(name, args)}
                     todo.on_tool_start(name)
                     snap = todo.get_snapshot()
@@ -666,7 +658,6 @@ class SlurmAgentSystem:
     async def run_streaming(
         self,
         user_message: str,
-        conversation_history: Optional[list] = None,  # API compat, unused
         hitl_decision: Optional[str] = None,  # "approve" or "reject" from frontend
     ) -> AsyncGenerator[Dict[str, Any], None]:
         try:
@@ -680,6 +671,8 @@ class SlurmAgentSystem:
 
             # Track HITL-approved tools for better error recovery
             hitl_approved_tools: List[str] = []
+            approval_decision: Optional[str] = None
+            augmented_message = user_message
 
             async with self._mcp_observer, self._mcp_operator:
 
@@ -715,6 +708,7 @@ class SlurmAgentSystem:
                         decision = hitl_decision
                     else:
                         decision = await self._classify_approval_llm(user_message)
+                    approval_decision = decision
 
                     # ── New instruction while HITL was pending ────────────────
                     # User sent a brand-new request instead of approving/rejecting.
@@ -804,9 +798,11 @@ class SlurmAgentSystem:
                             bad_agent = m.group(2)
 
                         # Determine if the tool exists on a different agent (cross-agent error)
-                        observer_tools = {"squeue", "sinfo", "sacct", "sshare", "sprio",
-                                          "sstat", "sacctmgr_list", "sdiag", "scontrol_show",
-                                          "run_analysis", "generate_chart", "lookup_skill"}
+                        observer_tools = {
+                            "squeue", "sinfo", "sacct", "sacctmgr_list", "scontrol_show",
+                            "sdiag", "sprio", "sstat", "read_file", "web_search",
+                            "lookup_skill",
+                        }
                         is_cross_agent = bad_tool in observer_tools and bad_agent == "Operator"
 
                         if not hasattr(self, '_hallucination_retries'):
@@ -819,11 +815,19 @@ class SlurmAgentSystem:
                             except Exception:
                                 pass
                             if is_cross_agent:
-                                nudge = (
-                                    f"[SYSTEM: The Operator tried to call '{bad_tool}' which is an Observer-only tool. "
-                                    f"The action has already completed successfully. "
-                                    f"Report the results to the user. Do NOT call '{bad_tool}'.]\n\n"
-                                )
+                                if getattr(ctx, "operator_actions_taken", 0) > 0:
+                                    nudge = (
+                                        f"[SYSTEM: The Operator tried to call '{bad_tool}' which is an Observer-only tool. "
+                                        f"The required action is already complete. Report results to the user. "
+                                        f"Do NOT call '{bad_tool}'.]\n\n"
+                                    )
+                                else:
+                                    nudge = (
+                                        f"[SYSTEM: The Operator tried to call '{bad_tool}' which is an Observer-only tool. "
+                                        "Continue the same request and execute the required action tool(s) now "
+                                        "(sbatch/scancel/scontrol_* as appropriate) using existing targets from context. "
+                                        "Do not ask clarification and do not call Observer-only tools.]\n\n"
+                                    )
                             else:
                                 nudge = (
                                     f"[SYSTEM: You called '{bad_tool}' which does not exist on {bad_agent}. "
@@ -878,6 +882,57 @@ class SlurmAgentSystem:
                         stream_interrupted = True
                     else:
                         raise  # re-raise non-recoverable errors
+
+                # ── Structural recovery: handoff occurred but no action executed ──
+                no_action_after_handoff = (
+                    not stream_interrupted
+                    and
+                    state.saw_transfer_to_operator
+                    and getattr(ctx, "operator_actions_taken", 0) == 0
+                    and not result.interruptions
+                    and approval_decision != "reject"
+                )
+                if no_action_after_handoff:
+                    logger.warning("Handoff to Operator occurred but no action tool executed; retrying once")
+                    if self._hallucination_retries < 1:
+                        self._hallucination_retries += 1
+                        try:
+                            await self.clear_session()
+                        except Exception:
+                            pass
+                        # Retry directly from Operator with the original handoff message.
+                        # This avoids re-running Observer (which would just hand off again).
+                        handoff_msg = state.last_handoff_message or augmented_message
+                        operator_nudge = (
+                            "[SYSTEM: You are the Operator. You received this task but called NO tool. "
+                            "Your ONLY job right now: call the action tool immediately.\n"
+                            "• 'Submit: X' → sbatch(script='X')\n"
+                            "• 'Cancel: N' → scancel(job_id='N')\n"
+                            "• 'Hold: N' → scontrol_hold(job_id='N')\n"
+                            "Do NOT generate any text. Call the tool NOW.]\n\n"
+                        )
+                        retry_input = operator_nudge + handoff_msg
+                        yield {"type": "status", "message": "Retrying (no action executed)…"}
+                        ctx = self._new_context()
+                        result = Runner.run_streamed(
+                            starting_agent=self.operator_agent,
+                            input=retry_input,
+                            session=session,
+                            context=ctx,
+                            max_turns=10,
+                        )
+                        state = _StreamState()
+                        async for ev in self._emit_stream_events(
+                            result, state, todo=todo, ctx=ctx,
+                        ):
+                            yield ev
+                    else:
+                        yield {
+                            "type": "final_answer",
+                            "message": "I couldn't execute the requested action after retrying. Please restate the exact action and targets.",
+                        }
+                        yield {"type": "done", "pending_actions": []}
+                        return
 
                 # ── Post-error recovery ──
                 # Tool may have executed but Ollama rejected the next turn.
@@ -970,7 +1025,6 @@ class SlurmAgentSystem:
                                 item_ev = event.item
                                 from agents.types import (
                                     ToolCallItem, ToolCallOutputItem,
-                                    HandoffCallItem, HandoffOutputItem,
                                 )
                                 if isinstance(item_ev, ToolCallItem):
                                     t_name = getattr(item_ev, "raw_item", {}).get("name", "")

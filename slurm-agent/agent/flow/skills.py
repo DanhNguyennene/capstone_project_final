@@ -8,11 +8,12 @@ when to use it, what steps to follow, and what output format to produce.
 Directory layout:
   skills/          — shared read-only skills (loaded by Observer by default)
   skills/observer/ — Observer-only analysis/investigation skills
+  skills/arhive/   — legacy shared runbooks (kept under existing repo spelling)
   skills/operator/ — Operator-only write-action skills
 
 Provides:
   - load_skills(dirs)           — read all .md files from a list of dirs
-  - load_observer_skills()      — skills/ + skills/observer/
+  - load_observer_skills()      — skills/ + skills/observer/ + skills/arhive/
   - load_operator_skills()      — skills/operator/ only
   - format_skills_for_instructions()  — build text block to inject into instructions
 """
@@ -23,7 +24,8 @@ from typing import Iterable
 logger = logging.getLogger(__name__)
 
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
-OBSERVER_SKILLS_DIRS = [SKILLS_DIR, SKILLS_DIR / "observer"]
+ARCHIVE_SKILLS_DIR = SKILLS_DIR / "arhive"  # legacy path in repo (intentional spelling)
+OBSERVER_SKILLS_DIRS = [SKILLS_DIR, SKILLS_DIR / "observer", ARCHIVE_SKILLS_DIR]
 OPERATOR_SKILLS_DIRS = [SKILLS_DIR / "operator"]
 
 
@@ -99,13 +101,9 @@ def _compress_skill(name: str, content: str) -> str:
 
 def format_skills_for_instructions(skills: dict[str, str]) -> str:
     """
-    Build a compact skill index for the Observer system prompt.
+    Compatibility shim for old prompt-injection flow.
 
-    With the lookup_skill tool available, the agent can load full skill content
-    on demand. The prompt only needs skill names so it knows what's available.
-
-    Returns comma-separated skill names, or empty string if no skills.
+    Skill guides are loaded lazily via lookup_skill, so prompts intentionally
+    do not inline skill names/content.
     """
-    if not skills:
-        return ""
-    return ", ".join(sorted(skills.keys()))
+    return ""

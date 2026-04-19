@@ -429,11 +429,25 @@ Focus on:
 - Did it trigger HITL for destructive operations?
 - Is the response accurate and helpful?
 
-Respond with ONLY: {{"score": <1-5>, "reason": "<one sentence>"}}"""
+Respond with ONLY: {{"score": <1-5>, "reason": "<one specific sentence>"}}.
+The reason must be concrete and MUST NOT be "...", "…", "N/A", or empty."""
+
+
+def _is_placeholder_judge_reason(reason: str) -> bool:
+    """Return True when judge reason is effectively non-informative."""
+    text = (reason or "").strip()
+    if not text:
+        return True
+    if text in {"...", "…", "-", "--"}:
+        return True
+    squashed = re.sub(r"[\s\.\,\;\:\-\_\!\?\\/]+", "", text).lower()
+    if squashed in {"na", "none", "null", "tbd", "unknown", "noreason"}:
+        return True
+    return len(squashed) < 10
 
 
 async def judge_flow(
-    test: dict, trace: 'AgentTrace', model: str = JUDGE_MODEL
+    test: dict, trace: 'AgentTrace', model: str = JUDGE_MODEL, _attempt: int = 1
 ) -> Tuple[float, str]:
     """Judge the entire agent flow using the Ollama native API.
     Returns (score_0_to_1, reason)."""
@@ -464,11 +478,21 @@ async def judge_flow(
     payload = {
         "model": model,
         "stream": False,
-        "options": {"temperature": 0.3, "num_predict": 1024},
+        "options": {
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "seed": 42,
+            "num_predict": 1024,
+        },
         "messages": [
             {
                 "role": "system",
-                "content": "You are a strict JSON evaluator. Respond with ONLY a JSON object like {\"score\": 3, \"reason\": \"...\"}. No markdown, no thinking, no other text.",
+                "content": (
+                    "You are a strict JSON evaluator. Respond with ONLY a JSON object "
+                    "like {\"score\": 3, \"reason\": \"Used unnecessary tool X despite correct output.\"}. "
+                    "No markdown, no thinking, no other text. Reason must be specific, "
+                    ">=12 characters, and cannot be ellipsis/placeholder."
+                ),
             },
             {"role": "user", "content": prompt_text},
         ],
@@ -479,6 +503,11 @@ async def judge_flow(
             async with session.post(f"{OLLAMA_BASE}/api/chat", json=payload) as resp:
                 if resp.status != 200:
                     err = await resp.text()
+                    if _attempt < 2:
+                        logger.warning(
+                            f"judge HTTP {resp.status}, retrying once (attempt={_attempt})"
+                        )
+                        return await judge_flow(test, trace, model=model, _attempt=_attempt + 1)
                     return 0.0, f"judge error: Ollama HTTP {resp.status}: {err[:100]}"
                 data = await resp.json()
 
@@ -534,16 +563,31 @@ async def judge_flow(
                     score = int(score_match.group(1))
                     return round((score - 1) / 4, 3), "Judge response was non-JSON; score extracted heuristically."
                 logger.warning(f"judge: no JSON found. raw={raw[:300]!r}")
+                if _attempt < 2:
+                    logger.warning(
+                        f"judge produced no JSON; retrying once (attempt={_attempt})"
+                    )
+                    return await judge_flow(test, trace, model=model, _attempt=_attempt + 1)
                 return 0.0, f"judge error: no JSON in response (len={len(raw)})"
 
         score = max(1, min(5, int(parsed.get("score", 1))))
         reason = str(parsed.get("reason", "")).strip()
         if not reason:
             reason = "Judge returned a score without explanation."
+        if _is_placeholder_judge_reason(reason):
+            if _attempt < 2:
+                logger.warning(
+                    f"judge returned placeholder reason={reason!r}; retrying once (attempt={_attempt})"
+                )
+                return await judge_flow(test, trace, model=model, _attempt=_attempt + 1)
+            reason = "Judge returned placeholder text; score kept but explanation unavailable."
         return round((score - 1) / 4, 3), reason
 
     except Exception as e:
         logger.warning(f"judge exception: {e}")
+        if _attempt < 2:
+            logger.warning(f"judge exception retry once (attempt={_attempt})")
+            return await judge_flow(test, trace, model=model, _attempt=_attempt + 1)
         return 0.0, f"judge error: {e}"
 
 

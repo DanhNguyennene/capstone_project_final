@@ -1,0 +1,1114 @@
+[
+  {
+    "url": "https://slurm.schedmd.com/documentation.html",
+    "title": "Slurm Workload Manager - Documentation",
+    "md_path": "documentation.md",
+    "depth": 0,
+    "word_count": "439",
+    "excerpt": "# Documentation NOTE: This documentation is for Slurm version 25.11. Documentation for older versions of Slurm are distributed with the source, or may be found in the [archive](https://slurm.schedmd.com/archive/). ## Slurm Users [#users](https://slurm.schedmd.com/documentation.ht"
+  },
+  {
+    "url": "https://slurm.schedmd.com/",
+    "title": "Slurm Workload Manager - Documentation",
+    "md_path": "index.md",
+    "depth": 1,
+    "word_count": "439",
+    "excerpt": "# Documentation NOTE: This documentation is for Slurm version 25.11. Documentation for older versions of Slurm are distributed with the source, or may be found in the [archive](https://slurm.schedmd.com/archive/). ## Slurm Users [#users](https://slurm.schedmd.com/) - [Quick Start"
+  },
+  {
+    "url": "https://slurm.schedmd.com/accounting.html",
+    "title": "Slurm Workload Manager - Accounting and Resource Limits",
+    "md_path": "accounting.md",
+    "depth": 1,
+    "word_count": "6459",
+    "excerpt": "# Accounting and Resource Limits ## Contents[#contents](https://slurm.schedmd.com/accounting.html) - [Overview](https://slurm.schedmd.com/accounting.html) - [Infrastructure](https://slurm.schedmd.com/accounting.html) [Storage Backup Host](https://slurm.schedmd.com/accounting.html"
+  },
+  {
+    "url": "https://slurm.schedmd.com/add.html",
+    "title": "Slurm Workload Manager - Adding Files or Plugins to Slurm",
+    "md_path": "add.md",
+    "depth": 1,
+    "word_count": "341",
+    "excerpt": "# Adding Files or Plugins to Slurm ## Adding a File to Slurm[#file](https://slurm.schedmd.com/add.html) This is the procedure to follow in order to add a new C file to the Slurm code base. We recommend using a git branch for this purpose. - Add your new file to the git repository"
+  },
+  {
+    "url": "https://slurm.schedmd.com/api.html",
+    "title": "Slurm Workload Manager - Slurm APIs",
+    "md_path": "api.md",
+    "depth": 1,
+    "word_count": "57",
+    "excerpt": "# Slurm APIs ### Overview[#overview](https://slurm.schedmd.com/api.html) All of the Slurm commands utilize a collection of Application Programming Interfaces (APIs) exposed through the \"slurm.h\" and \"slurmdb.h\" headers. Slurm's APIs are fixed within each major release. They do ch"
+  },
+  {
+    "url": "https://slurm.schedmd.com/authentication.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "authentication.md",
+    "depth": 1,
+    "word_count": "1210",
+    "excerpt": "# Authentication Plugins ## Overview[#Overview](https://slurm.schedmd.com/authentication.html) It is important for Slurm to know that the Remote Procedure Calls (RPCs) that it receives are coming from trusted sources. There are a few different authentication mechanisms available "
+  },
+  {
+    "url": "https://slurm.schedmd.com/big_sys.html",
+    "title": "Slurm Workload Manager - Large Cluster Administration Guide",
+    "md_path": "big_sys.md",
+    "depth": 1,
+    "word_count": "1352",
+    "excerpt": "# Large Cluster Administration Guide This document contains Slurm administrator information specifically for clusters containing 1,024 nodes or more. Some examples of large systems currently managed by Slurm are: - Frontier at Oak Ridge National Laboratory (ORNL) with 8,699,904 c"
+  },
+  {
+    "url": "https://slurm.schedmd.com/burst_buffer.html",
+    "title": "Slurm Workload Manager - Slurm Burst Buffer Guide",
+    "md_path": "burst_buffer.md",
+    "depth": 1,
+    "word_count": "4678",
+    "excerpt": "# Slurm Burst Buffer Guide - [Overview](https://slurm.schedmd.com/burst_buffer.html) - [Configuration (for system administrators)](https://slurm.schedmd.com/burst_buffer.html) [Common Configuration](https://slurm.schedmd.com/burst_buffer.html) - [Datawarp](https://slurm.schedmd.c"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cgroups.html",
+    "title": "Slurm Workload Manager - Control Group in Slurm",
+    "md_path": "cgroups.md",
+    "depth": 1,
+    "word_count": "2151",
+    "excerpt": "# Control Group in Slurm ## Contents [#contents](https://slurm.schedmd.com/cgroups.html) - [Control Group Overview](https://slurm.schedmd.com/cgroups.html) - [Slurm cgroup plugins design](https://slurm.schedmd.com/cgroups.html) - [Use of cgroup in Slurm](https://slurm.schedmd.com"
+  },
+  {
+    "url": "https://slurm.schedmd.com/classic_fair_share.html",
+    "title": "Slurm Workload Manager - Classic Fairshare Algorithm",
+    "md_path": "classic_fair_share.md",
+    "depth": 1,
+    "word_count": "2264",
+    "excerpt": "# Classic Fairshare Algorithm ## Overview[#overview](https://slurm.schedmd.com/classic_fair_share.html) Starting with Slurm 19.05, the Fair-share factor in the [priority/multifactor plugin](https://slurm.schedmd.com/priority_multifactor.html) will default to the [Fair Tree algori"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cli_filter_plugins.html",
+    "title": "Slurm Workload Manager - cli_filter Plugin API",
+    "md_path": "cli_filter_plugins.md",
+    "depth": 1,
+    "word_count": "1515",
+    "excerpt": "# cli_filter Plugin API ## Overview[#overview](https://slurm.schedmd.com/cli_filter_plugins.html) This document describes Slurm cli_filter plugins and the API that defines them. It is intended as a resource to programmers wishing to write their own Slurm cli_filter plugins. The p"
+  },
+  {
+    "url": "https://slurm.schedmd.com/configless_slurm.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "configless_slurm.md",
+    "depth": 1,
+    "word_count": "914",
+    "excerpt": "# \"Configless\" Slurm \"Configless\" Slurm is a feature that allows the compute nodes \u2014 specifically the slurmd process \u2014 and user commands running on login nodes to pull configuration information directly from the slurmctld instead of from a pre-distributed local file. Your cluster"
+  },
+  {
+    "url": "https://slurm.schedmd.com/configurator.easy.html",
+    "title": "Slurm System Configuration Tool",
+    "md_path": "configurator.easy.md",
+    "depth": 1,
+    "word_count": "1299",
+    "excerpt": "# Slurm Version 25.11 Configuration Tool - Easy Version This form can be used to create a Slurm configuration file with you controlling many of the important configuration parameters. This is a simplified version of the Slurm configuration tool. This version has fewer options for"
+  },
+  {
+    "url": "https://slurm.schedmd.com/configurator.html",
+    "title": "Slurm System Configuration Tool",
+    "md_path": "configurator.md",
+    "depth": 1,
+    "word_count": "1979",
+    "excerpt": "# Slurm Version 25.11 Configuration Tool This form can be used to create a Slurm configuration file with you controlling many of the important configuration parameters. This is the full version of the Slurm configuration tool. This version has all the configuration options to cre"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cons_tres.html",
+    "title": "Slurm Workload Manager - Consumable Resources in Slurm",
+    "md_path": "cons_tres.md",
+    "depth": 1,
+    "word_count": "1391",
+    "excerpt": "# Consumable Resources in Slurm Slurm, using the default node allocation plug-in, allocates nodes to jobs in exclusive mode. This means that even when all the resources within a node are not utilized by a given job, another job will not have access to these resources. Nodes posse"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cons_tres_share.html",
+    "title": "Slurm Workload Manager - Sharing Consumable Resources",
+    "md_path": "cons_tres_share.md",
+    "depth": 1,
+    "word_count": "1588",
+    "excerpt": "# Sharing Consumable Resources ## CPU Management [#cpu_management](https://slurm.schedmd.com/cons_tres_share.html) (Disclaimer: In this \"CPU Management\" section, the term \"consumable resource\" does not include memory. The management of memory as a consumable resource is discussed"
+  },
+  {
+    "url": "https://slurm.schedmd.com/containers.html",
+    "title": "Slurm Workload Manager - Containers Guide",
+    "md_path": "containers.md",
+    "depth": 1,
+    "word_count": "3821",
+    "excerpt": "# Containers Guide ## Contents[#contents](https://slurm.schedmd.com/containers.html) - [Overview](https://slurm.schedmd.com/containers.html) - [Known limitations](https://slurm.schedmd.com/containers.html) - [Prerequisites](https://slurm.schedmd.com/containers.html) - [Required s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/contributor.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "contributor.md",
+    "depth": 1,
+    "word_count": "504",
+    "excerpt": "# Slurm Workload Manager - ## NOTES FOR DEVELOPERS The official issue tracker for Slurm is at https://support.schedmd.com/ We welcome code contributions and patches, but we do not accept Pull Requests through GitHub at this time. Please submit patches as attachments to new ticket"
+  },
+  {
+    "url": "https://slurm.schedmd.com/core_spec.html",
+    "title": "Slurm Workload Manager - Core Specialization",
+    "md_path": "core_spec.md",
+    "depth": 1,
+    "word_count": "918",
+    "excerpt": "# Core Specialization Core specialization is a feature designed to isolate system overhead (system interrupts, etc.) to designated cores on a compute node. This can reduce context switching in applications to improve completion time. The job processes will not be able to directly"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cpu_management.html",
+    "title": "Slurm Workload Manager - CPU Management User and Administrator Guide",
+    "md_path": "cpu_management.md",
+    "depth": 1,
+    "word_count": "5752",
+    "excerpt": "# CPU Management User and Administrator Guide ## Overview[#Overview](https://slurm.schedmd.com/cpu_management.html) The purpose of this guide is to assist Slurm users and administrators in selecting configuration options and composing command lines to manage the use of CPU resour"
+  },
+  {
+    "url": "https://slurm.schedmd.com/dynamic_nodes.html",
+    "title": "Slurm Workload Manager - Dynamic Nodes",
+    "md_path": "dynamic_nodes.md",
+    "depth": 1,
+    "word_count": "381",
+    "excerpt": "# Dynamic Nodes ## Overview[#overview](https://slurm.schedmd.com/dynamic_nodes.html) Starting in Slurm 22.05, nodes can be dynamically added and removed from Slurm. ## Dynamic Node Communications [#communications](https://slurm.schedmd.com/dynamic_nodes.html) For regular, non-dyn"
+  },
+  {
+    "url": "https://slurm.schedmd.com/elasticsearch.html",
+    "title": "Slurm Workload Manager - Elasticsearch Guide",
+    "md_path": "elasticsearch.md",
+    "depth": 1,
+    "word_count": "688",
+    "excerpt": "# Elasticsearch Guide Slurm provides multiple Job Completion Plugins. These plugins are an orthogonal way to provide historical job [accounting](https://slurm.schedmd.com/accounting.html) data for finished jobs. In most installations, Slurm is already configured with an [Accounti"
+  },
+  {
+    "url": "https://slurm.schedmd.com/fair_tree.html",
+    "title": "Slurm Workload Manager - Fair Tree Fairshare Algorithm",
+    "md_path": "fair_tree.md",
+    "depth": 1,
+    "word_count": "1030",
+    "excerpt": "# Fair Tree Fairshare Algorithm ## Contents[#contents](https://slurm.schedmd.com/fair_tree.html) - [Introduction](https://slurm.schedmd.com/fair_tree.html) - [Overview for End Users](https://slurm.schedmd.com/fair_tree.html) - [Algorithm](https://slurm.schedmd.com/fair_tree.html)"
+  },
+  {
+    "url": "https://slurm.schedmd.com/faq.html",
+    "title": "Slurm Workload Manager - Frequently Asked Questions",
+    "md_path": "faq.md",
+    "depth": 1,
+    "word_count": "15824",
+    "excerpt": "# Frequently Asked Questions ## For Management - [Is Slurm really free?](https://slurm.schedmd.com/faq.html) - [Why should I use Slurm or other free software?](https://slurm.schedmd.com/faq.html) - [Why should I pay for free software?](https://slurm.schedmd.com/faq.html) - [What "
+  },
+  {
+    "url": "https://slurm.schedmd.com/federation.html",
+    "title": "Slurm Workload Manager - Slurm Federated Scheduling Guide",
+    "md_path": "federation.md",
+    "depth": 1,
+    "word_count": "2447",
+    "excerpt": "# Slurm Federated Scheduling Guide - [Overview](https://slurm.schedmd.com/federation.html) - [Configuration](https://slurm.schedmd.com/federation.html) - [Federated Job IDs](https://slurm.schedmd.com/federation.html) - [Job Submission](https://slurm.schedmd.com/federation.html) -"
+  },
+  {
+    "url": "https://slurm.schedmd.com/gang_scheduling.html",
+    "title": "Slurm Workload Manager - Gang Scheduling",
+    "md_path": "gang_scheduling.md",
+    "depth": 1,
+    "word_count": "3001",
+    "excerpt": "# Gang Scheduling Slurm supports timesliced gang scheduling in which two or more jobs are allocated to the same resources in the same partition and these jobs are alternately suspended to let one job at a time have dedicated access to the resources for a configured period of time"
+  },
+  {
+    "url": "https://slurm.schedmd.com/gres.html",
+    "title": "Slurm Workload Manager - Generic Resource (GRES) Scheduling",
+    "md_path": "gres.md",
+    "depth": 1,
+    "word_count": "4791",
+    "excerpt": "# Generic Resource (GRES) Scheduling ## Contents[#contents](https://slurm.schedmd.com/gres.html) - [Overview](https://slurm.schedmd.com/gres.html) - [Configuration](https://slurm.schedmd.com/gres.html) - [Running Jobs](https://slurm.schedmd.com/gres.html) - [AutoDetect](https://s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/gres_design.html",
+    "title": "Slurm Workload Manager - Generic Resource (GRES) Design Guide",
+    "md_path": "gres_design.md",
+    "depth": 1,
+    "word_count": "853",
+    "excerpt": "# Generic Resource (GRES) Design Guide ## Overview[#overview](https://slurm.schedmd.com/gres_design.html) Generic Resources (GRES) are resources associated with a specific node that can be allocated to jobs and steps. The most obvious example of GRES use would be GPUs. GRES are i"
+  },
+  {
+    "url": "https://slurm.schedmd.com/hdf5_profile_user_guide.html",
+    "title": "Slurm Workload Manager - Profiling Using HDF5 User Guide",
+    "md_path": "hdf5_profile_user_guide.md",
+    "depth": 1,
+    "word_count": "1688",
+    "excerpt": "# Profiling Using HDF5 User Guide ## Contents[#contents](https://slurm.schedmd.com/hdf5_profile_user_guide.html) - [Overview](https://slurm.schedmd.com/hdf5_profile_user_guide.html) - [Administration](https://slurm.schedmd.com/hdf5_profile_user_guide.html) - [Profiling Jobs](http"
+  },
+  {
+    "url": "https://slurm.schedmd.com/heterogeneous_jobs.html",
+    "title": "Slurm Workload Manager - Heterogeneous Job Support",
+    "md_path": "heterogeneous_jobs.md",
+    "depth": 1,
+    "word_count": "4512",
+    "excerpt": "# Heterogeneous Job Support - [Overview](https://slurm.schedmd.com/heterogeneous_jobs.html) - [Submitting Jobs](https://slurm.schedmd.com/heterogeneous_jobs.html) - [Burst Buffers](https://slurm.schedmd.com/heterogeneous_jobs.html) - [Managing Jobs](https://slurm.schedmd.com/hete"
+  },
+  {
+    "url": "https://slurm.schedmd.com/high_throughput.html",
+    "title": "Slurm Workload Manager - High Throughput Computing Administration Guide",
+    "md_path": "high_throughput.md",
+    "depth": 1,
+    "word_count": "2218",
+    "excerpt": "# High Throughput Computing Administration Guide This document contains Slurm administrator information specifically for high throughput computing, namely the execution of many short jobs. Getting optimal performance for high throughput computing does require some tuning and this"
+  },
+  {
+    "url": "https://slurm.schedmd.com/hres.html",
+    "title": "Slurm Workload Manager - Hierarchical Resource (HRES) Scheduling",
+    "md_path": "hres.md",
+    "depth": 1,
+    "word_count": "1109",
+    "excerpt": "# Hierarchical Resource (HRES) Scheduling ## Overview[#overview](https://slurm.schedmd.com/hres.html) Hierarchical Resources (HRES) were added in Slurm 25.05 in a Beta state. While in beta, the configuration file format and other aspects of this feature may undergo substantial ch"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_array.html",
+    "title": "Slurm Workload Manager - Job Array Support",
+    "md_path": "job_array.md",
+    "depth": 1,
+    "word_count": "2227",
+    "excerpt": "# Job Array Support ## Overview[#overview](https://slurm.schedmd.com/job_array.html) Job arrays offer a mechanism for submitting and managing collections of similar jobs quickly and easily, useful for repetitive workloads that follow a common job pattern. This greatly improves ov"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_exit_code.html",
+    "title": "Slurm Workload Manager - Job Exit Codes",
+    "md_path": "job_exit_code.md",
+    "depth": 1,
+    "word_count": "771",
+    "excerpt": "# Job Exit Codes A job's exit code (aka exit status, return code and completion code) is captured by Slurm and saved as part of the job record. For sbatch jobs, the exit code that is captured is the output of the batch script. For salloc jobs, the exit code will be the return val"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_launch.html",
+    "title": "Slurm Workload Manager - Job Launch Design Guide",
+    "md_path": "job_launch.md",
+    "depth": 1,
+    "word_count": "1449",
+    "excerpt": "# Job Launch Design Guide ## Overview[#overview](https://slurm.schedmd.com/job_launch.html) This guide describes at a high level the processes which occur in order to initiate a job including the daemons and plugins involved in the process. It describes the process of job allocat"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_reason_codes.html",
+    "title": "Slurm Workload Manager - Job Reason Codes",
+    "md_path": "job_reason_codes.md",
+    "depth": 1,
+    "word_count": "4090",
+    "excerpt": "# Job Reason Codes These reason codes can be used to identify why a pending job has not yet been started by the scheduler. There may be multiple reasons why a job cannot start, in which case only the reason that was encountered by the attempted scheduling method will be displayed"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_state_codes.html",
+    "title": "Slurm Workload Manager - Job State Codes",
+    "md_path": "job_state_codes.md",
+    "depth": 1,
+    "word_count": "572",
+    "excerpt": "# Job State Codes Each job in the Slurm system has a state assigned to it. How the job state is displayed depends on the method used to identify the state. ## Overview[#overview](https://slurm.schedmd.com/job_state_codes.html) In the Slurm code, there are base states and state fl"
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_submit_plugins.html",
+    "title": "Slurm Workload Manager - Job Submit Plugin API",
+    "md_path": "job_submit_plugins.md",
+    "depth": 1,
+    "word_count": "1873",
+    "excerpt": "# Job Submit Plugin API ## Overview[#overview](https://slurm.schedmd.com/job_submit_plugins.html) This document describes Slurm job submit plugins and the API that defines them. It is intended as a resource to programmers wishing to write their own Slurm job submit plugins. This "
+  },
+  {
+    "url": "https://slurm.schedmd.com/jobcomp_kafka.html",
+    "title": "Slurm Workload Manager - Job Completion Kafka plugin guide",
+    "md_path": "jobcomp_kafka.md",
+    "depth": 1,
+    "word_count": "888",
+    "excerpt": "# Job Completion Kafka plugin guide When configured, the jobcomp/kafka plugin attempts to publish a subset of the fields for each completed job record to a Kafka server. Since Slurm 25.05 it's also possible to optionally send a subset of job record fields when the job first start"
+  },
+  {
+    "url": "https://slurm.schedmd.com/jwt.html",
+    "title": "Slurm Workload Manager - JSON Web Tokens (JWT) Authentication",
+    "md_path": "jwt.md",
+    "depth": 1,
+    "word_count": "1843",
+    "excerpt": "# JSON Web Tokens (JWT) Authentication Slurm provides a [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519) compliant implementation of [JSON Web Tokens (JWT)](https://jwt.io/). This authentication can be used as an AuthAltType , usually alongside auth/munge as the AuthType "
+  },
+  {
+    "url": "https://slurm.schedmd.com/kubernetes.html",
+    "title": "Slurm Workload Manager - Kubernetes Guide",
+    "md_path": "kubernetes.md",
+    "depth": 1,
+    "word_count": "138",
+    "excerpt": "# Kubernetes Guide ## Contents[#contents](https://slurm.schedmd.com/kubernetes.html) - [Overview](https://slurm.schedmd.com/kubernetes.html) - [Presentations](https://slurm.schedmd.com/kubernetes.html) ## Overview[#overview](https://slurm.schedmd.com/kubernetes.html) [Kubernetes]"
+  },
+  {
+    "url": "https://slurm.schedmd.com/licenses.html",
+    "title": "Slurm Workload Manager - Licenses Guide",
+    "md_path": "licenses.md",
+    "depth": 1,
+    "word_count": "1732",
+    "excerpt": "# Licenses Guide ## Licenses Overview [#overview](https://slurm.schedmd.com/licenses.html) Slurm can help with software license management by assigning available licenses to jobs at scheduling time. If the licenses are not available, jobs are kept pending until licenses become av"
+  },
+  {
+    "url": "https://slurm.schedmd.com/mail.html",
+    "title": "Slurm Workload Manager - Mailing Lists",
+    "md_path": "mail.md",
+    "depth": 1,
+    "word_count": "101",
+    "excerpt": "# Mailing Lists SchedMD maintains two Slurm mailing lists: - slurm-announce@schedmd.com is designated for communications about Slurm releases. Only SchedMD may post to this list. Low traffic. - slurm-users@schedmd.com (formerly slurm-dev@schedmd.com) is for discussion by the Slur"
+  },
+  {
+    "url": "https://slurm.schedmd.com/man_index.html",
+    "title": "Slurm Workload Manager - Man Pages",
+    "md_path": "man_index.md",
+    "depth": 1,
+    "word_count": "402",
+    "excerpt": "# Man Pages NOTE: This documentation is for Slurm version 25.11. Documentation for other versions of Slurm is distributed with the code Refer to [this page](https://slurm.schedmd.com/slurm.html) for an overview of Slurm. ## Commands [#commands](https://slurm.schedmd.com/man_index"
+  },
+  {
+    "url": "https://slurm.schedmd.com/mc_support.html",
+    "title": "Slurm Workload Manager - Support for Multi-core/Multi-thread Architectures",
+    "md_path": "mc_support.md",
+    "depth": 1,
+    "word_count": "3639",
+    "excerpt": "# Support for Multi-core/Multi-thread Architectures ## Contents[#contents](https://slurm.schedmd.com/mc_support.html) - Definitions Overview of srun flags Motivation behind high-level srun flags Extensions to sinfo/squeue/scontrol Configuration settings in slurm.conf ## Definitio"
+  },
+  {
+    "url": "https://slurm.schedmd.com/mcs.html",
+    "title": "Slurm Workload Manager - Multi-Category Security (MCS) Guide",
+    "md_path": "mcs.md",
+    "depth": 1,
+    "word_count": "1173",
+    "excerpt": "# Multi-Category Security (MCS) Guide ## Overview[#overview](https://slurm.schedmd.com/mcs.html) The MCS Plugin is meant to extend the current Slurm functionality related to job node exclusivity and job/node information display privacy . Slurm's OverSubscribe option controls the "
+  },
+  {
+    "url": "https://slurm.schedmd.com/mpi_guide.html",
+    "title": "Slurm Workload Manager - MPI Users Guide",
+    "md_path": "mpi_guide.md",
+    "depth": 1,
+    "word_count": "3717",
+    "excerpt": "# MPI Users Guide MPI use depends upon the type of MPI being used. There are three fundamentally different modes of operation used by these various MPI implementations. - Slurm directly launches the tasks and performs initialization of communications through the PMI-1, PMI-2 or P"
+  },
+  {
+    "url": "https://slurm.schedmd.com/multi_cluster.html",
+    "title": "Slurm Workload Manager - Multi-Cluster Operation",
+    "md_path": "multi_cluster.md",
+    "depth": 1,
+    "word_count": "369",
+    "excerpt": "# Multi-Cluster Operation A cluster is comprised of all the nodes managed by a single slurmctld daemon. Slurm offers the ability to target commands to other clusters instead of, or in addition to, the local cluster on which the command is invoked. When this behavior is enabled, u"
+  },
+  {
+    "url": "https://slurm.schedmd.com/namespace.html",
+    "title": "Slurm Workload Manager - Namespace Plugins",
+    "md_path": "namespace.md",
+    "depth": 1,
+    "word_count": "506",
+    "excerpt": "# Namespace Plugins ## Overview[#overview](https://slurm.schedmd.com/namespace.html) A namespace plugin can be enabled to provide job-specific, private temporary file system space. When enabled on the cluster, a filesystem namespace will be created for each job with a unique, pri"
+  },
+  {
+    "url": "https://slurm.schedmd.com/network.html",
+    "title": "Slurm Workload Manager - Network Configuration Guide",
+    "md_path": "network.md",
+    "depth": 1,
+    "word_count": "1404",
+    "excerpt": "# Network Configuration Guide ## Contents[#contents](https://slurm.schedmd.com/network.html) - [Overview](https://slurm.schedmd.com/network.html) - [Communication for slurmctld](https://slurm.schedmd.com/network.html) - [Communication for slurmdbd](https://slurm.schedmd.com/netwo"
+  },
+  {
+    "url": "https://slurm.schedmd.com/nss_slurm.html",
+    "title": "Slurm Workload Manager - nss_slurm",
+    "md_path": "nss_slurm.md",
+    "depth": 1,
+    "word_count": "982",
+    "excerpt": "# nss_slurm nss_slurm is an optional NSS plugin that can permit passwd, group and cloud node host resolution for a job on the compute node to be serviced through the local slurmstepd process, rather than through some alternate network-based service such as LDAP, DNS, SSSD, or NSL"
+  },
+  {
+    "url": "https://slurm.schedmd.com/openapi_release_notes.html",
+    "title": "Slurm Workload Manager - Slurm OpenAPI Plugin Release Notes",
+    "md_path": "openapi_release_notes.md",
+    "depth": 1,
+    "word_count": "48844",
+    "excerpt": "# Slurm Workload Manager - Slurm OpenAPI Plugin Release Notes h3 { padding-top: 25px; font-size: 20px; text-transform: none; letter-spacing: 0.1em; font-weight: 600; } h4 { padding-top: 25px; font-size: 16px; text-transform: none; letter-spacing: 0.1em; font-weight: 500; } .tchan"
+  },
+  {
+    "url": "https://slurm.schedmd.com/overview.html",
+    "title": "Slurm Workload Manager - Overview",
+    "md_path": "overview.md",
+    "depth": 1,
+    "word_count": "1201",
+    "excerpt": "# Overview Slurm is an open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters. Slurm requires no kernel modifications for its operation and is relatively self-contained. As a cluster workload manager, Slurm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/pam_slurm_adopt.html",
+    "title": "Slurm Workload Manager - pam_slurm_adopt",
+    "md_path": "pam_slurm_adopt.md",
+    "depth": 1,
+    "word_count": "1878",
+    "excerpt": "# pam_slurm_adopt The purpose of this module is to prevent users from sshing into nodes that they do not have a running job on, and to track the ssh connection and any other spawned processes for accounting and to ensure complete job cleanup when the job is completed. This module"
+  },
+  {
+    "url": "https://slurm.schedmd.com/plugins.html",
+    "title": "Slurm Workload Manager - Slurm Plugin API",
+    "md_path": "plugins.md",
+    "depth": 1,
+    "word_count": "1427",
+    "excerpt": "# Slurm Plugin API ## Overview[#overview](https://slurm.schedmd.com/plugins.html) A Slurm plugin is a dynamically linked code object which is loaded explicitly at run time by the Slurm libraries. A plugin provides a customized implementation of a well-defined API connected to tas"
+  },
+  {
+    "url": "https://slurm.schedmd.com/power_save.html",
+    "title": "Slurm Workload Manager - Slurm Power Saving Guide",
+    "md_path": "power_save.md",
+    "depth": 1,
+    "word_count": "3792",
+    "excerpt": "# Slurm Power Saving Guide ## Contents[#contents](https://slurm.schedmd.com/power_save.html) - [Overview](https://slurm.schedmd.com/power_save.html) - [Configuration](https://slurm.schedmd.com/power_save.html) - [Node Lifecycle](https://slurm.schedmd.com/power_save.html) - [Manua"
+  },
+  {
+    "url": "https://slurm.schedmd.com/preempt.html",
+    "title": "Slurm Workload Manager - Preemption",
+    "md_path": "preempt.md",
+    "depth": 1,
+    "word_count": "3637",
+    "excerpt": "# Preemption Slurm supports job preemption, the act of \"stopping\" one or more \"low-priority\" jobs to let a \"high-priority\" job run. Job preemption is implemented as a variation of Slurm's [Gang Scheduling](https://slurm.schedmd.com/gang_scheduling.html) logic. When a job that can"
+  },
+  {
+    "url": "https://slurm.schedmd.com/prep_plugins.html",
+    "title": "Slurm Workload Manager - PrEp Plugin API",
+    "md_path": "prep_plugins.md",
+    "depth": 1,
+    "word_count": "873",
+    "excerpt": "# PrEp Plugin API ## Overview[#overview](https://slurm.schedmd.com/prep_plugins.html) This document describes the Slurm PrEp \u2014 short for \"Pr\"olog and \"Ep\"ilog \u2014 plugins API. It is intended as a resource to programmers wishing to write their own Slurm prep plugins. The purpose of "
+  },
+  {
+    "url": "https://slurm.schedmd.com/priority_multifactor.html",
+    "title": "Slurm Workload Manager - Multifactor Priority Plugin",
+    "md_path": "priority_multifactor.md",
+    "depth": 1,
+    "word_count": "3162",
+    "excerpt": "# Multifactor Priority Plugin ## Contents[#contents](https://slurm.schedmd.com/priority_multifactor.html) - Introduction Multifactor Job Priority Plugin Job Priority Factors In General Age Factor Association Factor Job Size Factor Nice Factor Partition Factor Quality of Service ("
+  },
+  {
+    "url": "https://slurm.schedmd.com/priority_multifactor3.html",
+    "title": "Slurm Workload Manager - Depth-Oblivious Fair-share Factor",
+    "md_path": "priority_multifactor3.md",
+    "depth": 1,
+    "word_count": "696",
+    "excerpt": "# Depth-Oblivious Fair-share Factor ## Contents[#contents](https://slurm.schedmd.com/priority_multifactor3.html) - Introduction - Depth-Oblivious Fair-Share Formula - The Effective Usage Ratio Under an Account Hierarchy - Configuration ## Introduction[#intro](https://slurm.schedm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/programmer_guide.html",
+    "title": "Slurm Workload Manager - Slurm Programmer's Guide",
+    "md_path": "programmer_guide.md",
+    "depth": 1,
+    "word_count": "1810",
+    "excerpt": "# Slurm Programmer's Guide ## Contents[#contents](https://slurm.schedmd.com/programmer_guide.html) - [Overview](https://slurm.schedmd.com/programmer_guide.html) - [Plugins](https://slurm.schedmd.com/programmer_guide.html) - [Directory Structure](https://slurm.schedmd.com/programm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/prolog_epilog.html",
+    "title": "Slurm Workload Manager - Prolog and Epilog Guide",
+    "md_path": "prolog_epilog.md",
+    "depth": 1,
+    "word_count": "2527",
+    "excerpt": "# Prolog and Epilog Guide Slurm supports a multitude of prolog and epilog programs. Note that for security reasons, these programs do not have a search path set. Either specify fully qualified path names in the program or set the PATH environment variable. The first table below i"
+  },
+  {
+    "url": "https://slurm.schedmd.com/publications.html",
+    "title": "Slurm Workload Manager - Presentations",
+    "md_path": "publications.md",
+    "depth": 1,
+    "word_count": "4903",
+    "excerpt": "# Presentations Note that older presentations may contain outdated information. ## Presentations from GTC 2026, March 2026 - [Orchestrate Next-Generation AI Workloads With Open-Source Slurm](http://slurm.schedmd.com/MISC26/Slurm_GTC_2026.pdf) Tim Wickberg and Danny Auble, SchedMD"
+  },
+  {
+    "url": "https://slurm.schedmd.com/qos.html",
+    "title": "Slurm Workload Manager - Quality of Service (QOS)",
+    "md_path": "qos.md",
+    "depth": 1,
+    "word_count": "2098",
+    "excerpt": "# Quality of Service (QOS) One can specify a Quality of Service (QOS) for each job submitted to Slurm. The QOSs are defined in the Slurm database using the sacctmgr command. Jobs request a QOS using the \"--qos=\" option to the sbatch , salloc , and srun commands. ## Contents[#cont"
+  },
+  {
+    "url": "https://slurm.schedmd.com/quickstart.html",
+    "title": "Slurm Workload Manager - Quick Start User Guide",
+    "md_path": "quickstart.md",
+    "depth": 1,
+    "word_count": "2296",
+    "excerpt": "# Quick Start User Guide ## Overview[#overview](https://slurm.schedmd.com/quickstart.html) Slurm is an open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters. Slurm requires no kernel modifications for its "
+  },
+  {
+    "url": "https://slurm.schedmd.com/quickstart_admin.html",
+    "title": "Slurm Workload Manager - Quick Start Administrator Guide",
+    "md_path": "quickstart_admin.md",
+    "depth": 1,
+    "word_count": "4546",
+    "excerpt": "# Quick Start Administrator Guide ## Contents[#contents](https://slurm.schedmd.com/quickstart_admin.html) - [Overview](https://slurm.schedmd.com/quickstart_admin.html) - [Super Quick Start](https://slurm.schedmd.com/quickstart_admin.html) - [Building and Installing Slurm](https:/"
+  },
+  {
+    "url": "https://slurm.schedmd.com/related_software.html",
+    "title": "Slurm Workload Manager - Related Software",
+    "md_path": "related_software.md",
+    "depth": 1,
+    "word_count": "1007",
+    "excerpt": "# Related Software Slurm source can be downloaded from [https://www.schedmd.com/download-slurm/](https://www.schedmd.com/download-slurm/). Note that the following related software is not written or maintained by SchedMD. Some of the software is required for certain functionality "
+  },
+  {
+    "url": "https://slurm.schedmd.com/release_notes.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "release_notes.md",
+    "depth": 1,
+    "word_count": "718",
+    "excerpt": "# Release Notes for Slurm 25.11 ## Upgrading Slurm 25.11 supports upgrading directly from 25.05, 24.11, and 24.05. See the [Upgrade Guide](https://slurm.schedmd.com/upgrades.html) for further details. ## Highlights - Added new \u201cExpedited Requeue\u201d mode for batch jobs. Batch jobs w"
+  },
+  {
+    "url": "https://slurm.schedmd.com/reservations.html",
+    "title": "Slurm Workload Manager - Advanced Resource Reservation Guide",
+    "md_path": "reservations.md",
+    "depth": 1,
+    "word_count": "3122",
+    "excerpt": "# Advanced Resource Reservation Guide Slurm has the ability to reserve resources for jobs being executed by select users and/or QOS and/or partitions and/or select accounts. A resource reservation identifies the resources in that reservation and a time period during which the res"
+  },
+  {
+    "url": "https://slurm.schedmd.com/resource_binding.html",
+    "title": "Slurm Workload Manager - Resource Binding",
+    "md_path": "resource_binding.md",
+    "depth": 1,
+    "word_count": "397",
+    "excerpt": "# Resource Binding - [Overview](https://slurm.schedmd.com/resource_binding.html) - [Srun --cpu-bind option](https://slurm.schedmd.com/resource_binding.html) - [Node CpuBind Configuration](https://slurm.schedmd.com/resource_binding.html) - [Partition CpuBind Configuration](https:/"
+  },
+  {
+    "url": "https://slurm.schedmd.com/resource_limits.html",
+    "title": "Slurm Workload Manager - Resource Limits",
+    "md_path": "resource_limits.md",
+    "depth": 1,
+    "word_count": "3451",
+    "excerpt": "# Resource Limits Familiarity with Slurm's [Accounting](https://slurm.schedmd.com/accounting.html) web page is strongly recommended before use of this document. ## Hierarchy[#hierarchy](https://slurm.schedmd.com/resource_limits.html) Slurm's hierarchical limits are enforced in th"
+  },
+  {
+    "url": "https://slurm.schedmd.com/rest.html",
+    "title": "Slurm Workload Manager - REST API Details",
+    "md_path": "rest.md",
+    "depth": 1,
+    "word_count": "2000",
+    "excerpt": "# REST API Details Slurm provides a [REST API](https://restfulapi.net/) through the slurmrestd daemon, using [JSON Web Tokens](https://slurm.schedmd.com/jwt.html) for authentication. This daemon is designed to allow clients to communicate with Slurm via a REST API (in addition to"
+  },
+  {
+    "url": "https://slurm.schedmd.com/rest_api.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "rest_api.md",
+    "depth": 1,
+    "word_count": "56076",
+    "excerpt": "# Slurm Workload Manager - - # Slurm REST API API to access and control Slurm More information: [https://www.schedmd.com/](https://www.schedmd.com/) Contact Info: [sales@schedmd.com](https://slurm.schedmd.com/sales@schedmd.com) Version: Slurm-25.11.5 BasePath: Apache 2.0 https://"
+  },
+  {
+    "url": "https://slurm.schedmd.com/rest_clients.html",
+    "title": "Slurm Workload Manager - REST API Client Writing Guide",
+    "md_path": "rest_clients.md",
+    "depth": 1,
+    "word_count": "2202",
+    "excerpt": "# REST API Client Writing Guide See also: - [REST API Quick Start Guide](https://slurm.schedmd.com/rest_quickstart.html) [Common Issues](https://slurm.schedmd.com/rest_quickstart.html) - [REST API Details](https://slurm.schedmd.com/rest.html) - [REST API Methods and Models](https"
+  },
+  {
+    "url": "https://slurm.schedmd.com/rest_quickstart.html",
+    "title": "Slurm Workload Manager - REST API Quick Start Guide",
+    "md_path": "rest_quickstart.md",
+    "depth": 1,
+    "word_count": "1624",
+    "excerpt": "# REST API Quick Start Guide Slurm provides a [REST API](https://restfulapi.net/) through the slurmrestd daemon, using [JSON Web Tokens](https://slurm.schedmd.com/jwt.html) for authentication. This daemon is designed to allow clients to communicate with Slurm via a REST API (in a"
+  },
+  {
+    "url": "https://slurm.schedmd.com/rosetta.html",
+    "title": "Slurm Workload Manager - Rosetta Stone of Workload Managers",
+    "md_path": "rosetta.md",
+    "depth": 1,
+    "word_count": "88",
+    "excerpt": "# Rosetta Stone of Workload Managers ## PBS/Torque, Slurm, LSF, SGE and LoadLeveler This table lists the most common command, environment variables, and job specification options used by the major workload management systems: PBS/Torque, Slurm, LSF, SGE and LoadLeveler. Each of t"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sched_config.html",
+    "title": "Slurm Workload Manager - Scheduling Configuration Guide",
+    "md_path": "sched_config.md",
+    "depth": 1,
+    "word_count": "1337",
+    "excerpt": "# Scheduling Configuration Guide ## Overview[#overview](https://slurm.schedmd.com/sched_config.html) Slurm is designed to perform a quick and simple scheduling attempt at events such as job submission or completion and configuration changes. During these event-triggered schedulin"
+  },
+  {
+    "url": "https://slurm.schedmd.com/select_design.html",
+    "title": "Slurm Workload Manager - Select Plugin Design Guide",
+    "md_path": "select_design.md",
+    "depth": 1,
+    "word_count": "587",
+    "excerpt": "# Select Plugin Design Guide ## Overview[#overview](https://slurm.schedmd.com/select_design.html) The select plugin is responsible for selecting compute resources to be allocated to a job, plus allocating and deallocating those resources. The select plugin is aware of the systems"
+  },
+  {
+    "url": "https://slurm.schedmd.com/selinux.html",
+    "title": "Slurm Workload Manager - SELinux",
+    "md_path": "selinux.md",
+    "depth": 1,
+    "word_count": "653",
+    "excerpt": "# SELinux Starting with version 21.08, Slurm includes support for setting an SELinux context for jobs as a technology preview. The implementation may change in future releases, and support for it is not enabled by default. ## Architecture [#ARCHITECTURE](https://slurm.schedmd.com"
+  },
+  {
+    "url": "https://slurm.schedmd.com/site_factor.html",
+    "title": "Slurm Workload Manager - Slurm Priority Site Factor Plugin API",
+    "md_path": "site_factor.md",
+    "depth": 1,
+    "word_count": "532",
+    "excerpt": "# Slurm Priority Site Factor Plugin API ## Overview[#overview](https://slurm.schedmd.com/site_factor.html) This document describes Slurm site_factor plugins and the API that defines them. It is intended as a resource to programmers wishing to write their own Slurm site_factor plu"
+  },
+  {
+    "url": "https://slurm.schedmd.com/topology.html",
+    "title": "Slurm Workload Manager - Topology Guide",
+    "md_path": "topology.md",
+    "depth": 1,
+    "word_count": "1955",
+    "excerpt": "# Topology Guide Slurm can be configured to support topology-aware resource allocation to optimize job performance. Slurm supports several modes of operation, one to optimize performance on systems with a three-dimensional torus interconnect and another for a hierarchical interco"
+  },
+  {
+    "url": "https://slurm.schedmd.com/tres.html",
+    "title": "Slurm Workload Manager - Trackable RESources (TRES)",
+    "md_path": "tres.md",
+    "depth": 1,
+    "word_count": "1079",
+    "excerpt": "# Trackable RESources (TRES) A TRES is a resource that can be tracked for usage or used to enforce limits against. A TRES is a combination of a Type and a Name. Types are predefined. Current TRES Types are: - BB (burst buffers) - Billing - CPU - Energy - FS (filesystem) - GRES - "
+  },
+  {
+    "url": "https://slurm.schedmd.com/troubleshoot.html",
+    "title": "Slurm Workload Manager - Slurm Troubleshooting Guide",
+    "md_path": "troubleshoot.md",
+    "depth": 1,
+    "word_count": "1364",
+    "excerpt": "# Slurm Troubleshooting Guide This guide is meant as a tool to help system administrators or operators troubleshoot Slurm failures and restore services. The [Frequently Asked Questions](https://slurm.schedmd.com/faq.html) document may also prove useful. - [Slurm is not responding"
+  },
+  {
+    "url": "https://slurm.schedmd.com/upgrades.html",
+    "title": "Slurm Workload Manager - Upgrade Guide",
+    "md_path": "upgrades.md",
+    "depth": 1,
+    "word_count": "3408",
+    "excerpt": "# Upgrade Guide Slurm supports in-place upgrades between certain versions. This page provides important details about the steps necessary to perform an upgrade and the potential complications to prepare for. See also [Quick Start Administrator Guide](https://slurm.schedmd.com/qui"
+  },
+  {
+    "url": "https://slurm.schedmd.com/user_permissions.html",
+    "title": "Slurm Workload Manager - User Permissions",
+    "md_path": "user_permissions.md",
+    "depth": 1,
+    "word_count": "213",
+    "excerpt": "# User Permissions Slurm supports several special user permissions as described below. ## Operator[#operator](https://slurm.schedmd.com/user_permissions.html) These users can add, modify, and remove any database object (user, account, etc), and add other operators. On a SlurmDBD "
+  },
+  {
+    "url": "https://slurm.schedmd.com/wckey.html",
+    "title": "Slurm Workload Manager - Workload Characterization Key (WCKey) Management",
+    "md_path": "wckey.md",
+    "depth": 1,
+    "word_count": "397",
+    "excerpt": "# Workload Characterization Key (WCKey) Management A WCKey is an orthogonal way to do accounting against possibly unrelated accounts. This can be useful where users from different accounts are all working on the same project. ## slurm(dbd).conf settings [#conf](https://slurm.sche"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sacct.html",
+    "title": "Slurm Workload Manager - sacct",
+    "md_path": "sacct.md",
+    "depth": 2,
+    "word_count": "6849",
+    "excerpt": "# sacct Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sacct.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sacct.html) sacct - displays accounting data for all jobs and job steps in the Slurm job accounting log or Slurm database ## "
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurm.conf.html",
+    "title": "Slurm Workload Manager - slurm.conf",
+    "md_path": "slurm.conf.md",
+    "depth": 2,
+    "word_count": "43524",
+    "excerpt": "# slurm.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/slurm.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurm.conf.html) slurm.conf - Slurm configuration file ## DESCRIPTION[#SECTION_DESCRIPTION](htt"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmdbd.conf.html",
+    "title": "Slurm Workload Manager - slurmdbd.conf",
+    "md_path": "slurmdbd.conf.md",
+    "depth": 2,
+    "word_count": "4840",
+    "excerpt": "# slurmdbd.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/slurmdbd.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmdbd.conf.html) slurmdbd.conf - Slurm Database Daemon (SlurmDBD) configuration file #"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sstat.html",
+    "title": "Slurm Workload Manager - sstat",
+    "md_path": "sstat.md",
+    "depth": 2,
+    "word_count": "1422",
+    "excerpt": "# sstat Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sstat.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sstat.html) sstat - Display the status information of a running job/step. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sackd.html",
+    "title": "Slurm Workload Manager - sackd",
+    "md_path": "sackd.md",
+    "depth": 2,
+    "word_count": "692",
+    "excerpt": "# sackd Section: Slurm Auth and Cred Kiosk Daemon (8) Updated: Slurm Auth and Cred Kiosk Daemon [Index](https://slurm.schedmd.com/sackd.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sackd.html) sackd - Slurm Auth and Cred Kiosk Daemon. ## SYNOPSIS[#SECTION_SYNOPSIS](http"
+  },
+  {
+    "url": "https://slurm.schedmd.com/burst_buffer.conf.html",
+    "title": "Slurm Workload Manager - burst_buffer.conf",
+    "md_path": "burst_buffer.conf.md",
+    "depth": 2,
+    "word_count": "999",
+    "excerpt": "# burst_buffer.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/burst_buffer.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/burst_buffer.conf.html) burst_buffer.conf - Slurm configuration file for burst bu"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cgroup.conf.html",
+    "title": "Slurm Workload Manager - cgroup.conf",
+    "md_path": "cgroup.conf.md",
+    "depth": 2,
+    "word_count": "1960",
+    "excerpt": "# cgroup.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/cgroup.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/cgroup.conf.html) cgroup.conf - Slurm configuration file for the cgroup support ## DESCRIPTIO"
+  },
+  {
+    "url": "https://slurm.schedmd.com/cgroup_v2.html",
+    "title": "Slurm Workload Manager - Control Group v2 plugin",
+    "md_path": "cgroup_v2.md",
+    "depth": 2,
+    "word_count": "4742",
+    "excerpt": "# Control Group v2 plugin ## Contents [#contents](https://slurm.schedmd.com/cgroup_v2.html) - [Overview](https://slurm.schedmd.com/cgroup_v2.html) - [Conversion from cgroup v1](https://slurm.schedmd.com/cgroup_v2.html) [Reconfigure SystemD](https://slurm.schedmd.com/cgroup_v2.htm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurm.html",
+    "title": "Slurm Workload Manager - Slurm Workload Manager",
+    "md_path": "slurm.md",
+    "depth": 2,
+    "word_count": "717",
+    "excerpt": "# Slurm Workload Manager Slurm is an open-source workload manager designed for Linux clusters of all sizes. It provides three key functions. First it allocates exclusive and/or non-exclusive access to resources (computer nodes) to users for some duration of time so they can perfo"
+  },
+  {
+    "url": "https://slurm.schedmd.com/srun.html",
+    "title": "Slurm Workload Manager - srun",
+    "md_path": "srun.md",
+    "depth": 2,
+    "word_count": "23917",
+    "excerpt": "# srun Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/srun.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/srun.html) srun - Run parallel jobs ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/srun.html) srun [ OPTIONS(0) ... ["
+  },
+  {
+    "url": "https://slurm.schedmd.com/oci.conf.html",
+    "title": "Slurm Workload Manager - oci.conf",
+    "md_path": "oci.conf.md",
+    "depth": 2,
+    "word_count": "996",
+    "excerpt": "# oci.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/oci.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/oci.conf.html) oci.conf - Slurm configuration file for containers. ## DESCRIPTION[#SECTION_DESCRIPT"
+  },
+  {
+    "url": "https://slurm.schedmd.com/scrun.html",
+    "title": "Slurm Workload Manager - scrun",
+    "md_path": "scrun.md",
+    "depth": 2,
+    "word_count": "3720",
+    "excerpt": "# scrun Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/scrun.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/scrun.html) scrun - an OCI runtime proxy for Slurm. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/scrun.html) ## C"
+  },
+  {
+    "url": "https://slurm.schedmd.com/dist_plane.html",
+    "title": "Slurm Workload Manager - Plane distribution",
+    "md_path": "dist_plane.md",
+    "depth": 2,
+    "word_count": "556",
+    "excerpt": "# Plane distribution: -m plane=plane_size The plane distribution allocates tasks in blocks of size plane_size in a round-robin fashion across allocated nodes. To specify the plane distribution add to the srun command line --distribution=plane=plane_size or -m plane=plane_size whe"
+  },
+  {
+    "url": "https://slurm.schedmd.com/salloc.html",
+    "title": "Slurm Workload Manager - salloc",
+    "md_path": "salloc.md",
+    "depth": 2,
+    "word_count": "15575",
+    "excerpt": "# salloc Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/salloc.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/salloc.html) salloc - Obtain a Slurm job allocation (a set of nodes), execute a command, and then release the allocation wh"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sbatch.html",
+    "title": "Slurm Workload Manager - sbatch",
+    "md_path": "sbatch.md",
+    "depth": 2,
+    "word_count": "17919",
+    "excerpt": "# sbatch Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sbatch.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sbatch.html) sbatch - Submit a batch script to Slurm. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/sbatch.html)"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmd.html",
+    "title": "Slurm Workload Manager - slurmd",
+    "md_path": "slurmd.md",
+    "depth": 2,
+    "word_count": "1499",
+    "excerpt": "# slurmd Section: Slurm Daemon (8) Updated: Slurm Daemon [Index](https://slurm.schedmd.com/slurmd.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmd.html) slurmd - The compute node daemon for Slurm. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/slurmd.html) "
+  },
+  {
+    "url": "https://slurm.schedmd.com/job_container.conf.html",
+    "title": "Slurm Workload Manager - job_container.conf",
+    "md_path": "job_container.conf.md",
+    "depth": 2,
+    "word_count": "1196",
+    "excerpt": "# job_container.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/job_container.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/job_container.conf.html) job_container.conf - Slurm configuration file for name"
+  },
+  {
+    "url": "https://slurm.schedmd.com/gres.conf.html",
+    "title": "Slurm Workload Manager - gres.conf",
+    "md_path": "gres.conf.md",
+    "depth": 2,
+    "word_count": "2737",
+    "excerpt": "# gres.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/gres.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/gres.conf.html) gres.conf - Slurm configuration file for Generic RESource (GRES) management. ## D"
+  },
+  {
+    "url": "https://slurm.schedmd.com/acct_gather.conf.html",
+    "title": "Slurm Workload Manager - acct_gather.conf",
+    "md_path": "acct_gather.conf.md",
+    "depth": 2,
+    "word_count": "1886",
+    "excerpt": "# acct_gather.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/acct_gather.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/acct_gather.conf.html) acct_gather.conf - Slurm configuration file for the acct_gat"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sh5util.html",
+    "title": "Slurm Workload Manager - sh5util",
+    "md_path": "sh5util.md",
+    "depth": 2,
+    "word_count": "774",
+    "excerpt": "# sh5util Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sh5util.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sh5util.html) sh5util - Tool for merging HDF5 files from the acct_gather_profile plugin that gathers detailed data for jo"
+  },
+  {
+    "url": "https://slurm.schedmd.com/resources.yaml.html",
+    "title": "Slurm Workload Manager - resources.yaml",
+    "md_path": "resources.yaml.md",
+    "depth": 2,
+    "word_count": "738",
+    "excerpt": "# resources.yaml Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/resources.yaml.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/resources.yaml.html) resources.yaml - Slurm configuration file for the Hierarchical Res"
+  },
+  {
+    "url": "https://slurm.schedmd.com/scontrol.html",
+    "title": "Slurm Workload Manager - scontrol",
+    "md_path": "scontrol.md",
+    "depth": 2,
+    "word_count": "17141",
+    "excerpt": "# scontrol Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/scontrol.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/scontrol.html) scontrol - view or modify Slurm configuration and state. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.sc"
+  },
+  {
+    "url": "https://slurm.schedmd.com/squeue.html",
+    "title": "Slurm Workload Manager - squeue",
+    "md_path": "squeue.md",
+    "depth": 2,
+    "word_count": "7550",
+    "excerpt": "# squeue Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/squeue.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/squeue.html) squeue - view information about jobs located in the Slurm scheduling queue. ## SYNOPSIS[#SECTION_SYNOPSIS](htt"
+  },
+  {
+    "url": "https://slurm.schedmd.com/helpers.conf.html",
+    "title": "Slurm Workload Manager - helpers.conf",
+    "md_path": "helpers.conf.md",
+    "depth": 2,
+    "word_count": "1021",
+    "excerpt": "# helpers.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/helpers.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/helpers.conf.html) helpers.conf - Slurm configuration file for the helpers plugin. ## DESCR"
+  },
+  {
+    "url": "https://slurm.schedmd.com/mpi.conf.html",
+    "title": "Slurm Workload Manager - mpi.conf",
+    "md_path": "mpi.conf.md",
+    "depth": 2,
+    "word_count": "661",
+    "excerpt": "# mpi.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/mpi.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/mpi.conf.html) mpi.conf - Slurm configuration file to allow the configuration of MPI plugins. ## DE"
+  },
+  {
+    "url": "https://slurm.schedmd.com/namespace.yaml.html",
+    "title": "Slurm Workload Manager - namespace.yaml",
+    "md_path": "namespace.yaml.md",
+    "depth": 2,
+    "word_count": "1332",
+    "excerpt": "# namespace.yaml Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/namespace.yaml.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/namespace.yaml.html) namespace.yaml - Slurm configuration file for the namespace/linux "
+  },
+  {
+    "url": "https://slurm.schedmd.com/sacctmgr.html",
+    "title": "Slurm Workload Manager - sacctmgr",
+    "md_path": "sacctmgr.md",
+    "depth": 2,
+    "word_count": "15042",
+    "excerpt": "# sacctmgr Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sacctmgr.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sacctmgr.html) sacctmgr - Used to view and modify Slurm account information. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slu"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sattach.html",
+    "title": "Slurm Workload Manager - sattach",
+    "md_path": "sattach.md",
+    "depth": 2,
+    "word_count": "757",
+    "excerpt": "# sattach Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sattach.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sattach.html) sattach - Attach to a Slurm job step. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/sattach.html"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sbcast.html",
+    "title": "Slurm Workload Manager - sbcast",
+    "md_path": "sbcast.md",
+    "depth": 2,
+    "word_count": "1086",
+    "excerpt": "# sbcast Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sbcast.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sbcast.html) sbcast - transmit a file to the nodes allocated to a Slurm job. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/scancel.html",
+    "title": "Slurm Workload Manager - scancel",
+    "md_path": "scancel.md",
+    "depth": 2,
+    "word_count": "1956",
+    "excerpt": "# scancel Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/scancel.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/scancel.html) scancel - Used to signal jobs or job steps that are under the control of Slurm. ## SYNOPSIS[#SECTION_SYNOPS"
+  },
+  {
+    "url": "https://slurm.schedmd.com/scrontab.html",
+    "title": "Slurm Workload Manager - scrontab",
+    "md_path": "scrontab.md",
+    "depth": 2,
+    "word_count": "1159",
+    "excerpt": "# scrontab Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/scrontab.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/scrontab.html) scrontab - manage Slurm crontab files ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/scrontab."
+  },
+  {
+    "url": "https://slurm.schedmd.com/sdiag.html",
+    "title": "Slurm Workload Manager - sdiag",
+    "md_path": "sdiag.md",
+    "depth": 2,
+    "word_count": "2073",
+    "excerpt": "# sdiag Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sdiag.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sdiag.html) sdiag - Scheduling diagnostic tool for Slurm ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/sdiag.html)"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sinfo.html",
+    "title": "Slurm Workload Manager - sinfo",
+    "md_path": "sinfo.md",
+    "depth": 2,
+    "word_count": "4613",
+    "excerpt": "# sinfo Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sinfo.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sinfo.html) sinfo - View information about Slurm nodes and partitions. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.c"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmctld.html",
+    "title": "Slurm Workload Manager - slurmctld",
+    "md_path": "slurmctld.md",
+    "depth": 2,
+    "word_count": "1102",
+    "excerpt": "# slurmctld Section: Slurm Daemon (8) Updated: Slurm Daemon [Index](https://slurm.schedmd.com/slurmctld.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmctld.html) slurmctld - The central management daemon of Slurm. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd."
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmdbd.html",
+    "title": "Slurm Workload Manager - slurmdbd",
+    "md_path": "slurmdbd.md",
+    "depth": 2,
+    "word_count": "618",
+    "excerpt": "# slurmdbd Section: Slurm Daemon (8) Updated: Slurm Daemon [Index](https://slurm.schedmd.com/slurmdbd.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmdbd.html) slurmdbd - Slurm Database Daemon. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedmd.com/slurmdbd.html) sl"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmrestd.html",
+    "title": "Slurm Workload Manager - slurmrestd",
+    "md_path": "slurmrestd.md",
+    "depth": 2,
+    "word_count": "2928",
+    "excerpt": "# slurmrestd Section: Slurm REST Daemon (8) Updated: Slurm REST Daemon [Index](https://slurm.schedmd.com/slurmrestd.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmrestd.html) slurmrestd - Interface to Slurm via REST API. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slurmstepd.html",
+    "title": "Slurm Workload Manager - slurmstepd",
+    "md_path": "slurmstepd.md",
+    "depth": 2,
+    "word_count": "323",
+    "excerpt": "# slurmstepd Section: Slurm Component (8) Updated: Slurm Component [Index](https://slurm.schedmd.com/slurmstepd.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/slurmstepd.html) slurmstepd - The job step manager for Slurm. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.schedm"
+  },
+  {
+    "url": "https://slurm.schedmd.com/spank.html",
+    "title": "Slurm Workload Manager - SPANK",
+    "md_path": "spank.md",
+    "depth": 2,
+    "word_count": "3225",
+    "excerpt": "# SPANK Section: Slurm Component (8) Updated: Slurm Component [Index](https://slurm.schedmd.com/spank.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/spank.html) SPANK - Slurm Plug-in Architecture for Node and job (K)control ## DESCRIPTION[#SECTION_DESCRIPTION](https://slu"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sprio.html",
+    "title": "Slurm Workload Manager - sprio",
+    "md_path": "sprio.md",
+    "depth": 2,
+    "word_count": "1279",
+    "excerpt": "# sprio Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sprio.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sprio.html) sprio - view the factors that comprise a job's scheduling priority ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sreport.html",
+    "title": "Slurm Workload Manager - sreport",
+    "md_path": "sreport.md",
+    "depth": 2,
+    "word_count": "3534",
+    "excerpt": "# sreport Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sreport.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sreport.html) sreport - Generate reports from the slurm accounting data. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.sch"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sshare.html",
+    "title": "Slurm Workload Manager - sshare",
+    "md_path": "sshare.md",
+    "depth": 2,
+    "word_count": "1205",
+    "excerpt": "# sshare Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sshare.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sshare.html) sshare - Tool for listing the shares of associations to a cluster. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slur"
+  },
+  {
+    "url": "https://slurm.schedmd.com/strigger.html",
+    "title": "Slurm Workload Manager - strigger",
+    "md_path": "strigger.md",
+    "depth": 2,
+    "word_count": "2075",
+    "excerpt": "# strigger Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/strigger.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/strigger.html) strigger - Used to set, get or clear Slurm trigger information. ## SYNOPSIS[#SECTION_SYNOPSIS](https://s"
+  },
+  {
+    "url": "https://slurm.schedmd.com/sview.html",
+    "title": "Slurm Workload Manager - sview",
+    "md_path": "sview.md",
+    "depth": 2,
+    "word_count": "600",
+    "excerpt": "# sview Section: Slurm Commands (1) Updated: Slurm Commands [Index](https://slurm.schedmd.com/sview.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/sview.html) sview - graphical user interface to view and modify Slurm state. ## SYNOPSIS[#SECTION_SYNOPSIS](https://slurm.sch"
+  },
+  {
+    "url": "https://slurm.schedmd.com/topology.conf.html",
+    "title": "Slurm Workload Manager - topology.conf",
+    "md_path": "topology.conf.md",
+    "depth": 2,
+    "word_count": "758",
+    "excerpt": "# topology.conf Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/topology.conf.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/topology.conf.html) topology.conf - Slurm configuration file for the topology plugins ## "
+  },
+  {
+    "url": "https://slurm.schedmd.com/topology.yaml.html",
+    "title": "Slurm Workload Manager - topology.yaml",
+    "md_path": "topology.yaml.md",
+    "depth": 2,
+    "word_count": "600",
+    "excerpt": "# topology.yaml Section: Slurm Configuration File (5) Updated: Slurm Configuration File [Index](https://slurm.schedmd.com/topology.yaml.html) ## NAME[#SECTION_NAME](https://slurm.schedmd.com/topology.yaml.html) topology.yaml - Slurm configuration file for the topology plugins ## "
+  },
+  {
+    "url": "https://slurm.schedmd.com/SLUG17/cli_filter-slug2017/cli_filter.html",
+    "title": "cli_filter",
+    "md_path": "SLUG17/cli_filter-slug2017/cli_filter.md",
+    "depth": 2,
+    "word_count": "107",
+    "excerpt": "# cli_filter ```text function slurm_job_submit(req, partitions, uid) return check_qos(req, nil) end function slurm_job_modify(req, desc, partitions, uid) return check_qos(req, desc) end function check_qos(req, desc) local qos = read_str_field(req, desc, \"qos\") if qos == \"premium\""
+  },
+  {
+    "url": "https://slurm.schedmd.com/platforms.html",
+    "title": "Slurm Workload Manager - Platforms",
+    "md_path": "platforms.md",
+    "depth": 2,
+    "word_count": "350",
+    "excerpt": "# Platforms ## Operating Systems[#os](https://slurm.schedmd.com/platforms.html) - FreeBSD \u2014 Limited support, not actively tested. - Linux \u2014 Slurm has been thoroughly tested on most popular Linux distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some features a"
+  },
+  {
+    "url": "https://slurm.schedmd.com/tls.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "tls.md",
+    "depth": 2,
+    "word_count": "639",
+    "excerpt": "# TLS ## Overview[#Overview](https://slurm.schedmd.com/tls.html) TLS can be enabled for internal Slurm cluster communications in environments via the `tls` plugin interface. ## s2n[#s2n](https://slurm.schedmd.com/tls.html) The `tls/s2n` plugin uses Amazon's TLS implementation [s2"
+  },
+  {
+    "url": "https://slurm.schedmd.com/elastic_computing.html",
+    "title": "Slurm Workload Manager - Slurm Power Saving Guide",
+    "md_path": "elastic_computing.md",
+    "depth": 3,
+    "word_count": "3792",
+    "excerpt": "# Slurm Power Saving Guide ## Contents[#contents](https://slurm.schedmd.com/elastic_computing.html) - [Overview](https://slurm.schedmd.com/elastic_computing.html) - [Configuration](https://slurm.schedmd.com/elastic_computing.html) - [Node Lifecycle](https://slurm.schedmd.com/elas"
+  },
+  {
+    "url": "https://slurm.schedmd.com/metrics.html",
+    "title": "Slurm Workload Manager - Metrics Guide",
+    "md_path": "metrics.md",
+    "depth": 3,
+    "word_count": "1281",
+    "excerpt": "# Metrics Guide ## Contents [#contents](https://slurm.schedmd.com/metrics.html) - [Metrics Overview](https://slurm.schedmd.com/metrics.html) - [Configuration](https://slurm.schedmd.com/metrics.html) - [HTTP Endpoints](https://slurm.schedmd.com/metrics.html) - [OpenMetrics Plugin]"
+  },
+  {
+    "url": "https://slurm.schedmd.com/extra_constraints.html",
+    "title": "Slurm Workload Manager - Extra Constraints",
+    "md_path": "extra_constraints.md",
+    "depth": 3,
+    "word_count": "790",
+    "excerpt": "# Extra Constraints ## Contents - [Overview](https://slurm.schedmd.com/extra_constraints.html) - [Configuration](https://slurm.schedmd.com/extra_constraints.html) - [Node Extra Data](https://slurm.schedmd.com/extra_constraints.html) - [Job Submission](https://slurm.schedmd.com/ex"
+  },
+  {
+    "url": "https://slurm.schedmd.com/certmgr.html",
+    "title": "Slurm Workload Manager -",
+    "md_path": "certmgr.md",
+    "depth": 3,
+    "word_count": "965",
+    "excerpt": "# TLS Certificate Manager ## Overview[#Overview](https://slurm.schedmd.com/certmgr.html) The `certmgr` plugin interface can be used alongside the `tls` plugin interface to dynamically create and renew signed certificates for slurmd/sackd nodes. Signed certificates and accompanyin"
+  },
+  {
+    "url": "https://slurm.schedmd.com/slinky.html",
+    "title": "Slurm Workload Manager - Slinky",
+    "md_path": "slinky.md",
+    "depth": 4,
+    "word_count": "254",
+    "excerpt": "# Slinky \u2014 Slurm and Kubernetes ## Contents[#contents](https://slurm.schedmd.com/slinky.html) - [Overview](https://slurm.schedmd.com/slinky.html) - [Links](https://slurm.schedmd.com/slinky.html) - [Presentations](https://slurm.schedmd.com/slinky.html) ## Overview[#overview](https"
+  }
+]

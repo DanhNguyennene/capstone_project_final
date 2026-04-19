@@ -29,7 +29,7 @@ Key columns: `Account`, `User`, `RawShares`, `NormShares`, `RawUsage`, `NormUsag
 
 ### Step 3 – Check QOS priority boost
 ```
-sacctmgr_show(entity="qos", params="format=Name,Priority,GrpTRES,MaxTRESPJ,MaxWall")
+sacctmgr_list(entity="qos", params="format=Name,Priority,GrpTRES,MaxTRESPJ,MaxWall")
 ```
 Find the user's QOS and note the Priority factor.
 

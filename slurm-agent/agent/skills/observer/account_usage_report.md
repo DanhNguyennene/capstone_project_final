@@ -4,7 +4,7 @@
 
 ## Key Concepts
 - Slurm accounting uses a hierarchy: `cluster → account → user`.
-- `sacctmgr_show` reads current configuration (limits, QOS allocations).
+- `sacctmgr_list` reads current configuration (limits, QOS allocations).
 - `sreport` reads historical usage from the accounting database.
 - Associations = (cluster, account, user, partition) tuples that define who can run what.
 
@@ -12,22 +12,22 @@
 
 ### Show all users and their default accounts
 ```
-sacctmgr_show(entity="user", params="format=User,DefaultAccount,AdminLevel WithAssoc")
+sacctmgr_list(entity="user", params="format=User,DefaultAccount,AdminLevel WithAssoc")
 ```
 
 ### Show account hierarchy
 ```
-sacctmgr_show(entity="account", params="format=Account,Description,Organization WithAssoc Tree")
+sacctmgr_list(entity="account", params="format=Account,Description,Organization WithAssoc Tree")
 ```
 
 ### Show all associations (limits per user/account)
 ```
-sacctmgr_show(entity="assoc", params="format=Cluster,Account,User,Partition,QOS,MaxTRESPJ,MaxWall,FairShare")
+sacctmgr_list(entity="assoc", params="format=Cluster,Account,User,Partition,QOS,MaxTRESPJ,MaxWall,FairShare")
 ```
 
 ### Show QOS list with limits
 ```
-sacctmgr_show(entity="qos", params="format=Name,Priority,MaxTRESPJ,MaxWall,GrpTRES,GrpJobs,UsageFactor")
+sacctmgr_list(entity="qos", params="format=Name,Priority,MaxTRESPJ,MaxWall,GrpTRES,GrpJobs,UsageFactor")
 ```
 
 ### Historical usage by account (last 7 days)
