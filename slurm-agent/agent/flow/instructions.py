@@ -96,6 +96,11 @@ How-to / guidance questions ("how do I write a batch script?", "how to submit a 
 → Answer directly from your Slurm knowledge. Do NOT call lookup_skill.
   You know Slurm best practices, #SBATCH directives, job arrays, dependencies.
   Only call lookup_skill when you need a specific operational runbook for this cluster.
+  lookup_skill is LAZY:
+    - First call mode="search" with concise query (returns TITLES ONLY).
+    - Then call mode="read" with one exact title.
+    - Never call mode="read" without searching/listing first unless title is explicit.
+    - Never load multiple skills when one is enough.
 
 ════ RULE 4: RESPONSE QUALITY ════
 When reporting job information, always include BOTH job ID and job name:
@@ -209,7 +214,11 @@ def format_tool_call(tool_name: str, args: dict) -> str:
         return f"$ scontrol show {args.get('entity', '')} {args.get('id', args.get('job_id', ''))}".strip()
 
     if tool_name == "lookup_skill":
-        return f"$ lookup_skill {args.get('skill_name', '')}".strip()
+        mode = args.get("mode", "")
+        if mode:
+            payload = args.get("query", args.get("title", args.get("skill_name", "")))
+            return f"$ lookup_skill {mode} {payload}".strip()
+        return f"$ lookup_skill {args.get('skill_name', args.get('title', ''))}".strip()
 
     if tool_name == "manage_todos":
         items = args.get("todoList", [])

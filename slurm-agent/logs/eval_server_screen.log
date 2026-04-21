@@ -2791,3 +2791,167 @@ WARNING:  Invalid HTTP request received.
 WARNING:  Invalid HTTP request received.
 WARNING:  Invalid HTTP request received.
 INFO:     185.219.7.27:47796 - "GET /login HTTP/1.1" 404 Not Found
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [86349]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Dataset changed (be7b5b577f12 → 41b3c240188c), clearing old results
+[startup] Restored 0 results from eval_latest_snapshot.json
+INFO:     10.0.0.1:56266 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56266 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=false HTTP/1.1" 200 OK
+INFO:     10.0.0.1:44176 - "GET /api/test/read_all_healthy HTTP/1.1" 200 OK
+[persist] Saved 1 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 2 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 3 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 4 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 5 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 6 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 8 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 9 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 10 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     10.0.0.1:48710 - "GET /api/test/read_history_alice_healthy HTTP/1.1" 200 OK
+[persist] Saved 11 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 12 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     10.0.0.1:48880 - "GET /api/test/diag_memory_healthy HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60644 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60658 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60644 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60658 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60644 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60658 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60658 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60644 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60658 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60660 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60660 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60660 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=false HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60664 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=false HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:60676 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=true HTTP/1.1" 200 OK
+[persist] Saved 13 results → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     10.0.0.1:33010 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&auto_approve=true&use_judge=true&no_variants=true HTTP/1.1" 200 OK
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [89731]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 13 results from eval_latest_snapshot.json
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+[startup] Restored 13 results from eval_latest_snapshot.json
+INFO:     10.0.0.1:55540 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "POST /api/clear-results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset?no_variants=true HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     10.0.0.1:56238 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     10.0.0.1:55540 - "GET /api/results HTTP/1.1" 200 OK

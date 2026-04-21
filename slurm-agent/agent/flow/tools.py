@@ -134,16 +134,29 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
 
 def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
     """
-    Create a FunctionTool that loads local markdown runbooks on demand.
-
-    This keeps guides out of the system prompt while still allowing the model
-    to fetch deterministic, repo-backed instructions when needed.
+    Create a lazy skill browser:
+      - list/search returns titles only (no content)
+      - read loads one selected title on demand
+    This keeps runbook content out of context unless explicitly requested.
     """
-    def _normalize(raw: str) -> str:
-        return raw.strip().lower().replace(" ", "_").replace("-", "_")
+    import re
+
+    def _canonical(raw: str) -> str:
+        """Canonical form for exact title matching."""
+        return re.sub(r"[\s\-]+", "_", (raw or "").strip().lower())
+
+    def _search_norm(raw: str) -> str:
+        """Light normalization for title/content search."""
+        txt = (raw or "").lower()
+        txt = re.sub(r"[^a-z0-9_\-\s]", " ", txt)
+        return re.sub(r"\s+", " ", txt).strip()
 
     sorted_names = sorted(skills.keys())
-    normalized_to_name = {_normalize(name): name for name in sorted_names}
+    canonical_to_name = {_canonical(name): name for name in sorted_names}
+    search_index = [
+        (name, _search_norm(name), _search_norm(skills.get(name, "")))
+        for name in sorted_names
+    ]
 
     def _render_skill(name: str) -> str:
         content = (skills.get(name) or "").strip()
@@ -151,13 +164,20 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
             return content[:7000].rstrip() + "\n\n...[truncated for context size]..."
         return content
 
-    def _list_preview(limit: int = 12) -> str:
-        if not sorted_names:
-            return "No skills are loaded."
-        shown = ", ".join(sorted_names[:limit])
-        if len(sorted_names) > limit:
-            shown += f", +{len(sorted_names) - limit} more"
-        return shown
+    def _parse_limit(raw_limit: object, default: int = 12) -> int:
+        try:
+            n = int(raw_limit)
+        except Exception:
+            n = default
+        return max(1, min(50, n))
+
+    def _format_titles(titles: list[str], *, total: int, label: str) -> str:
+        if not titles:
+            return f"{label}: no results."
+        lines = [f"{label} ({len(titles)}/{total}):"]
+        lines.extend(f"{i+1}. {title}" for i, title in enumerate(titles))
+        lines.append('Use mode="read" with exact title to load one.')
+        return "\n".join(lines)
 
     async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
         if not sorted_names:
@@ -168,52 +188,119 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
         except json.JSONDecodeError:
             args = {}
 
-        query = _normalize(args.get("skill_name", ""))
-        if not query:
-            return "Provide skill_name. Available: " + _list_preview()
+        raw_mode = str(args.get("mode", "")).strip().lower()
+        query = str(args.get("query", "")).strip()
+        title = str(args.get("title") or args.get("skill_name") or "").strip()
+        limit = _parse_limit(args.get("limit", 12))
 
-        # Exact canonical match
-        if query in normalized_to_name:
-            return _render_skill(normalized_to_name[query])
+        if raw_mode and raw_mode not in {"list", "search", "read"}:
+            return "Invalid mode. Use one of: list, search, read."
 
-        # Fuzzy match on canonical names
-        matches = []
-        for canonical, original_name in normalized_to_name.items():
-            if query in canonical or canonical in query:
-                matches.append(original_name)
-        matches = sorted(dict.fromkeys(matches))
+        # Backward-compatible mode inference
+        mode = raw_mode
+        if not mode:
+            if title:
+                mode = "read"
+            elif query:
+                mode = "search"
+            else:
+                mode = "list"
 
-        if len(matches) == 1:
-            return _render_skill(matches[0])
-        if len(matches) > 1:
-            shown = ", ".join(matches[:12])
-            more = f", +{len(matches) - 12} more" if len(matches) > 12 else ""
-            return (
-                f"Multiple skills match '{query}': {shown}{more}. "
-                "Use exact skill_name."
+        if mode == "list":
+            shown = sorted_names[:limit]
+            return _format_titles(shown, total=len(sorted_names), label="Skill titles")
+
+        if mode == "search":
+            if not query:
+                return 'Provide query for search mode, or use mode="list".'
+            qn = _search_norm(query)
+            scored: list[tuple[int, str]] = []
+            for name, title_norm, content_norm in search_index:
+                score = 0
+                if qn == title_norm:
+                    score = 300
+                elif qn and qn in title_norm:
+                    score = 200
+                elif qn and title_norm in qn:
+                    score = 150
+                elif qn and qn in content_norm:
+                    score = 100
+                if score == 0 and qn:
+                    # Lightweight token-overlap fallback for queries like "failed job diagnosis"
+                    q_tokens = [tok for tok in qn.split(" ") if len(tok) >= 3]
+                    title_hits = sum(1 for tok in q_tokens if tok in title_norm)
+                    content_hits = sum(1 for tok in q_tokens if tok in content_norm)
+                    if title_hits:
+                        score = 120 + title_hits
+                    elif content_hits >= 2:
+                        score = 80 + content_hits
+                if score > 0:
+                    scored.append((score, name))
+            scored.sort(key=lambda x: (-x[0], x[1]))
+            titles = [name for _, name in scored[:limit]]
+            return _format_titles(titles, total=len(scored), label=f"Skill search: {query}")
+
+        # mode == "read": load exactly one chosen title
+        if not title:
+            return 'Provide title for read mode. Tip: use mode="search" first.'
+
+        canonical = _canonical(title)
+        exact_name = canonical_to_name.get(canonical)
+        if exact_name:
+            return _render_skill(exact_name)
+
+        # No exact title: return suggestions (titles only), never content.
+        suggestions: list[str] = []
+        for name in sorted_names:
+            c = _canonical(name)
+            if canonical in c or c in canonical:
+                suggestions.append(name)
+        suggestions = suggestions[:limit]
+        if suggestions:
+            return _format_titles(
+                suggestions,
+                total=len(suggestions),
+                label=f'No exact title for "{title}". Similar titles',
             )
-
-        return (
-            f"Skill '{query}' not found. Available: {_list_preview()}."
-        )
+        return f'No skill title matches "{title}". Use mode="search" first.'
 
     return FunctionTool(
         name="lookup_skill",
         description=(
-            "Load a local Slurm workflow/runbook markdown guide by name. "
-            "Use for how-to guidance only; do NOT use instead of live data tools "
-            "(squeue/sinfo/sacct/scontrol_show). "
-            f"Available: {_list_preview(limit=20)}"
+            "Lazy skill browser for local Slurm runbooks. "
+            "mode=list/search returns titles only; mode=read loads one selected title. "
+            "Search matches both titles and content, but returns titles only."
         ),
         params_json_schema={
             "type": "object",
             "properties": {
+                "mode": {
+                    "type": "string",
+                    "enum": ["list", "search", "read"],
+                    "description": (
+                        "Operation mode. list=show titles, search=match titles/content, "
+                        "read=load one skill content."
+                    ),
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Search text for mode=search.",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Exact skill title for mode=read.",
+                },
                 "skill_name": {
                     "type": "string",
-                    "description": "Skill file name (without .md), e.g. diagnose_failed_job",
+                    "description": "Legacy alias of title for backward compatibility.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "description": "Max titles to return for list/search (default: 12).",
                 }
             },
-            "required": ["skill_name"],
             "additionalProperties": False,
         },
         on_invoke_tool=_invoke,
