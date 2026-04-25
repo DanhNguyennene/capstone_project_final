@@ -35,6 +35,73 @@ SCREEN_STOP=0
 SCREEN_NAME="${SCREEN_NAME:-eval-server}"
 SCREEN_LOG="${SCREEN_LOG:-$ROOT/logs/eval_server_screen.log}"
 
+KEY_FILE_LOCAL="$ROOT/.key"
+KEY_FILE_PARENT="$ROOT/../.key"
+ENV_FILE_LOCAL="$ROOT/.env"
+ENV_FILE_PARENT="$ROOT/../.env"
+
+trim_ws() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+load_env_like_file() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+
+  local raw line key value loaded=0
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    line="$(trim_ws "$raw")"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+
+    if [[ "$line" == export\ * ]]; then
+      line="${line#export }"
+    fi
+
+    if [[ "$line" == *=* ]]; then
+      key="$(trim_ws "${line%%=*}")"
+      value="$(trim_ws "${line#*=}")"
+
+      if [[ ( "$value" == \"*\" && "$value" == *\" ) || ( "$value" == \'*\' && "$value" == *\' ) ]]; then
+        value="${value:1:${#value}-2}"
+      fi
+
+      case "$key" in
+        OPEN_AI_KEY)
+          export OPENAI_API_KEY="$value"
+          loaded=1
+          ;;
+        *)
+          if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            export "$key=$value"
+            loaded=1
+          fi
+          ;;
+      esac
+      continue
+    fi
+
+    # Allow a raw single-token API key file.
+    if [[ "$line" == sk-* ]]; then
+      export OPENAI_API_KEY="$line"
+      loaded=1
+    fi
+  done < "$file"
+
+  [[ $loaded -eq 1 ]] && ok "Loaded local secrets from: $file"
+  return 0
+}
+
+for f in "$KEY_FILE_LOCAL" "$KEY_FILE_PARENT" "$ENV_FILE_LOCAL" "$ENV_FILE_PARENT"; do
+  load_env_like_file "$f" || true
+done
+
+if [[ -z "${OPENAI_API_KEY:-}" && -n "${OPEN_AI_KEY:-}" ]]; then
+  export OPENAI_API_KEY="$OPEN_AI_KEY"
+fi
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --host)

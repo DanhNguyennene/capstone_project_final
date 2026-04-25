@@ -13,7 +13,7 @@ function isPlaceholderJudgeReason(reason) {
   return squashed.length < 10
 }
 
-export default function EvalPage({ agentUrl }) {
+export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = true, onToggleGlobalSidebar = null }) {
   const [dataset, setDataset]     = useState([])
   const [results, setResults]     = useState({})
   const [metrics, setMetrics]     = useState(null)
@@ -21,6 +21,15 @@ export default function EvalPage({ agentUrl }) {
   const [detail, setDetail]       = useState(null) // { test, result }
   const [running, setRunning]     = useState(false)
   const [progress, setProgress]   = useState(0)
+  const [judgeRunning, setJudgeRunning]   = useState(false)
+  const [judgeProgress, setJudgeProgress] = useState(0)
+  const [judgeTotal, setJudgeTotal]       = useState(0)
+  const [judgeCurrentId, setJudgeCurrentId] = useState('')
+  const [terminalTestId, setTerminalTestId] = useState('')
+  const [terminalHistory, setTerminalHistory] = useState([])
+  const [terminalCommand, setTerminalCommand] = useState('')
+  const [, setTerminalHistoryCursor] = useState(-1)
+  const [terminalRunning, setTerminalRunning] = useState(false)
   const [filters, setFilters]     = useState(() => {
     try {
       const raw = localStorage.getItem(LS_FILTERS_KEY)
@@ -38,6 +47,8 @@ export default function EvalPage({ agentUrl }) {
   const abortRef = useRef(null)
   const runTotalRef = useRef(0)
   const activeIdRef = useRef(activeId)
+  const terminalInputRef = useRef(null)
+  const terminalBodyRef = useRef(null)
   activeIdRef.current = activeId
 
   // ── Data loading ─────────────────────────────────────────────
@@ -57,12 +68,14 @@ export default function EvalPage({ agentUrl }) {
   const _syncResultsFromServer = async () => {
     const rr = await fetch(`${EVAL_URL}/api/results`)
     const rd = await rr.json()
-    if (rd.results?.length) {
-      const rm = {}
-      for (const res of rd.results) rm[res.test_id] = res
-      setResults(rm)
-      if (rd.metrics?.n_tests) setMetrics(rd.metrics)
-    }
+    const rm = {}
+    for (const res of (rd.results || [])) rm[res.test_id] = res
+    setResults(rm)
+    setMetrics(rd.metrics?.n_tests ? rd.metrics : null)
+    setDetail(prev => {
+      if (!prev?.test?.id) return prev
+      return { ...prev, result: rm[prev.test.id] || null }
+    })
   }
 
   const loadDefault = async () => {
@@ -82,11 +95,122 @@ export default function EvalPage({ agentUrl }) {
     await _syncResultsFromServer()
   }
 
+  const refreshTerminalHistory = useCallback(async (testId = '') => {
+    const p = new URLSearchParams()
+    if (testId) p.set('test_id', testId)
+    try {
+      const r = await fetch(`${EVAL_URL}/api/terminal/history?${p.toString()}`)
+      const d = await r.json()
+      setTerminalHistory(Array.isArray(d.history) ? d.history : [])
+    } catch {
+      setTerminalHistory([])
+    }
+  }, [])
+
   const loadTestDetail = async (id) => {
     setActiveId(id)
-    const r = await fetch(`${EVAL_URL}/api/test/${id}`)
-    const d = await r.json()
-    setDetail(d)
+    try {
+      await refreshTerminalHistory(id)
+      const rr = await fetch(`${EVAL_URL}/api/test/${id}`)
+      const d = await rr.json()
+      setDetail(d)
+    } catch {
+      // no-op
+    }
+  }
+
+  const runTerminalCommand = async () => {
+    const contextId = terminalTestId || activeId || ''
+    const cmd = terminalCommand.trim()
+    if (!cmd || !contextId) return
+    setTerminalRunning(true)
+    try {
+      const r = await fetch(`${EVAL_URL}/api/terminal/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd, test_id: contextId, mcp_url: mcpUrl }),
+      })
+      let d = {}
+      try {
+        d = await r.json()
+      } catch {
+        d = {}
+      }
+      if (Array.isArray(d.history)) {
+        setTerminalHistory(d.history)
+      } else {
+        const fallbackError = !r.ok
+          ? `Terminal request failed (HTTP ${r.status})`
+          : 'Terminal response malformed.'
+        const errorText = (typeof d.error === 'string' && d.error.trim()) ? d.error : fallbackError
+        setTerminalHistory(prev => ([
+          ...prev,
+          {
+            id: Date.now(),
+            prompt: 'slurm@hpc:~$ ',
+            command: cmd,
+            output: errorText,
+            ok: false,
+          },
+        ]))
+      }
+      if (r.ok) {
+        setTerminalCommand('')
+        setTerminalHistoryCursor(-1)
+      }
+    } catch (err) {
+      const msg = (err && err.message) ? err.message : 'Could not reach eval server.'
+      setTerminalHistory(prev => ([
+        ...prev,
+        {
+          id: Date.now(),
+          prompt: 'slurm@hpc:~$ ',
+          command: cmd,
+          output: `Network error: ${msg}`,
+          ok: false,
+        },
+      ]))
+    } finally {
+      setTerminalRunning(false)
+    }
+  }
+
+  const clearTerminalHistory = async () => {
+    const contextId = terminalTestId || activeId || ''
+    if (!contextId) return
+    try {
+      await fetch(`${EVAL_URL}/api/terminal/clear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_id: contextId }),
+      })
+      setTerminalHistory([])
+    } catch {
+      // No-op
+    }
+  }
+
+  const markBadTestCase = async () => {
+    const contextId = terminalTestId || activeId || ''
+    if (!contextId) return
+    try {
+      const r = await fetch(`${EVAL_URL}/api/test/${encodeURIComponent(contextId)}/mark-bad`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Manually flagged by admin terminal.' }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d?.result) {
+        setResults(prev => ({ ...prev, [contextId]: d.result }))
+        if (d.metrics) setMetrics(d.metrics)
+        setDetail(prev => {
+          if (!prev?.test?.id || prev.test.id !== contextId) return prev
+          return { ...prev, result: d.result }
+        })
+      }
+    } catch {
+      // No-op
+    }
   }
 
   // ── Run all via SSE ──────────────────────────────────────────
@@ -119,25 +243,63 @@ export default function EvalPage({ agentUrl }) {
           const parsed = JSON.parse(data)
           if (evt === 'start') {
             if (typeof parsed.total === 'number') runTotalRef.current = parsed.total
+            if (typeof parsed.judge_total === 'number') setJudgeTotal(parsed.judge_total)
+            setJudgeProgress(0)
+            setJudgeCurrentId('')
+            setJudgeRunning(false)
+            if (typeof parsed.already_done === 'number') {
+              const denom = runTotalRef.current || dataset.length || 1
+              setProgress((parsed.already_done / denom) * 100)
+            }
           } else if (evt === 'test_start') {
             const denom = runTotalRef.current || dataset.length || 1
-            setProgress((parsed.index / denom) * 100)
+            const completed = (typeof parsed.completed === 'number') ? parsed.completed : parsed.index
+            setProgress((completed / denom) * 100)
             setDataset(prev => prev.map(t =>
               t.id === parsed.id ? { ...t, status: 'running' } : t))
           } else if (evt === 'test_done') {
             setResults(prev => ({ ...prev, [parsed.id]: parsed.result }))
             setDataset(prev => prev.map(t =>
-              t.id === parsed.id ? { ...t, status: parsed.result.passed ? 'passed' : 'failed' } : t))
+              t.id === parsed.id
+                ? { ...t, status: parsed.result.judge_pending ? 'judging' : (parsed.result.passed ? 'passed' : 'failed') }
+                : t))
             const denom = runTotalRef.current || dataset.length || 1
-            setProgress(((parsed.index + 1) / denom) * 100)
+            const completed = (typeof parsed.completed === 'number')
+              ? parsed.completed
+              : (typeof parsed.index === 'number' ? parsed.index + 1 : 0)
+            setProgress((completed / denom) * 100)
             if (activeIdRef.current === parsed.id) {
               setDetail(d => d ? { ...d, result: parsed.result } : d)
             }
+          } else if (evt === 'judge_start') {
+            setJudgeRunning(true)
+            setJudgeProgress(0)
+            if (typeof parsed.total === 'number') setJudgeTotal(parsed.total)
+          } else if (evt === 'judge_test_start') {
+            setJudgeCurrentId(parsed.id || '')
+            setDataset(prev => prev.map(t =>
+              t.id === parsed.id ? { ...t, status: 'judging' } : t))
+          } else if (evt === 'judge_done') {
+            setJudgeProgress(typeof parsed.done === 'number' ? parsed.done : 0)
+            setResults(prev => ({ ...prev, [parsed.id]: parsed.result }))
+            setDataset(prev => prev.map(t =>
+              t.id === parsed.id ? { ...t, status: parsed.result.passed ? 'passed' : 'failed' } : t))
+            if (activeIdRef.current === parsed.id) {
+              setDetail(d => d ? { ...d, result: parsed.result } : d)
+            }
+          } else if (evt === 'judge_complete') {
+            setJudgeRunning(false)
+            setJudgeCurrentId('')
+            setJudgeProgress(prev => (typeof parsed.done === 'number' ? parsed.done : prev))
           } else if (evt === 'complete') {
             setMetrics(parsed.metrics)
             setProgress(100)
+            setJudgeRunning(false)
+            setJudgeCurrentId('')
             setRunning(false)
           } else if (evt === 'stopped' || evt === 'error') {
+            setJudgeRunning(false)
+            setJudgeCurrentId('')
             setRunning(false)
           }
         } catch {}
@@ -151,12 +313,19 @@ export default function EvalPage({ agentUrl }) {
     abortRef.current = ctrl
     setRunning(true)
     setProgress(0)
+    setJudgeRunning(false)
+    setJudgeProgress(0)
+    setJudgeCurrentId('')
+    setJudgeTotal(opts.judge ? dataset.length : 0)
 
     const p = new URLSearchParams({
       agent_url: agentUrl,
+      mcp_url: mcpUrl,
       auto_approve: opts.approve,
       use_judge: opts.judge,
+      judge_model: judgeModel,
       no_variants: opts.noVariants,
+      resume: 'true',
     })
     if (filters.scenario) p.set('scenario', filters.scenario)
     if (filters.category) p.set('category', filters.category)
@@ -182,7 +351,11 @@ export default function EvalPage({ agentUrl }) {
 
   const runSingle = async (id) => {
     const p = new URLSearchParams({
-      agent_url: agentUrl, auto_approve: opts.approve, use_judge: opts.judge,
+      agent_url: agentUrl,
+      mcp_url: mcpUrl,
+      auto_approve: opts.approve,
+      use_judge: opts.judge,
+      judge_model: judgeModel,
     })
     const r = await fetch(`${EVAL_URL}/api/run-single/${id}?${p}`, { method: 'POST' })
     const d = await r.json()
@@ -196,6 +369,8 @@ export default function EvalPage({ agentUrl }) {
   const stopEval = async () => {
     abortRef.current?.abort()
     setRunning(false)
+    setJudgeRunning(false)
+    setJudgeCurrentId('')
     try { await fetch(`${EVAL_URL}/api/stop`, { method: 'POST' }) } catch {}
   }
 
@@ -206,6 +381,14 @@ export default function EvalPage({ agentUrl }) {
     setDetail(null)
     setActiveId(null)
     setProgress(0)
+    setJudgeRunning(false)
+    setJudgeProgress(0)
+    setJudgeTotal(0)
+    setJudgeCurrentId('')
+    setTerminalTestId('')
+    setTerminalCommand('')
+    setTerminalHistoryCursor(-1)
+    setTerminalHistory([])
     setDataset(prev => prev.map(t => ({ ...t, status: 'untested' })))
   }
 
@@ -228,6 +411,10 @@ export default function EvalPage({ agentUrl }) {
         const s = await r.json()
         runTotalRef.current = s.total || 0
         setRunning(!!s.running)
+        setJudgeRunning(!!s.judge_running)
+        setJudgeProgress(s.judge_progress || 0)
+        setJudgeTotal(s.judge_total || 0)
+        if (!s.judge_running) setJudgeCurrentId('')
         if (typeof s.progress === 'number' && (s.total || 0) > 0) {
           setProgress((s.progress / s.total) * 100)
         }
@@ -240,15 +427,19 @@ export default function EvalPage({ agentUrl }) {
           setResults(rm)
           if (rd.metrics?.n_tests) setMetrics(rd.metrics)
         }
+        await refreshTerminalHistory(activeIdRef.current || '')
 
         // If a run is still active when user returns, re-attach stream so UI
         // continues updating live without restarting the run.
         if (s.running) {
           const p = new URLSearchParams({
             agent_url: agentUrl,
+            mcp_url: mcpUrl,
             auto_approve: opts.approve,
             use_judge: opts.judge,
+            judge_model: judgeModel,
             no_variants: opts.noVariants,
+            resume: 'true',
           })
           if (filters.scenario) p.set('scenario', filters.scenario)
           if (filters.category) p.set('category', filters.category)
@@ -257,12 +448,16 @@ export default function EvalPage({ agentUrl }) {
         }
       } catch {}
     })()
-  }, [agentUrl, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream])
+  }, [agentUrl, mcpUrl, judgeModel, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream, refreshTerminalHistory])
 
   // ── Keyboard nav ─────────────────────────────────────────────
 
   useEffect(() => {
     const handler = (e) => {
+      const target = e.target
+      const tag = (target?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       if (!activeId || !dataset.length) return
       const idx = dataset.findIndex(t => t.id === activeId)
       if ((e.key === 'ArrowDown' || e.key === 'j') && idx < dataset.length - 1) {
@@ -276,35 +471,79 @@ export default function EvalPage({ agentUrl }) {
     return () => window.removeEventListener('keydown', handler)
   }, [activeId, dataset])
 
+  useEffect(() => {
+    if (activeId && terminalTestId !== activeId) {
+      setTerminalTestId(activeId)
+      setTerminalHistoryCursor(-1)
+      refreshTerminalHistory(activeId)
+      return
+    }
+    if (!dataset.length) {
+      if (terminalTestId) setTerminalTestId('')
+      setTerminalHistoryCursor(-1)
+      setTerminalHistory([])
+      return
+    }
+    const stillValid = terminalTestId && dataset.some(t => t.id === terminalTestId)
+    if (!stillValid) {
+      const first = dataset[0].id
+      setTerminalTestId(first)
+      setTerminalHistoryCursor(-1)
+      refreshTerminalHistory(first)
+    }
+  }, [activeId, dataset, terminalTestId, refreshTerminalHistory])
+
+  useEffect(() => {
+    const el = terminalBodyRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [terminalHistory, activeId, terminalRunning])
+
   // ── Helpers ──────────────────────────────────────────────────
 
   const pct = (v) => Math.round((v || 0) * 100) + '%'
   const scenarios   = [...new Set(dataset.map(t => t.scenario))].sort()
   const categories  = [...new Set(dataset.map(t => t.category))].sort()
-  const tested = dataset.filter(t => results[t.id])
+  const tested = dataset.filter(t => results[t.id] && !results[t.id]?.judge_pending)
+  const pendingJudge = dataset.filter(t => results[t.id]?.judge_pending).length
   const passed = tested.filter(t => results[t.id]?.passed)
   const failed = tested.length - passed.length
-  const untested = dataset.length - tested.length
+  const untested = dataset.length - tested.length - pendingJudge
 
   const filteredList = dataset.filter(t => {
-    if (filters.status === 'passed')  return results[t.id]?.passed === true
-    if (filters.status === 'failed')  return results[t.id]?.passed === false
+    if (filters.status === 'passed')  return results[t.id]?.judge_pending !== true && results[t.id]?.passed === true
+    if (filters.status === 'failed')  return results[t.id]?.judge_pending !== true && results[t.id]?.passed === false
+    if (filters.status === 'judging') return results[t.id]?.judge_pending === true || t.status === 'judging'
     if (filters.status === 'untested') return !results[t.id]
     return true
   })
+  const terminalCommandHistory = terminalHistory
+    .map(entry => (entry?.command || '').trim())
+    .filter(Boolean)
 
   // ── Render ───────────────────────────────────────────────────
 
   return (
     <div className="eval-page">
+      {onToggleGlobalSidebar && (
+        <button
+          className="eval-global-sidebar-toggle"
+          onClick={onToggleGlobalSidebar}
+          title={sidebarOpen ? 'Hide app sidebar' : 'Show app sidebar'}
+        >
+          {sidebarOpen ? '⟨' : '⟩'}
+        </button>
+      )}
       {/* Left panel: controls + test list */}
       <div className="eval-sidebar">
         <div className="eval-header">
-          <span className="eval-title">Evaluation</span>
+          <div className="eval-header-row">
+            <span className="eval-title">Evaluation</span>
+          </div>
           <div className="eval-stats">
             <span className="eval-stat">{dataset.length} tests</span>
             <span className="eval-stat eval-stat-pass">{passed.length} ✓</span>
             <span className="eval-stat eval-stat-fail">{failed} ✗</span>
+            <span className="eval-stat">{pendingJudge} …</span>
             <span className="eval-stat">{untested} ○</span>
           </div>
         </div>
@@ -331,6 +570,11 @@ export default function EvalPage({ agentUrl }) {
               No variants
             </label>
           </div>
+          {opts.judge && (
+            <div className="eval-ctrl-row">
+              <span className="eval-check">Judge model: {judgeModel}</span>
+            </div>
+          )}
           <div className="eval-ctrl-row">
             <button className="eval-btn eval-btn-run" onClick={runAll} disabled={running || !dataset.length}>
               ▶ Run All
@@ -359,7 +603,7 @@ export default function EvalPage({ agentUrl }) {
               onClick={() => setFilters(f => ({ ...f, category: f.category === c ? '' : c }))}
             >{c}</span>
           ))}
-          {['passed', 'failed', 'untested'].map(s => (
+          {['passed', 'failed', 'judging', 'untested'].map(s => (
             <span key={s}
               className={`eval-chip eval-chip-${s}${filters.status === s ? ' active' : ''}`}
               onClick={() => setFilters(f => ({ ...f, status: f.status === s ? '' : s }))}
@@ -373,12 +617,21 @@ export default function EvalPage({ agentUrl }) {
             <div className="eval-progress-fill" style={{ width: `${progress}%` }} />
           </div>
         )}
+        {judgeRunning && (
+          <div className="eval-judge-loading">
+            LLM is judging… {judgeProgress}/{judgeTotal || '?'}{judgeCurrentId ? ` · ${judgeCurrentId}` : ''}
+          </div>
+        )}
 
         {/* Test list */}
         <div className="eval-list">
           {filteredList.map(t => {
             const r = results[t.id]
-            const status = r ? (r.passed ? 'passed' : 'failed') : t.status
+            let status = t.status || 'untested'
+            if (status !== 'running') {
+              if (r?.judge_pending) status = 'judging'
+              else if (r) status = r.passed ? 'passed' : 'failed'
+            }
             return (
               <div
                 key={t.id}
@@ -390,6 +643,7 @@ export default function EvalPage({ agentUrl }) {
                   <div className="eval-item-id">
                     {t.id}
                     {t.is_variant && <span className="eval-variant-tag">v</span>}
+                    {r?.bad_test_case && <span className="eval-badcase-tag">bad-case</span>}
                   </div>
                   <div className="eval-item-meta">{t.category} · {t.scenario}</div>
                 </div>
@@ -403,55 +657,202 @@ export default function EvalPage({ agentUrl }) {
           })}
           {dataset.length === 0 && (
             <div className="eval-empty-list">Load a dataset to begin</div>
-          )}
+            )}
         </div>
       </div>
 
-      {/* Right panel: detail + metrics */}
+      {/* Right panel: detail + metrics + admin terminal */}
       <div className="eval-main">
-        {/* Metrics bar — always on top when available */}
-        {metrics && (
-          <div className="eval-metrics">
-            <h3 className="eval-section-title">Results Summary</h3>
-            <div className="eval-metrics-grid">
-              {[
-                ['Pass', metrics.pass_rate],
-                ['BAR', metrics.BAR],
-                ['SVR', metrics.SVR],
-                ['CSR', metrics.CSR],
-                ['Tool↻', metrics.avg_tool_recall],
-                ['Route', metrics.avg_routing_match],
-                ['HITL', metrics.avg_hitl_match],
-                ['Overall', metrics.avg_overall],
-                ...(metrics.avg_judge_score != null && opts.judge ? [['Judge', metrics.avg_judge_score]] : []),
-              ].map(([label, val]) => (
-                <div className="eval-metric" key={label}>
-                  <div className={`eval-metric-val ${val >= 0.8 ? 'good' : val < 0.5 ? 'bad' : 'mid'}`}>
-                    {pct(val)}
-                  </div>
-                  <div className="eval-metric-label">{label}</div>
+        <div className="eval-main-layout">
+          <div className="eval-main-content">
+            {/* Metrics bar — always on top when available */}
+            {metrics && (
+              <div className="eval-metrics">
+                <h3 className="eval-section-title">Results Summary</h3>
+                <div className="eval-metrics-grid">
+                  {[
+                    ['Pass', metrics.pass_rate],
+                    ['BAR', metrics.BAR],
+                    ['SVR', metrics.SVR],
+                    ['CSR', metrics.CSR],
+                    ['Tool↻', metrics.avg_tool_recall],
+                    ['Route', metrics.avg_routing_match],
+                    ['HITL', metrics.avg_hitl_match],
+                    ['Overall', metrics.avg_overall],
+                    ['BadTC', metrics.bad_test_case_rate, true],
+                    ...(metrics.avg_judge_score != null && opts.judge ? [['Judge', metrics.avg_judge_score]] : []),
+                  ].map(([label, val, invertGood]) => (
+                    <div className="eval-metric" key={label}>
+                      <div className={`eval-metric-val ${
+                        invertGood
+                          ? (val <= 0.05 ? 'good' : val >= 0.2 ? 'bad' : 'mid')
+                          : (val >= 0.8 ? 'good' : val < 0.5 ? 'bad' : 'mid')
+                      }`}>
+                        {pct(val)}
+                      </div>
+                      <div className="eval-metric-label">{label}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Detail view */}
-        {detail ? <TestDetail
-          test={detail.test}
-          result={detail.result || results[detail.test?.id]}
-          dataset={dataset}
-          activeId={activeId}
-          onNav={loadTestDetail}
-          onRun={runSingle}
-          pct={pct}
-          judgeEnabled={opts.judge}
-        /> : (
-          <div className="eval-empty">
-            <div className="eval-empty-icon">📋</div>
-            <p>Select a test case from the list</p>
+            {/* Detail view */}
+            {detail ? <TestDetail
+              test={detail.test}
+              result={detail.result || results[detail.test?.id]}
+              dataset={dataset}
+              activeId={activeId}
+              onNav={loadTestDetail}
+              onRun={runSingle}
+              pct={pct}
+              judgeEnabled={opts.judge}
+            /> : (
+              <div className="eval-empty">
+                <div className="eval-empty-icon">📋</div>
+                <p>Select a test case from the list</p>
+              </div>
+            )}
           </div>
-        )}
+
+          <aside className="eval-admin-sidebar">
+            <div className="eval-admin-head">
+              <div>
+                <h3 className="eval-section-title" style={{ marginBottom: 2 }}>Admin Terminal</h3>
+                <div className="eval-admin-sub">
+                  {terminalTestId
+                    ? `Context: ${terminalTestId} (isolated per test)`
+                    : 'Select a test to start terminal'}
+                </div>
+              </div>
+              <select
+                className="eval-admin-select"
+                value={terminalTestId}
+                onChange={e => {
+                  const next = e.target.value
+                  setTerminalTestId(next)
+                  setTerminalHistoryCursor(-1)
+                  refreshTerminalHistory(next)
+                }}
+                disabled={dataset.length === 0 || terminalRunning}
+                title="Select terminal context test"
+              >
+                {dataset.map(t => <option key={t.id} value={t.id}>{t.id}</option>)}
+              </select>
+              <button
+                className="eval-btn eval-btn-ghost eval-btn-sm"
+                onClick={clearTerminalHistory}
+                disabled={!terminalTestId || terminalHistory.length === 0 || terminalRunning}
+              >
+                Clear
+              </button>
+              <button
+                className="eval-btn eval-btn-ghost eval-btn-sm"
+                onClick={markBadTestCase}
+                disabled={!terminalTestId || terminalRunning}
+                title="Flag this test as an invalid/bad test case"
+              >
+                ⚑ Flag Bad
+              </button>
+            </div>
+
+            <div className="eval-terminal eval-admin-terminal">
+              <div className="eval-terminal-bar">
+                <span className="eval-terminal-dot" style={{ background: '#ff5f56' }} />
+                <span className="eval-terminal-dot" style={{ background: '#ffbd2e' }} />
+                <span className="eval-terminal-dot" style={{ background: '#27c93f' }} />
+                <span className="eval-terminal-title">slurm@hpc admin shell</span>
+              </div>
+              <div
+                className="eval-terminal-body"
+                ref={terminalBodyRef}
+                onClick={() => terminalInputRef.current?.focus()}
+              >
+                {terminalHistory.length === 0 ? (
+                  <span className="eval-term-empty">
+                    {terminalTestId
+                      ? 'No commands yet for this test. Start with: squeue'
+                      : 'Select a test to open an isolated terminal session'}
+                  </span>
+                ) : terminalHistory.map((entry, i) => (
+                  <div key={entry.id || `${entry.command}-${i}`} className="eval-term-block">
+                    <div className="eval-term-cmdline">
+                      <span className="eval-term-ps1">{entry.prompt || 'slurm@hpc:~$ '}</span>
+                      <span className={`eval-term-cmd${entry.ok === false ? ' eval-term-cmd-extra' : ''}`}>
+                        {entry.command}
+                      </span>
+                    </div>
+                    <pre className="eval-term-output">{entry.output || '(no output)'}</pre>
+                  </div>
+                ))}
+                {terminalRunning && (
+                  <div className="eval-term-sys">Running command…</div>
+                )}
+              </div>
+            </div>
+
+            <div className="eval-admin-input-row">
+              <span className="eval-term-ps1">slurm@hpc:~$&nbsp;</span>
+              <input
+                ref={terminalInputRef}
+                className="eval-admin-input"
+                value={terminalCommand}
+                onChange={e => {
+                  setTerminalCommand(e.target.value)
+                  setTerminalHistoryCursor(-1)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    runTerminalCommand()
+                    return
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!terminalCommandHistory.length) return
+                    setTerminalHistoryCursor(prev => {
+                      const next = prev < 0
+                        ? terminalCommandHistory.length - 1
+                        : Math.max(0, prev - 1)
+                      setTerminalCommand(terminalCommandHistory[next] || '')
+                      return next
+                    })
+                    return
+                  }
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!terminalCommandHistory.length) return
+                    setTerminalHistoryCursor(prev => {
+                      if (prev < 0) return -1
+                      const next = prev + 1
+                      if (next >= terminalCommandHistory.length) {
+                        setTerminalCommand('')
+                        return -1
+                      }
+                      setTerminalCommand(terminalCommandHistory[next] || '')
+                      return next
+                    })
+                  }
+                }}
+                placeholder="squeue --state PENDING"
+                disabled={!terminalTestId || terminalRunning}
+              />
+              <button
+                className="eval-btn eval-btn-primary eval-btn-sm"
+                onClick={runTerminalCommand}
+                disabled={!terminalTestId || terminalRunning || !terminalCommand.trim()}
+              >
+                Run
+              </button>
+            </div>
+            <div className="eval-admin-hint">
+              Commands are persisted per test and state is restored per context. Use ↑/↓ for command history.
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   )
@@ -466,8 +867,9 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
   const prevId = idx > 0 ? dataset[idx - 1].id : null
   const nextId = idx < dataset.length - 1 ? dataset[idx + 1].id : null
 
+  const judgePending = result?.judge_pending === true
   // judge ran only when backend says so; fallback supports older result files.
-  const judgeRan = (result?.judge_ran === true) || (!!result?.judge_reason)
+  const judgeRan = !judgePending && ((result?.judge_ran === true) || (!!result?.judge_reason))
   const rawJudgeReason = (result?.judge_reason || '').trim()
   const hasConcreteJudgeReason = !!rawJudgeReason && !isPlaceholderJudgeReason(rawJudgeReason)
   const judgeReasonText = hasConcreteJudgeReason
@@ -477,14 +879,22 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
       || 'Judge output was low-quality/placeholder. Please rerun this test with Judge enabled.'
     )
 
-  const dims = [
-    { key: 'tool_recall',    label: 'Tool Recall', w: '30%' },
-    { key: 'routing_match',  label: 'Routing',     w: '25%' },
-    { key: 'hitl_match',     label: 'HITL',        w: '25%' },
-    { key: 'keyword_score',  label: 'Keywords',    w: '10%' },
-    { key: 'state_match',    label: 'State',       w: '10%' },
-  ]
-  if (judgeRan) dims.push({ key: 'judge_score', label: 'Judge (15%)', w: '15%' })
+  const dims = judgeRan
+    ? [
+      { key: 'tool_recall',    label: 'Tool Recall', w: '25%' },
+      { key: 'routing_match',  label: 'Routing',     w: '20%' },
+      { key: 'hitl_match',     label: 'HITL',        w: '20%' },
+      { key: 'keyword_score',  label: 'Keywords',    w: '10%' },
+      { key: 'state_match',    label: 'State',       w: '10%' },
+      { key: 'judge_score',    label: 'Judge',       w: '15%' },
+    ]
+    : [
+      { key: 'tool_recall',    label: 'Tool Recall', w: '30%' },
+      { key: 'routing_match',  label: 'Routing',     w: '25%' },
+      { key: 'hitl_match',     label: 'HITL',        w: '25%' },
+      { key: 'keyword_score',  label: 'Keywords',    w: '10%' },
+      { key: 'state_match',    label: 'State',       w: '10%' },
+    ]
 
   // State transitions
   const src = test.source_state?.jobs || {}
@@ -503,10 +913,22 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
 
       <div className="eval-prompt">{test.input}</div>
 
+      {result?.bad_test_case && (
+        <div className="eval-section">
+          <h3 className="eval-section-title">Test Case Quality</h3>
+          <div className="eval-badcase-panel">
+            <div className="eval-badcase-title">⚠ Flagged as potentially invalid test case</div>
+            <div className="eval-badcase-reason">
+              {(result.bad_test_case_reason || 'No reason provided by evaluator.').trim()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Scores */}
       {result && (
         <div className="eval-section">
-          <h3 className="eval-section-title">Scores</h3>
+          <h3 className="eval-section-title">Scores (Selected Test)</h3>
           <div className="eval-scores">
             {dims.map(d => {
               const v = result[d.key] ?? 0
@@ -658,6 +1080,15 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
       </div>
 
       {/* Judge */}
+      {judgeEnabled && judgePending && (
+        <div className="eval-section">
+          <h3 className="eval-section-title">LLM Judge</h3>
+          <div className="eval-judge eval-judge-pending">
+            <span className="eval-judge-score eval-judge-error">LLM is judging…</span>
+          </div>
+        </div>
+      )}
+
       {judgeRan && (
         <div className="eval-section">
           <h3 className="eval-section-title">LLM Judge</h3>

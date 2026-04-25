@@ -29,14 +29,43 @@ logger = logging.getLogger(__name__)
 DANGEROUS_TOOL_NAMES: Set[str] = {
     "scancel", "scontrol_hold", "scontrol_release", "scontrol_update", "sbatch",
     "scontrol_requeue",
+    "scontrol_suspend", "scontrol_resume_job",
+    "srun", "salloc", "sattach", "sbcast",
     "scontrol_reconfigure",
     "sacctmgr_add", "sacctmgr_modify", "sacctmgr_delete",
+    "sacctmgr_recalc", "sacctmgr_archive", "sacctmgr_load", "sacctmgr_dump",
+    "strigger_set", "strigger_clear",
+    # Node and reservation management
+    "scontrol_node",
+    "scontrol_node_power_down", "scontrol_node_power_up",
+    "scontrol_node_features", "scontrol_node_gres", "scontrol_node_weight",
+    "scontrol_create_reservation",
+    "scontrol_delete_reservation",
+    "scontrol_update_reservation",
+    # Cluster control
+    "scontrol_write_config", "scontrol_setdebug", "scontrol_token", "scontrol_shutdown",
 }
 
 ANALYSIS_TOOL_NAMES: Set[str] = {
     "squeue", "sacct", "sinfo", "scontrol_show",
     "sacctmgr_list",  # read-only listing of accounting entities
     "sdiag", "sprio", "sstat", "read_file", "web_search",
+    "fetch_web_content",
+    # Extended read-only tools
+    "sreport",                    # CPU/GPU-hour usage reports
+    "scontrol_license",           # software license availability
+    "scontrol_reservation_show",  # list/show reservations
+    # Additional query/introspection tools
+    "sshare",
+    "scontrol_show_config", "scontrol_ping", "scontrol_show_topology",
+    "scontrol_show_step", "scontrol_show_federation", "scontrol_show_burstbuffer",
+    "sinfo_reasons", "sinfo_node",
+    "squeue_steps", "squeue_reservation",
+    "sprio_weights",
+    "strigger_get",
+    "scontrol_show_aliases",
+    "sacctmgr_show_problems",
+    "get_mock_state_snapshot",
 }
 
 # Everything else discovered on the MCP server is treated as safe.

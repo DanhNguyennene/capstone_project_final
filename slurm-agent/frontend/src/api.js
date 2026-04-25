@@ -1,8 +1,23 @@
 // Async generator: yields OpenAI delta objects from SSE stream
 // Pass an AbortSignal to cancel mid-stream
-export async function* streamChat(agentUrl, sessionId, userText, signal, mcpUrl, hitlDecision = null) {
+export async function* streamChat(
+  agentUrl,
+  sessionId,
+  userText,
+  signal,
+  mcpUrl,
+  llmProvider = null,
+  llmModel = null,
+  llmSpecialistModel = null,
+  llmJudgeModel = null,
+  hitlDecision = null,
+) {
   const headers = { 'Content-Type': 'application/json' }
   if (mcpUrl) headers['X-MCP-URL'] = mcpUrl
+  if (llmProvider) headers['X-LLM-Provider'] = llmProvider
+  if (llmModel) headers['X-LLM-Model'] = llmModel
+  if (llmSpecialistModel) headers['X-LLM-Specialist-Model'] = llmSpecialistModel
+  if (llmJudgeModel) headers['X-LLM-Judge-Model'] = llmJudgeModel
   const payload = {
     model: 'slurm-agent',
     messages: [{ role: 'user', content: userText }],

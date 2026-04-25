@@ -235,9 +235,24 @@ class SlurmContext:
     session_id: str = "default"
     chart_artifacts: List[str] = field(default_factory=list)
     operator_actions_taken: int = 0  # count of dangerous tools executed this run
+    operator_required_tool: str = ""  # optional per-handoff required action tool
+    operator_targets: List[str] = field(default_factory=list)  # targets captured at latest handoff
+    operator_discovery_calls: int = 0  # bounded pre-action discovery reads per handoff
+    operator_no_targets_found: bool = False  # set when discovery confirms no eligible targets
 
     def mark_operator_action(self):
         self.operator_actions_taken += 1
+
+    def mark_operator_discovery(self):
+        self.operator_discovery_calls += 1
+
+    def mark_no_targets_found(self):
+        self.operator_no_targets_found = True
+
+    def reset_operator_handoff_state(self):
+        self.operator_actions_taken = 0
+        self.operator_discovery_calls = 0
+        self.operator_no_targets_found = False
 
     # ── chart artifacts ──────────────────────────────────────────────────────
     def add_chart_artifact(self, mermaid_code: str):

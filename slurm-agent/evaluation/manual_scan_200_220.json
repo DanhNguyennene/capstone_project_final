@@ -1,0 +1,443 @@
+[
+  {
+    "index": 200,
+    "id": "sub_single_pending",
+    "category": "submission",
+    "scenario": "pending",
+    "input": "Submit train.sh",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "submit",
+        "train"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 201,
+    "id": "sub_gpu_pending",
+    "category": "submission",
+    "scenario": "pending",
+    "input": "Submit train.sh to the gpu partition with 4 GPUs",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu",
+        "submit"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 202,
+    "id": "sub_multi_pending",
+    "category": "submission",
+    "scenario": "pending",
+    "input": "Submit preprocess.sh, train_gpu.sh, and evaluate.sh",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "submit"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 203,
+    "id": "sub_array_pending",
+    "category": "submission",
+    "scenario": "pending",
+    "input": "Submit gpu_benchmark.sh as a job array of 10 tasks",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "array",
+        "submit"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 204,
+    "id": "sub_depend_3005_pending",
+    "category": "submission",
+    "scenario": "pending",
+    "input": "Submit evaluate.sh only after job 3005 completes successfully",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "3005",
+        "submit"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 205,
+    "id": "multi_cond_cancel_3001_pending",
+    "category": "multi_step",
+    "scenario": "pending",
+    "input": "Why is job 3001 pending and cancel it if it's been waiting over 2 hours",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "3001"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 206,
+    "id": "multi_check_submit_pending",
+    "category": "multi_step",
+    "scenario": "pending",
+    "input": "Show which gpu nodes are free then submit gpu_benchmark.sh if any are available",
+    "ground_truth": {
+      "tools": [
+        "sinfo"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "gpu",
+        "node"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 207,
+    "id": "multi_runtime_cancel_bob_pending",
+    "category": "multi_step",
+    "scenario": "pending",
+    "input": "Check how long bob's running jobs have been running and cancel any over 8 hours",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "bob"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 208,
+    "id": "acct_list_pending",
+    "category": "account",
+    "scenario": "pending",
+    "input": "Show all accounts on the cluster",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_list"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "account"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 209,
+    "id": "acct_qos_pending",
+    "category": "account",
+    "scenario": "pending",
+    "input": "List all QOS policies and their limits",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_list"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "QOS"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 210,
+    "id": "acct_add_pending",
+    "category": "account",
+    "scenario": "pending",
+    "input": "Add user dave to the research account",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_add"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "dave",
+        "add"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 211,
+    "id": "acct_delete_pending",
+    "category": "account",
+    "scenario": "pending",
+    "input": "Remove user dave from the research account",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_delete"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "dave"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 212,
+    "id": "acct_modify_charlie_pending",
+    "category": "account",
+    "scenario": "pending",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_modify"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "charlie",
+        "64"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 213,
+    "id": "edge_nonexistent_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "What is the status of job 99999?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "99999"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 214,
+    "id": "edge_invalid_id_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "Cancel job abc",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "invalid"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 215,
+    "id": "edge_capability_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "What can you help me with?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "job"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 216,
+    "id": "edge_incomplete_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "Cancel",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 217,
+    "id": "edge_waiting_phrase_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "Remove all waiting jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue",
+        "scancel"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "3001",
+        "3002",
+        "3003",
+        "3004",
+        "cancel"
+      ]
+    },
+    "changed_jobs": {
+      "3001": {
+        "from": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        }
+      },
+      "3002": {
+        "from": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        }
+      },
+      "3003": {
+        "from": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        }
+      },
+      "3004": {
+        "from": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 218,
+    "id": "edge_guidance_pending",
+    "category": "edge",
+    "scenario": "pending",
+    "input": "How do I write a good Slurm batch script?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "script"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 219,
+    "id": "node_drain_gpu-node-01_pending",
+    "category": "action",
+    "scenario": "pending",
+    "input": "Drain gpu-node-01 for scheduled maintenance",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "drain"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 220,
+    "id": "node_down_gpu-node-01_pending",
+    "category": "action",
+    "scenario": "pending",
+    "input": "Take gpu-node-01 down immediately — hardware failure detected",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "down"
+      ]
+    },
+    "changed_jobs": {}
+  }
+]

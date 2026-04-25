@@ -5,18 +5,70 @@ import InputBar from './InputBar'
 import TodoList from './components/TodoList'
 import EvalPage from './EvalPage'
 import { checkHealth } from './api'
-import { URL_KEY, MCP_URL_KEY } from './lib/storage'
+import {
+  URL_KEY,
+  MCP_URL_KEY,
+  LLM_PROVIDER_KEY,
+  OLLAMA_MODEL_KEY,
+  OPENAI_MODEL_KEY,
+  OLLAMA_SPECIALIST_MODEL_KEY,
+  OPENAI_SPECIALIST_MODEL_KEY,
+  OLLAMA_JUDGE_MODEL_KEY,
+  OPENAI_JUDGE_MODEL_KEY,
+  JUDGE_MODEL_KEY,
+} from './lib/storage'
 import { useSessions } from './hooks/useSessions'
 import { useStream }   from './hooks/useStream'
+
+const OLLAMA_MODEL_OPTIONS = [
+  'qwen3.5:9b',
+  'qwen2.5:7b',
+  'qwen3.5:27b',
+  'gpt-oss:20b',
+]
+
+const OPENAI_MODEL_OPTIONS = [
+  'gpt-4o-mini',
+  'gpt-4.1-mini',
+  'gpt-4.1',
+  'o4-mini',
+]
 
 export default function App() {
   const [agentUrl]    = useState(() => localStorage.getItem(URL_KEY) || 'http://localhost:8000')
   const [mcpUrl,      setMcpUrl]      = useState(() => localStorage.getItem(MCP_URL_KEY) || 'http://localhost:3002')
+  const [llmProvider, setLlmProvider] = useState(() => localStorage.getItem(LLM_PROVIDER_KEY) || 'ollama')
+  const [ollamaMainModel, setOllamaMainModel] = useState(() => localStorage.getItem(OLLAMA_MODEL_KEY) || 'qwen3.5:9b')
+  const [openaiMainModel, setOpenaiMainModel] = useState(() => localStorage.getItem(OPENAI_MODEL_KEY) || 'gpt-4o-mini')
+  const [ollamaSpecialistModel, setOllamaSpecialistModel] = useState(
+    () => localStorage.getItem(OLLAMA_SPECIALIST_MODEL_KEY) || 'qwen2.5:7b'
+  )
+  const [openaiSpecialistModel, setOpenaiSpecialistModel] = useState(
+    () => localStorage.getItem(OPENAI_SPECIALIST_MODEL_KEY) || 'gpt-4o-mini'
+  )
+  const [ollamaJudgeModel, setOllamaJudgeModel] = useState(() => {
+    const stored = localStorage.getItem(OLLAMA_JUDGE_MODEL_KEY)
+    if (stored && OLLAMA_MODEL_OPTIONS.includes(stored)) return stored
+    const legacy = localStorage.getItem(JUDGE_MODEL_KEY)
+    if (legacy && OLLAMA_MODEL_OPTIONS.includes(legacy)) return legacy
+    return 'qwen3.5:9b'
+  })
+  const [openaiJudgeModel, setOpenaiJudgeModel] = useState(() => {
+    const stored = localStorage.getItem(OPENAI_JUDGE_MODEL_KEY)
+    if (stored && OPENAI_MODEL_OPTIONS.includes(stored)) return stored
+    const legacy = localStorage.getItem(JUDGE_MODEL_KEY)
+    if (legacy && OPENAI_MODEL_OPTIONS.includes(legacy)) return legacy
+    return 'gpt-4o-mini'
+  })
   const [streaming,   setStreaming]   = useState(false)
   const [status,      setStatus]      = useState({ state: 'idle', text: 'Connecting…' })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [todoList,    setTodoList]    = useState([])  // session-level plan
   const [view,        setView]        = useState('chat') // 'chat' | 'eval'
+  const mainModel = llmProvider === 'openai' ? openaiMainModel : ollamaMainModel
+  const specialistModel = llmProvider === 'openai' ? openaiSpecialistModel : ollamaSpecialistModel
+  const judgeModel = llmProvider === 'openai' ? openaiJudgeModel : ollamaJudgeModel
+  const providerModelOptions = llmProvider === 'openai' ? OPENAI_MODEL_OPTIONS : OLLAMA_MODEL_OPTIONS
 
   const {
     sessions, setSessions, activeId, setActiveId,
@@ -30,9 +82,30 @@ export default function App() {
   activeIdRef.current = activeId
 
   const { sendMessage, handleAction, abortRef } = useStream({
-    agentUrl, mcpUrl, activeIdRef, setSessions, setStreaming, setStatus, patchMsg, createSession,
+    agentUrl,
+    mcpUrl,
+    llmProvider,
+    llmMainModel: mainModel,
+    llmSpecialistModel: specialistModel,
+    llmJudgeModel: judgeModel,
+    activeIdRef, setSessions, setStreaming, setStatus, patchMsg, createSession,
     onTodoUpdate: setTodoList,
   })
+
+  const handleMainModelChange = value => {
+    if (llmProvider === 'openai') setOpenaiMainModel(value)
+    else setOllamaMainModel(value)
+  }
+
+  const handleSpecialistModelChange = value => {
+    if (llmProvider === 'openai') setOpenaiSpecialistModel(value)
+    else setOllamaSpecialistModel(value)
+  }
+
+  const handleJudgeModelChange = value => {
+    if (llmProvider === 'openai') setOpenaiJudgeModel(value)
+    else setOllamaJudgeModel(value)
+  }
 
   // Clear plan when switching sessions
   useEffect(() => { setTodoList([]) }, [activeId])
@@ -52,6 +125,26 @@ export default function App() {
       .catch(() => setStatus({ state: 'offline', text: 'Disconnected' }))
   }, [agentUrl, mcpUrl])
 
+  useEffect(() => {
+    localStorage.setItem(LLM_PROVIDER_KEY, llmProvider)
+    localStorage.setItem(OLLAMA_MODEL_KEY, ollamaMainModel)
+    localStorage.setItem(OPENAI_MODEL_KEY, openaiMainModel)
+    localStorage.setItem(OLLAMA_SPECIALIST_MODEL_KEY, ollamaSpecialistModel)
+    localStorage.setItem(OPENAI_SPECIALIST_MODEL_KEY, openaiSpecialistModel)
+    localStorage.setItem(OLLAMA_JUDGE_MODEL_KEY, ollamaJudgeModel)
+    localStorage.setItem(OPENAI_JUDGE_MODEL_KEY, openaiJudgeModel)
+    localStorage.setItem(JUDGE_MODEL_KEY, judgeModel)
+  }, [
+    llmProvider,
+    ollamaMainModel,
+    openaiMainModel,
+    ollamaSpecialistModel,
+    openaiSpecialistModel,
+    ollamaJudgeModel,
+    openaiJudgeModel,
+    judgeModel,
+  ])
+
   return (
     <div className="app">
       <Sidebar
@@ -63,12 +156,28 @@ export default function App() {
         onDelete={deleteSession}
         mcpUrl={mcpUrl}
         onMcpUrlChange={setMcpUrl}
+        llmProvider={llmProvider}
+        onLlmProviderChange={setLlmProvider}
+        mainModel={mainModel}
+        specialistModel={specialistModel}
+        judgeModel={judgeModel}
+        llmModelOptions={providerModelOptions}
+        judgeModelOptions={providerModelOptions}
+        onMainModelChange={handleMainModelChange}
+        onSpecialistModelChange={handleSpecialistModelChange}
+        onJudgeModelChange={handleJudgeModelChange}
         view={view}
         onViewChange={setView}
       />
 
       {view === 'eval' ? (
-        <EvalPage agentUrl={agentUrl} />
+        <EvalPage
+          agentUrl={agentUrl}
+          mcpUrl={mcpUrl}
+          judgeModel={judgeModel}
+          sidebarOpen={sidebarOpen}
+          onToggleGlobalSidebar={() => setSidebarOpen(o => !o)}
+        />
       ) : (
       <div className="main">
         <header className="topbar">
@@ -94,4 +203,3 @@ export default function App() {
     </div>
   )
 }
-

@@ -50,22 +50,11 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
     base = mcp_url.rstrip("/")
     result = []
 
-    # Schemas with required args — skip HITL for calls missing them
-    # so the guardrail rejection goes straight back to the model
+    # Safety policy: dangerous actions always require HITL approval before execution.
+    # We do not bypass approval for malformed arguments.
     def _make_needs_approval(schema: dict):
-        required = set(schema.get("required", []))
-        if not required:
-            return True  # always need approval if no required args
-
-        def _check_approval(ctx, parsed_args: dict, call_id: str) -> bool:
-            # If required args are missing, skip approval so the guardrail
-            # rejects immediately and the model can retry without user input
-            for key in required:
-                val = parsed_args.get(key)
-                if val is None or (isinstance(val, str) and not val.strip()):
-                    return False
-            return True
-        return _check_approval
+        _ = schema
+        return True
 
     for dtool in dangerous_tools:
         def _make_invoke(captured_name: str, required_args: set):
@@ -111,6 +100,15 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                     return f"❌ {description}: {exc}"
             return _invoke
 
+        def _make_is_enabled(captured_name: str):
+            def _is_enabled(run_ctx, _agent) -> bool:
+                ctx_obj = run_ctx.context if hasattr(run_ctx, "context") else None
+                required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
+                if not required:
+                    return True
+                return captured_name.lower() == required
+            return _is_enabled
+
         tool_required = set(dtool.schema.get("required", []))
         guardrails = TOOL_INPUT_GUARDRAILS.get(dtool.name)
         result.append(FunctionTool(
@@ -119,6 +117,7 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
             params_json_schema=dtool.schema,
             on_invoke_tool=_make_invoke(dtool.name, tool_required),
             strict_json_schema=False,  # MCP schemas aren't guaranteed strict-compatible
+            is_enabled=_make_is_enabled(dtool.name),
             tool_input_guardrails=guardrails,
             tool_output_guardrails=[guard_redact_secrets],
             needs_approval=_make_needs_approval(dtool.schema),
@@ -126,6 +125,101 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
             timeout_behavior="error_as_result",
         ))
         logger.info(f"Created HITL-guarded FunctionTool for {dtool.name}")
+
+    return result
+
+
+def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> List[FunctionTool]:
+    """
+    Build Operator-side read tools with guardrails tied to handoff payload state.
+
+    Policy:
+    - If handoff carries explicit targets, discovery reads are disabled. Operator
+      should execute the required action tool directly.
+    - For broad actions (no explicit targets), allow at most one discovery read
+      call per handoff before forcing execute/handback behavior.
+    """
+    base = mcp_url.rstrip("/")
+    result: List[FunctionTool] = []
+
+    for rtool in read_tools:
+        if rtool.name not in {"squeue", "scontrol_show"}:
+            continue
+
+        def _make_invoke(captured_name: str, required_args: set):
+            async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
+                try:
+                    args = json.loads(args_json) if args_json else {}
+                except Exception:
+                    args = {}
+
+                missing = [k for k in required_args if not args.get(k)]
+                if missing:
+                    hint = ", ".join(f'{k}="value"' for k in missing)
+                    return (
+                        f"❌ {captured_name}() — missing required: {', '.join(missing)}. "
+                        f"Provide: {hint}."
+                    )
+
+                ctx_obj = ctx.context if hasattr(ctx, "context") else None
+                required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
+                targets = list(getattr(ctx_obj, "operator_targets", []) or [])
+                discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
+
+                if required and targets:
+                    return (
+                        "❌ Discovery read tools are disabled for explicit targets. "
+                        "Execute the required action tool now."
+                    )
+
+                if discovery_calls >= 1:
+                    return (
+                        "❌ Discovery read limit reached for this handoff. "
+                        "Execute the required action tool or hand back with a concise result."
+                    )
+
+                try:
+                    content = await _mcp_call(base, captured_name, args)
+                    text = " ".join(
+                        getattr(c, "text", "") for c in content if hasattr(c, "text")
+                    ).strip() or "No output"
+                    if hasattr(ctx_obj, "mark_operator_discovery"):
+                        ctx_obj.mark_operator_discovery()
+                    lowered = text.lower()
+                    if "no jobs found" in lowered or "no matching jobs" in lowered:
+                        if hasattr(ctx_obj, "mark_no_targets_found"):
+                            ctx_obj.mark_no_targets_found()
+                    return text
+                except Exception as exc:
+                    logger.error(f"Read failed: {captured_name}: {exc}")
+                    return f"❌ {captured_name} failed: {exc}"
+            return _invoke
+
+        def _make_is_enabled():
+            def _is_enabled(run_ctx, _agent) -> bool:
+                ctx_obj = run_ctx.context if hasattr(run_ctx, "context") else None
+                if ctx_obj is None:
+                    return True
+                required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
+                targets = list(getattr(ctx_obj, "operator_targets", []) or [])
+                if required and targets:
+                    return False
+                discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
+                return discovery_calls < 1
+            return _is_enabled
+
+        read_required = set(rtool.schema.get("required", []))
+        result.append(FunctionTool(
+            name=rtool.name,
+            description=rtool.description,
+            params_json_schema=rtool.schema,
+            on_invoke_tool=_make_invoke(rtool.name, read_required),
+            strict_json_schema=False,
+            is_enabled=_make_is_enabled(),
+            timeout_seconds=20.0,
+            timeout_behavior="error_as_result",
+        ))
+        logger.info(f"Created Operator read FunctionTool for {rtool.name}")
 
     return result
 

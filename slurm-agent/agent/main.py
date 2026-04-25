@@ -15,11 +15,26 @@ import uuid
 import time
 import os
 import re
+import base64
+import mimetypes
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
 from flow import SlurmAgentSystem
-from flow.model import DEFAULT_MODEL, OLLAMA_BASE_URL
+from flow.model import (
+    DEFAULT_MODEL,
+    SPECIALIST_MODEL,
+    OLLAMA_BASE_URL,
+    LLM_PROVIDER,
+    OPENAI_BASE_URL,
+    OPENAI_MODEL,
+    OPENAI_API_KEY,
+    COPILOT_BASE_URL,
+    GITHUB_MODELS_BASE_URL,
+    GITHUB_TOKEN,
+    normalize_provider,
+)
+from flow.skills import load_observer_skills
 
 # Configuration
 MCP_SERVER_URL = "http://localhost:3002"
@@ -28,6 +43,9 @@ AUTO_APPROVE = os.environ.get("AUTO_APPROVE", "false").lower() in ("1", "true", 
 STREAM_TIMEOUT = int(os.environ.get("STREAM_TIMEOUT", "75"))
 CHARTS_DIR = "/tmp/slurm_charts"
 UPLOADS_DIR = "/tmp/slurm_uploads"
+VISION_MODEL = os.environ.get("SLURM_AGENT_VISION_MODEL", "").strip()
+MAX_IMAGE_BYTES = int(os.environ.get("SLURM_AGENT_MAX_IMAGE_BYTES", "2000000"))
+MAX_IMAGE_ATTACHMENTS = int(os.environ.get("SLURM_AGENT_MAX_IMAGE_ATTACHMENTS", "3"))
 
 os.makedirs(CHARTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
@@ -62,6 +80,22 @@ def create_stream_chunk(
     return f"data: {json.dumps(chunk)}\n\n"
 
 
+def create_todo_chunk(items: list[dict]) -> str:
+    """Create SSE chunk for todo panel updates."""
+    chunk = {
+        "id": f"slurm-{uuid.uuid4()}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": "slurm-agent",
+        "choices": [{
+            "index": 0,
+            "finish_reason": None,
+            "delta": {"todo_update": items},
+        }],
+    }
+    return f"data: {json.dumps(chunk)}\n\n"
+
+
 def _event_to_sse(event: dict) -> str | None:
     """Convert an agent event dict to an SSE data line, or None to skip."""
     t = event.get("type")
@@ -89,35 +123,111 @@ def _event_to_sse(event: dict) -> str | None:
 
 
 # ===== Session Management =====
-_session_agents: Dict[str, tuple] = {}
+SessionAgentEntry = tuple[SlurmAgentSystem, str, str, str, str, float]
+_session_agents: Dict[str, SessionAgentEntry] = {}
 SESSION_TIMEOUT = 3600
 
 
-def get_agent(session_id: str = "default", mcp_url: str | None = None) -> SlurmAgentSystem:
+def _default_model_for_provider(provider: str) -> str:
+    if provider == "openai":
+        return OPENAI_MODEL
+    return DEFAULT_MODEL
+
+
+def _default_specialist_model_for_provider(provider: str) -> str:
+    if provider == "openai":
+        return OPENAI_MODEL
+    return SPECIALIST_MODEL
+
+
+def _schedule_disconnect(agent: SlurmAgentSystem) -> None:
+    """Best-effort cleanup for replaced/expired agents."""
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(agent.disconnect())
+    except Exception:
+        pass
+
+
+def get_agent(
+    session_id: str = "default",
+    mcp_url: str | None = None,
+    llm_provider: str | None = None,
+    llm_model: str | None = None,
+    llm_specialist_model: str | None = None,
+    openai_api_key: str | None = None,
+) -> SlurmAgentSystem:
     """Get or create agent for session."""
     global _session_agents
     current_time = time.time()
     effective_mcp = mcp_url or MCP_SERVER_URL
+    effective_provider = normalize_provider(llm_provider or LLM_PROVIDER)
+    effective_model = (llm_model or "").strip() or _default_model_for_provider(effective_provider)
+    effective_specialist_model = (llm_specialist_model or "").strip() or _default_specialist_model_for_provider(effective_provider)
 
-    expired = [k for k, (_, _, t) in _session_agents.items() if current_time - t > SESSION_TIMEOUT]
+    expired = [
+        k for k, (agent, _, _, _, _, t) in _session_agents.items()
+        if current_time - t > SESSION_TIMEOUT
+    ]
     for k in expired:
+        _schedule_disconnect(_session_agents[k][0])
         del _session_agents[k]
 
     if session_id in _session_agents:
-        agent, prev_mcp, _ = _session_agents[session_id]
-        if prev_mcp == effective_mcp:
-            _session_agents[session_id] = (agent, prev_mcp, current_time)
+        agent, prev_mcp, prev_provider, prev_model, prev_specialist_model, _ = _session_agents[session_id]
+        key_changed = (
+            effective_provider == "openai"
+            and bool(openai_api_key)
+            and getattr(agent, "openai_api_key", "") != openai_api_key
+        )
+        if (
+            prev_mcp == effective_mcp
+            and prev_provider == effective_provider
+            and prev_model == effective_model
+            and prev_specialist_model == effective_specialist_model
+            and not key_changed
+        ):
+            _session_agents[session_id] = (
+                agent,
+                prev_mcp,
+                prev_provider,
+                prev_model,
+                prev_specialist_model,
+                current_time,
+            )
             return agent
-        logger.info(f"MCP URL changed for session {session_id}: {prev_mcp} -> {effective_mcp}")
+        logger.info(
+            f"Agent config changed for session {session_id}: "
+            f"mcp {prev_mcp}->{effective_mcp}, "
+            f"provider {prev_provider}->{effective_provider}, "
+            f"main-model {prev_model}->{effective_model}, "
+            f"specialist-model {prev_specialist_model}->{effective_specialist_model}"
+        )
+        _schedule_disconnect(agent)
 
-    logger.info(f"Creating agent for session: {session_id} (mcp={effective_mcp})")
+    logger.info(
+        f"Creating agent for session: {session_id} "
+        f"(mcp={effective_mcp}, provider={effective_provider}, "
+        f"main-model={effective_model}, specialist-model={effective_specialist_model})"
+    )
     agent = SlurmAgentSystem(
-        reasoning_model=DEFAULT_MODEL,
+        reasoning_model=effective_model,
         mcp_url=effective_mcp,
         session_id=session_id,
         auto_approve=AUTO_APPROVE,
+        llm_provider=effective_provider,
+        llm_model=effective_model,
+        specialist_model=effective_specialist_model,
+        openai_api_key=openai_api_key,
     )
-    _session_agents[session_id] = (agent, effective_mcp, current_time)
+    _session_agents[session_id] = (
+        agent,
+        effective_mcp,
+        effective_provider,
+        effective_model,
+        effective_specialist_model,
+        current_time,
+    )
     return agent
 
 
@@ -126,7 +236,7 @@ def get_agent(session_id: str = "default", mcp_url: str | None = None) -> SlurmA
 async def lifespan(app: FastAPI):
     logger.info("Starting Slurm Agent API")
     yield
-    for sid, (agent, _, _) in _session_agents.items():
+    for sid, (agent, _, _, _, _, _) in _session_agents.items():
         try:
             await agent.disconnect()
         except Exception as e:
@@ -164,6 +274,26 @@ class ChatRequest(BaseModel):
 
 # ===== File Attachment Pre-processing =====
 _ATTACH_RE = re.compile(r'\[Attached file:\s*([^\]]+)\]')
+_SKILL_CMD_RE = re.compile(r"^\s*/skill\s+(list|search|use)\b(.*)$", re.IGNORECASE | re.DOTALL)
+_NATURAL_SKILL_RE = re.compile(
+    r"^\s*(?:use|follow)\s+(?:the\s+)?(?:skill|runbook)\b(.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_TODO_CMD_RE = re.compile(r"^\s*/todo\b(.*)$", re.IGNORECASE | re.DOTALL)
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
+
+
+def _attached_paths(user_message: str) -> list[str]:
+    paths: list[str] = []
+    for raw in _ATTACH_RE.findall(user_message or ""):
+        path = (raw or "").strip()
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _is_image_path(path: str) -> bool:
+    return os.path.splitext(path.lower())[1] in _IMAGE_EXTS
 
 
 def _preprocess_attachments(user_message: str) -> str:
@@ -184,25 +314,289 @@ def _preprocess_attachments(user_message: str) -> str:
             parts.append(f"📎 **{filename}** (path: {path}) ⚠️ not found")
 
     file_block = "\n".join(parts)
-    all_sh = all(p.endswith('.sh') for p in valid_paths) and valid_paths
-    action_words = any(w in clean_text.lower() for w in [
-        "run", "submit", "execute", "start", "launch", "these", "all",
-    ]) if clean_text else False
-
-    if all_sh and (action_words or not clean_text):
-        paths_csv = ",".join(valid_paths)
-        directive = (
-            f"ACTION REQUIRED: Submit {len(valid_paths)} scripts to Slurm via sbatch.\n"
-            f"Paths: {paths_csv}\n"
-            f"→ Hand off to Operator immediately."
-        )
-        if clean_text:
-            return f"{file_block}\n\n{directive}\n\nUser message: {clean_text}"
-        return f"{file_block}\n\n{directive}"
 
     if clean_text:
         return f"{file_block}\n\nUser request: {clean_text}"
     return f"{file_block}\n\nUser request: Process these files."
+
+
+def _parse_todo_steps(raw: str) -> list[str]:
+    text = (raw or "").strip()
+    if not text:
+        return []
+    parts = [text]
+    if ";" in text:
+        parts = [p.strip() for p in text.split(";")]
+    elif "\n" in text:
+        parts = [p.strip() for p in text.splitlines()]
+    cleaned: list[str] = []
+    for part in parts:
+        s = re.sub(r"^\s*[-*]\s*", "", part).strip()
+        s = re.sub(r"^\s*\d+[\.)]\s*", "", s).strip()
+        if s:
+            cleaned.append(s[:100])
+    return cleaned[:20]
+
+
+def _format_todo_text(items: list[dict]) -> str:
+    if not items:
+        return "Todo list is empty."
+    lines = ["Todo list:"]
+    for item in items:
+        status = str(item.get("status", "not-started"))
+        marker = "[x]" if status == "completed" else "[>]" if status == "in-progress" else "[ ]"
+        lines.append(f"{marker} {item.get('id', '?')}. {item.get('title', '')}")
+    return "\n".join(lines)
+
+
+def _handle_todo_command(agent: SlurmAgentSystem, user_message: str) -> Optional[Dict[str, Any]]:
+    m = _TODO_CMD_RE.match((user_message or "").strip())
+    if not m:
+        return None
+
+    payload = (m.group(1) or "").strip()
+    if not payload:
+        payload = "show"
+    parts = payload.split(None, 1)
+    sub = parts[0].lower()
+    rest = parts[1].strip() if len(parts) > 1 else ""
+
+    if sub in {"show", "list"}:
+        items = agent._todo.get_items()
+        return {"message": _format_todo_text(items), "todo_items": items}
+
+    if sub == "clear":
+        agent._todo.reset()
+        return {"message": "Cleared todo list.", "todo_items": []}
+
+    if sub == "set":
+        steps = _parse_todo_steps(rest)
+        if not steps:
+            return {
+                "message": 'Usage: /todo set step 1; step 2; step 3',
+                "todo_items": agent._todo.get_items(),
+            }
+        items = [{"id": i + 1, "title": title, "status": "not-started"} for i, title in enumerate(steps)]
+        agent._todo.set_from_tool(items)
+        return {"message": f"Set todo list ({len(items)} items).", "todo_items": agent._todo.get_items()}
+
+    if sub == "add":
+        title = rest.strip()
+        if not title:
+            return {
+                "message": "Usage: /todo add <task>",
+                "todo_items": agent._todo.get_items(),
+            }
+        items = agent._todo.get_items()
+        next_id = max((int(i.get("id", 0)) for i in items), default=0) + 1
+        items.append({"id": next_id, "title": title[:100], "status": "not-started"})
+        agent._todo.set_from_tool(items)
+        return {"message": f"Added todo #{next_id}.", "todo_items": agent._todo.get_items()}
+
+    return {
+        "message": "Todo commands: /todo show | /todo clear | /todo set <a; b; c> | /todo add <task>",
+        "todo_items": agent._todo.get_items(),
+    }
+
+
+def _search_skill_titles(skills: dict[str, str], query: str, limit: int = 12) -> list[str]:
+    q = (query or "").strip().lower()
+    if not q:
+        return sorted(skills.keys())[:limit]
+    hits: list[str] = []
+    for title, content in sorted(skills.items()):
+        title_l = title.lower()
+        content_l = content.lower()
+        if q in title_l or q in content_l:
+            hits.append(title)
+    return hits[:limit]
+
+
+def _handle_skill_command(user_message: str) -> Optional[Dict[str, str]]:
+    raw = (user_message or "").strip()
+    m = _SKILL_CMD_RE.match(raw)
+    if not m:
+        # Natural-language skill/runbook request fallback.
+        m2 = _NATURAL_SKILL_RE.match(raw)
+        if not m2:
+            return None
+        query = (m2.group(1) or "").strip(" :")
+        if not query:
+            return {"direct_message": "Please specify which skill or runbook to use."}
+        rewritten = (
+            "EXPLICIT SKILL EXECUTION REQUEST\n"
+            f"Skill query: {query}\n"
+            f"Task: Apply this skill guidance for: {query}\n\n"
+            "You MUST do this sequence:\n"
+            "1) Call lookup_skill with mode='search' for the skill query.\n"
+            "2) Call lookup_skill with mode='read' using one exact title from search results.\n"
+            "3) Follow that skill workflow in your tool usage and answer.\n"
+            "4) If no skill matches, report that and list close titles.\n"
+        )
+        return {"rewritten_message": rewritten}
+
+    mode = (m.group(1) or "").strip().lower()
+    payload = (m.group(2) or "").strip()
+    skills = load_observer_skills()
+    titles = sorted(skills.keys())
+
+    if mode == "list":
+        if not titles:
+            return {"direct_message": "No local skills found."}
+        lines = ["Available skills:"] + [f"- {name}" for name in titles[:50]]
+        if len(titles) > 50:
+            lines.append(f"...and {len(titles) - 50} more.")
+        return {"direct_message": "\n".join(lines)}
+
+    if mode == "search":
+        if not payload:
+            return {"direct_message": "Usage: /skill search <query>"}
+        hits = _search_skill_titles(skills, payload)
+        if not hits:
+            return {"direct_message": f'No skills matched "{payload}".'}
+        lines = [f'Skill matches for "{payload}":'] + [f"- {name}" for name in hits]
+        return {"direct_message": "\n".join(lines)}
+
+    # mode == "use"
+    if not payload:
+        return {"direct_message": "Usage: /skill use <query> :: <task>"}
+    query, sep, task = payload.partition("::")
+    query = query.strip()
+    task = task.strip() if sep else ""
+    if not query:
+        return {"direct_message": "Usage: /skill use <query> :: <task>"}
+    if not task:
+        task = f"Apply this skill guidance for: {query}"
+    rewritten = (
+        "EXPLICIT SKILL EXECUTION REQUEST\n"
+        f"Skill query: {query}\n"
+        f"Task: {task}\n\n"
+        "You MUST do this sequence:\n"
+        "1) Call lookup_skill with mode='search' for the skill query.\n"
+        "2) Call lookup_skill with mode='read' using one exact title from search results.\n"
+        "3) Execute the task by following that skill's steps.\n"
+        "4) If no skill matches, report that and list close titles.\n"
+    )
+    return {"rewritten_message": rewritten}
+
+
+async def _describe_image(
+    path: str,
+    llm_provider: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+) -> Optional[str]:
+    if not VISION_MODEL:
+        return None
+    if not os.path.isfile(path):
+        return None
+    try:
+        size = os.path.getsize(path)
+        if size <= 0 or size > MAX_IMAGE_BYTES:
+            return f"Skipped ({os.path.basename(path)}): unsupported size {size} bytes."
+
+        with open(path, "rb") as f:
+            raw = f.read()
+        mime = mimetypes.guess_type(path)[0] or "image/png"
+        data_url = f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+
+        provider = normalize_provider(llm_provider or LLM_PROVIDER)
+        client, _, extra_kwargs = _build_chat_client(
+            provider=provider,
+            model_name=VISION_MODEL,
+            openai_api_key=openai_api_key,
+        )
+
+        resp = await client.chat.completions.create(
+            model=VISION_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are helping an HPC assistant. Describe the image concisely with concrete "
+                        "details that could be useful for troubleshooting or operations."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Describe the attached image for technical ops context."},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                },
+            ],
+            temperature=0.1,
+            max_tokens=220,
+            **extra_kwargs,
+        )
+        desc = (resp.choices[0].message.content or "").strip()
+        if not desc:
+            return "No description returned by vision model."
+        return desc[:700]
+    except Exception as exc:
+        logger.warning(f"Vision parse failed for {path}: {exc}")
+        return f"Vision parse failed for {os.path.basename(path)}: {exc}"
+
+
+def _build_chat_client(
+    provider: str,
+    model_name: Optional[str],
+    openai_api_key: Optional[str] = None,
+):
+    """Create an OpenAI-compatible client for the active provider."""
+    from openai import AsyncOpenAI
+
+    active_provider = normalize_provider(provider)
+    target_model = (model_name or "").strip() or _default_model_for_provider(active_provider)
+
+    if active_provider == "openai":
+        token = (openai_api_key or OPENAI_API_KEY).strip()
+        if not token:
+            raise RuntimeError("OPENAI_API_KEY missing for OpenAI provider")
+        return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token), target_model, {}
+
+    if active_provider == "copilot":
+        if not GITHUB_TOKEN:
+            raise RuntimeError("GITHUB_TOKEN missing for Copilot provider")
+        return AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN), target_model, {}
+
+    if active_provider == "github-models":
+        if not GITHUB_TOKEN:
+            raise RuntimeError("GITHUB_TOKEN missing for GitHub Models provider")
+        return AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN), target_model, {}
+
+    return (
+        AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama"),
+        target_model,
+        {"extra_body": {"think": False}},
+    )
+
+
+async def _augment_with_image_descriptions(
+    user_message: str,
+    llm_provider: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+) -> str:
+    paths = [p for p in _attached_paths(user_message) if os.path.isfile(p) and _is_image_path(p)]
+    if not paths:
+        return user_message
+
+    image_paths = paths[:MAX_IMAGE_ATTACHMENTS]
+    notes: list[str] = []
+    if not VISION_MODEL:
+        names = ", ".join(os.path.basename(p) for p in image_paths)
+        notes.append(
+            f"Image attachments detected ({names}), but no vision model is configured. "
+            "Set SLURM_AGENT_VISION_MODEL to enable image understanding."
+        )
+    else:
+        for p in image_paths:
+            desc = await _describe_image(p, llm_provider=llm_provider, openai_api_key=openai_api_key)
+            if desc:
+                notes.append(f"{os.path.basename(p)}: {desc}")
+    if not notes:
+        return user_message
+    joined = "\n".join(f"- {n}" for n in notes)
+    return f"{user_message}\n\n[IMAGE_ANALYSIS]\n{joined}"
 
 
 # ===== Endpoints =====
@@ -234,8 +628,23 @@ async def chat(request: ChatRequest, raw_request: Request):
         logger.warning(f"No chat_id in request, generated new session: {session_id}")
 
     mcp_url = raw_request.headers.get("x-mcp-url")
-    logger.info(f"Chat request - session_id: {session_id}, mcp_url: {mcp_url or 'default'}")
-    agent = get_agent(session_id, mcp_url=mcp_url)
+    llm_provider = normalize_provider(raw_request.headers.get("x-llm-provider") or LLM_PROVIDER)
+    llm_model = (raw_request.headers.get("x-llm-model") or "").strip() or None
+    llm_specialist_model = (raw_request.headers.get("x-llm-specialist-model") or "").strip() or None
+    openai_api_key = (raw_request.headers.get("x-openai-api-key") or "").strip() or None
+    logger.info(
+        f"Chat request - session_id: {session_id}, mcp_url: {mcp_url or 'default'}, "
+        f"provider: {llm_provider}, main-model: {llm_model or '(default)'}, "
+        f"specialist-model: {llm_specialist_model or '(default)'}"
+    )
+    agent = get_agent(
+        session_id,
+        mcp_url=mcp_url,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        llm_specialist_model=llm_specialist_model,
+        openai_api_key=openai_api_key,
+    )
 
     messages = [m.model_dump() for m in request.messages]
     user_message = ""
@@ -246,7 +655,45 @@ async def chat(request: ChatRequest, raw_request: Request):
             task = msg.get("task", "chat")
             break
 
+    def _direct_completion(content: str) -> dict:
+        return {
+            "id": f"chatcmpl-{uuid.uuid4()}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": "slurm-agent",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}],
+        }
+
+    async def _direct_stream(content: str, todo_items: Optional[list[dict]] = None):
+        if todo_items is not None:
+            yield create_todo_chunk(todo_items)
+        yield create_stream_chunk(content=content, finish_reason="stop")
+        yield "data: [DONE]\n\n"
+
+    todo_cmd = _handle_todo_command(agent, user_message)
+    if todo_cmd is not None:
+        msg = str(todo_cmd.get("message", "")).strip() or "Done."
+        todo_items = todo_cmd.get("todo_items", [])
+        if request.stream:
+            return StreamingResponse(_direct_stream(msg, todo_items), media_type="text/event-stream")
+        return _direct_completion(msg)
+
+    skill_cmd = _handle_skill_command(user_message)
+    if skill_cmd is not None:
+        if skill_cmd.get("direct_message"):
+            msg = str(skill_cmd["direct_message"]).strip()
+            if request.stream:
+                return StreamingResponse(_direct_stream(msg), media_type="text/event-stream")
+            return _direct_completion(msg)
+        if skill_cmd.get("rewritten_message"):
+            user_message = str(skill_cmd["rewritten_message"])
+
     user_message = _preprocess_attachments(user_message)
+    user_message = await _augment_with_image_descriptions(
+        user_message,
+        llm_provider=agent.llm_provider,
+        openai_api_key=agent.openai_api_key,
+    )
     logger.info(f"Preprocessed message ({len(user_message)} chars): {user_message[:500]}")
 
     # Non-streaming
@@ -274,13 +721,16 @@ async def chat(request: ChatRequest, raw_request: Request):
 
             # Generation tasks use simple LLM directly
             if task in ["follow_up_generation", "title_generation", "tags_generation"]:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+                client, generation_model, extra_kwargs = _build_chat_client(
+                    provider=agent.llm_provider,
+                    model_name=agent.llm_model,
+                    openai_api_key=agent.openai_api_key,
+                )
                 response = await client.chat.completions.create(
-                    model=DEFAULT_MODEL,
+                    model=generation_model,
                     messages=messages,
                     temperature=0.2,
-                    extra_body={"think": False},
+                    **extra_kwargs,
                 )
                 content = response.choices[0].message.content or ""
                 yield create_stream_chunk(content=content, finish_reason="stop")
@@ -347,7 +797,7 @@ async def clear_all_sessions():
     """Clear all sessions and SQLite conversation history."""
     global _session_agents
     count = len(_session_agents)
-    for sid, (agent, _, _) in list(_session_agents.items()):
+    for sid, (agent, _, _, _, _, _) in list(_session_agents.items()):
         try:
             await agent.disconnect()
         except Exception as e:
@@ -365,7 +815,7 @@ async def clear_session(session_id: str):
     """Clear a specific session."""
     global _session_agents
     if session_id in _session_agents:
-        agent, _, _ = _session_agents.pop(session_id)
+        agent, _, _, _, _, _ = _session_agents.pop(session_id)
         try:
             await agent.clear_session()
             await agent.disconnect()

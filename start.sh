@@ -24,6 +24,10 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 AGENT_DIR="$ROOT/slurm-agent/agent"
 MCP_DIR="$ROOT/slurm-agent/mcp-server"
 FRONTEND_DIR="$ROOT/slurm-agent/frontend"
+KEY_FILE="$ROOT/.key"
+KEY_FILE_ALT="$ROOT/slurm-agent/.key"
+ENV_FILE="$ROOT/.env"
+ENV_FILE_ALT="$ROOT/slurm-agent/.env"
 
 # ── Colours ────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -33,6 +37,87 @@ log()  { echo -e "${CYAN}[start]${NC} $*"; }
 ok()   { echo -e "${GREEN}  ✓${NC} $*"; }
 warn() { echo -e "${YELLOW}  !${NC} $*"; }
 die()  { echo -e "${RED}  ✗ $*${NC}"; exit 1; }
+
+# ── Optional local key bootstrap (.key/.env are gitignored) ───────
+trim_ws() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+load_env_like_file() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+
+  local raw line key value loaded=0
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    line="$(trim_ws "$raw")"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+
+    if [[ "$line" == export\ * ]]; then
+      line="${line#export }"
+    fi
+
+    if [[ "$line" == *=* ]]; then
+      key="$(trim_ws "${line%%=*}")"
+      value="$(trim_ws "${line#*=}")"
+
+      if [[ ( "$value" == \"*\" && "$value" == *\" ) || ( "$value" == \'*\' && "$value" == *\' ) ]]; then
+        value="${value:1:${#value}-2}"
+      fi
+
+      case "$key" in
+        OPEN_AI_KEY)
+          export OPENAI_API_KEY="$value"
+          loaded=1
+          ;;
+        GH_TOKEN|GH_PAT|GITHUB_PAT)
+          export GITHUB_TOKEN="$value"
+          loaded=1
+          ;;
+        *)
+          if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            export "$key=$value"
+            loaded=1
+          else
+            warn "Skipping invalid key name in $(basename "$file"): $key"
+          fi
+          ;;
+      esac
+      continue
+    fi
+
+    if [[ "$line" == sk-* ]]; then
+      export OPENAI_API_KEY="$line"
+      loaded=1
+    elif [[ "$line" == ghp_* || "$line" == github_pat_* || "$line" == gho_* || "$line" == ghu_* || "$line" == ghs_* ]]; then
+      export GITHUB_TOKEN="$line"
+      loaded=1
+    fi
+  done < "$file"
+
+  [[ $loaded -eq 1 ]] && ok "Loaded local secrets from: $file"
+  return 0
+}
+
+for f in "$KEY_FILE" "$KEY_FILE_ALT" "$ENV_FILE" "$ENV_FILE_ALT"; do
+  load_env_like_file "$f" || true
+done
+
+if [[ -z "${OPENAI_API_KEY:-}" && -n "${OPEN_AI_KEY:-}" ]]; then
+  export OPENAI_API_KEY="$OPEN_AI_KEY"
+fi
+
+if [[ -z "${GITHUB_TOKEN:-}" && -n "${GH_TOKEN:-}" ]]; then
+  export GITHUB_TOKEN="$GH_TOKEN"
+fi
+
+if [[ -n "${OPENAI_API_KEY:-}" && -z "${LLM_PROVIDER:-}" ]]; then
+  export LLM_PROVIDER="openai"
+  export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
+  ok "Detected OPENAI_API_KEY; defaulting LLM_PROVIDER=openai"
+fi
 
 # ── Kill stale processes on our ports ──────────────────────────────
 for port in 3002 8000; do

@@ -1,0 +1,471 @@
+[
+  {
+    "index": 260,
+    "id": "read_reservations_pending_v2",
+    "category": "read",
+    "scenario": "pending",
+    "input": "List scheduled reservations",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "reservation"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 261,
+    "id": "read_all_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show me all jobs in the queue",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "4002",
+        "4003",
+        "4004",
+        "4005",
+        "4006"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 262,
+    "id": "read_running_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show all currently running jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "4005",
+        "RUNNING"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 263,
+    "id": "read_pending_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show all pending jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4003",
+        "4006",
+        "PENDING"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 264,
+    "id": "read_failed_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show all failed jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4002",
+        "FAILED"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 265,
+    "id": "read_user_charlie_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show all jobs for user charlie",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "charlie",
+        "4003",
+        "4006"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 266,
+    "id": "read_gpu_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "List all jobs on the gpu partition",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "gpu",
+        "4001",
+        "4003",
+        "4005"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 267,
+    "id": "read_nodes_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show cluster node and partition status",
+    "ground_truth": {
+      "tools": [
+        "sinfo"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "node",
+        "partition"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 268,
+    "id": "read_util_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Is the cluster overloaded? Show me utilisation",
+    "ground_truth": {
+      "tools": [
+        "sinfo",
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "node"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 269,
+    "id": "read_detail_4001_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show details for job 4001",
+    "ground_truth": {
+      "tools": [
+        "scontrol_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "ml_training",
+        "alice"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 270,
+    "id": "read_history_charlie_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show charlie's job history for this week",
+    "ground_truth": {
+      "tools": [
+        "sacct"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "charlie"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 271,
+    "id": "diag_pending_4003_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "Why is job 4003 still pending?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4003",
+        "PENDING",
+        "Resources"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 272,
+    "id": "diag_failed_4002_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "Why did job 4002 fail? What went wrong?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4002",
+        "FAILED"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 273,
+    "id": "diag_runtime_4001_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "How long has job 4001 been running?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "ml_training"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 274,
+    "id": "diag_memory_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "Which jobs are consuming the most memory right now?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 275,
+    "id": "diag_acct_4002_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "Show a full accounting summary for job 4002 including CPU and memory usage",
+    "ground_truth": {
+      "tools": [
+        "sacct"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4002"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 276,
+    "id": "diag_health_mixed",
+    "category": "diagnose",
+    "scenario": "mixed",
+    "input": "Give me a full cluster health report: nodes, active jobs, pending jobs, and any failures",
+    "ground_truth": {
+      "tools": [
+        "sinfo",
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "node",
+        "RUNNING",
+        "FAILED",
+        "PENDING"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 277,
+    "id": "action_cancel_4001_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Cancel job 4001",
+    "ground_truth": {
+      "tools": [
+        "scancel"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "4001",
+        "cancel"
+      ]
+    },
+    "changed_jobs": {
+      "4001": {
+        "from": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 278,
+    "id": "action_hold_4003_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Hold job 4003",
+    "ground_truth": {
+      "tools": [
+        "scontrol_hold"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "4003",
+        "hold"
+      ]
+    },
+    "changed_jobs": {
+      "4003": {
+        "from": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "HOLD",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 279,
+    "id": "action_release_4003_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Release the hold on job 4003",
+    "ground_truth": {
+      "tools": [
+        "scontrol_release"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "4003",
+        "release"
+      ]
+    },
+    "changed_jobs": {
+      "4003": {
+        "from": {
+          "state": "HOLD",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 280,
+    "id": "action_requeue_4002_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Requeue job 4002",
+    "ground_truth": {
+      "tools": [
+        "scontrol_requeue"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "4002",
+        "requeue"
+      ]
+    },
+    "changed_jobs": {
+      "4002": {
+        "from": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "to": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        }
+      }
+    }
+  }
+]

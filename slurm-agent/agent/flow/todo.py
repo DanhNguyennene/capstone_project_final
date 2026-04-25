@@ -10,7 +10,20 @@ import logging
 import re
 from typing import Optional
 
-from .model import DEFAULT_MODEL, LLM_PROVIDER, OLLAMA_BASE_URL
+from .model import (
+    DEFAULT_MODEL,
+    LLM_PROVIDER,
+    SPECIALIST_MODEL,
+    OLLAMA_BASE_URL,
+    GITHUB_TOKEN,
+    COPILOT_BASE_URL,
+    COPILOT_MODEL,
+    GITHUB_MODELS_BASE_URL,
+    GITHUB_MODELS_MODEL,
+    OPENAI_BASE_URL,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +63,21 @@ User: "run all these" (with 3 attached files)
 class TodoTracker:
     """Session-scoped task tracker with LLM-generated plans."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        llm_provider: str = LLM_PROVIDER,
+        main_model: str = DEFAULT_MODEL,
+        specialist_model: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+    ):
         self.items: list[dict] = []  # [{id, title, status}]
         self._active_step: Optional[int] = None
         self._changed = False
+        self.llm_provider = (llm_provider or LLM_PROVIDER).strip().lower()
+        self.main_model = (main_model or DEFAULT_MODEL).strip()
+        default_specialist = OPENAI_MODEL if self.llm_provider == "openai" else SPECIALIST_MODEL
+        self.specialist_model = (specialist_model or default_specialist).strip()
+        self.openai_api_key = openai_api_key or OPENAI_API_KEY
 
     @property
     def has_plan(self) -> bool:
@@ -97,14 +121,27 @@ class TodoTracker:
         """Generate a plan via lightweight LLM call. Returns True if successful."""
         try:
             from openai import AsyncOpenAI
-            if LLM_PROVIDER == "copilot":
-                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
+            if self.llm_provider == "copilot":
+                if not GITHUB_TOKEN:
+                    raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
                 client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
                 _model = COPILOT_MODEL
                 _create_kwargs: dict = {}
+            elif self.llm_provider == "github-models":
+                if not GITHUB_TOKEN:
+                    raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
+                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
+                _model = GITHUB_MODELS_MODEL
+                _create_kwargs = {}
+            elif self.llm_provider == "openai":
+                if not self.openai_api_key:
+                    raise RuntimeError("OPENAI_API_KEY missing for openai provider")
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=self.openai_api_key)
+                _model = self.specialist_model or OPENAI_MODEL
+                _create_kwargs = {}
             else:
                 client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
-                _model = DEFAULT_MODEL
+                _model = self.specialist_model or SPECIALIST_MODEL
                 _create_kwargs = {"extra_body": {"think": False}}
             resp = await client.chat.completions.create(
                 model=_model,

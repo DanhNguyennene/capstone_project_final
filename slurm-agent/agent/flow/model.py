@@ -1,13 +1,15 @@
 """
 Model configuration for the Slurm agent.
 
-- DEFAULT_MODEL             — single source of truth for the model name
+- DEFAULT_MODEL             — model for core agents (Observer/Operator/etc.)
+- SPECIALIST_MODEL          — model for agent-as-tool specialists
 - OLLAMA_BASE_URL           — Ollama API endpoint
 - create_ollama_model()     — OpenAI-compat Ollama client
+- create_openai_model()     — Native OpenAI API client
 - create_copilot_model()    — GitHub Copilot API (Claude Sonnet via Copilot)
 - resolve_model()           — returns correct model based on LLM_PROVIDER env var
 - REASONING_MODEL_SETTINGS  — main agent (high-quality thinking)
-- COPILOT_MODEL_SETTINGS    — Copilot/Claude settings (no think/num_ctx extras)
+- CLOUD_MODEL_SETTINGS      — cloud provider settings (no Ollama-specific extras)
 """
 import logging
 import os
@@ -19,9 +21,16 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 # ── Provider selection ────────────────────────────────────────────────────────
-# Set LLM_PROVIDER=copilot + GITHUB_TOKEN=<pat> to route through GitHub Copilot.
-# Leave unset to use local Ollama (default).
+# Supported providers: ollama (default), openai, copilot, github-models.
 LLM_PROVIDER: str = os.environ.get("LLM_PROVIDER", "ollama").lower()
+
+# ── OpenAI config ─────────────────────────────────────────────────────────────
+OPENAI_BASE_URL: str = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_MODEL: str = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_API_KEY: str = (
+    os.environ.get("OPENAI_API_KEY", "")
+    or os.environ.get("OPEN_AI_KEY", "")
+)
 
 # ── Copilot config ────────────────────────────────────────────────────────────
 # GitHub Copilot — OpenAI-compat endpoint.
@@ -38,11 +47,16 @@ GITHUB_MODELS_BASE_URL: str = os.environ.get(
 )
 GITHUB_MODELS_MODEL: str = os.environ.get("GITHUB_MODELS_MODEL", "claude-sonnet-4-5")
 
-GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_TOKEN: str = (
+    os.environ.get("GITHUB_TOKEN", "")
+    or os.environ.get("GH_TOKEN", "")
+    or os.environ.get("GITHUB_PAT", "")
+)
 
 # ── Ollama config ─────────────────────────────────────────────────────────────
-# Override via env vars: SLURM_AGENT_MODEL, SLURM_AGENT_BASE_URL
+# Override via env vars: SLURM_AGENT_MODEL, SLURM_AGENT_SPECIALIST_MODEL, SLURM_AGENT_BASE_URL
 DEFAULT_MODEL: str = os.environ.get("SLURM_AGENT_MODEL", "qwen3.5:9b")
+SPECIALIST_MODEL: str = os.environ.get("SLURM_AGENT_SPECIALIST_MODEL", "qwen2.5:7b")
 OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:11434/v1")
 
 
@@ -55,6 +69,27 @@ def create_ollama_model(
     """Create an Ollama-backed model using the OpenAI-compat endpoint."""
     client = AsyncOpenAI(base_url=base_url, api_key="ollama")
     return OpenAIChatCompletionsModel(model=model_name, openai_client=client)
+
+
+def create_openai_model(
+    model_name: str | None = None,
+    token: str | None = None,
+    base_url: str | None = None,
+) -> OpenAIChatCompletionsModel:
+    """Create a native OpenAI model client.
+
+    Requires OPENAI_API_KEY in env or explicit token.
+    """
+    _token = token or OPENAI_API_KEY
+    if not _token:
+        raise RuntimeError(
+            "OPENAI_API_KEY env var is required for LLM_PROVIDER=openai."
+        )
+    _model = model_name or OPENAI_MODEL
+    _base = base_url or OPENAI_BASE_URL
+    client = AsyncOpenAI(base_url=_base, api_key=_token)
+    logger.info(f"[model] OpenAI backend: {_base} model={_model}")
+    return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
 
 def create_copilot_model(
@@ -101,40 +136,94 @@ def create_github_models_model(
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
 
-def resolve_model(model_name: str | None = None) -> OpenAIChatCompletionsModel:
+def normalize_provider(provider: str | None = None) -> str:
+    """Normalize provider input, falling back to env default."""
+    value = (provider or LLM_PROVIDER or "ollama").strip().lower()
+    if value not in {"ollama", "openai", "copilot", "github-models"}:
+        return "ollama"
+    return value
+
+
+def resolve_model(
+    model_name: str | None = None,
+    *,
+    provider: str | None = None,
+    openai_api_key: str | None = None,
+    openai_base_url: str | None = None,
+    github_token: str | None = None,
+) -> OpenAIChatCompletionsModel:
     """Return the appropriate model based on LLM_PROVIDER env var.
 
     LLM_PROVIDER=ollama         (default) → Ollama at SLURM_AGENT_BASE_URL
+    LLM_PROVIDER=openai                   → OpenAI API (needs OPENAI_API_KEY)
     LLM_PROVIDER=copilot                  → GitHub Copilot API (needs gh CLI token)
     LLM_PROVIDER=github-models            → GitHub Models API (works with PAT)
     """
-    if LLM_PROVIDER == "copilot":
-        return create_copilot_model(model_name)
-    if LLM_PROVIDER == "github-models":
-        return create_github_models_model(model_name)
+    active_provider = normalize_provider(provider)
+    if active_provider == "openai":
+        return create_openai_model(model_name, token=openai_api_key, base_url=openai_base_url)
+    if active_provider == "copilot":
+        return create_copilot_model(model_name, token=github_token)
+    if active_provider == "github-models":
+        return create_github_models_model(model_name, token=github_token)
     return create_ollama_model(model_name or DEFAULT_MODEL, OLLAMA_BASE_URL)
+
+
+def resolve_specialist_model(
+    model_name: str | None = None,
+    *,
+    provider: str | None = None,
+    openai_api_key: str | None = None,
+    openai_base_url: str | None = None,
+    github_token: str | None = None,
+) -> OpenAIChatCompletionsModel:
+    """Return model for agent-as-tool specialists.
+
+    For Ollama, defaults to a smaller model (`qwen2.5:7b`) to keep specialist calls fast/cheap.
+    For non-Ollama providers, falls back to the provider default.
+    """
+    active_provider = normalize_provider(provider)
+    if active_provider == "ollama":
+        return create_ollama_model(model_name or SPECIALIST_MODEL, OLLAMA_BASE_URL)
+    if active_provider == "openai":
+        return create_openai_model(
+            model_name or OPENAI_MODEL,
+            token=openai_api_key,
+            base_url=openai_base_url,
+        )
+    return resolve_model(
+        model_name,
+        provider=active_provider,
+        openai_api_key=openai_api_key,
+        openai_base_url=openai_base_url,
+        github_token=github_token,
+    )
 
 
 # ── Sampling settings ─────────────────────────────────────────────────────────
 
 # Ollama: deterministic, tool-focused responses (no explicit reasoning stream)
 REASONING_MODEL_SETTINGS = ModelSettings(
-    temperature=0.1,
+    temperature=0.0,
     top_p=0.9,
     parallel_tool_calls=False,
     extra_body={"think": False, "options": {"num_ctx": 16384}},
 )
 
-# Copilot/Claude: no Ollama-specific extras; Claude handles thinking natively
-COPILOT_MODEL_SETTINGS = ModelSettings(
-    temperature=0.3,
+# Cloud providers: no Ollama-specific extras.
+CLOUD_MODEL_SETTINGS = ModelSettings(
+    temperature=0.0,
     top_p=0.7,
     parallel_tool_calls=False,
 )
 
+
+def model_settings_for_provider(provider: str | None = None) -> ModelSettings:
+    """Return model settings that match the selected provider."""
+    active_provider = normalize_provider(provider)
+    if active_provider in ("openai", "copilot", "github-models"):
+        return CLOUD_MODEL_SETTINGS
+    return REASONING_MODEL_SETTINGS
+
 # Active settings — picked at import time based on provider
-ACTIVE_MODEL_SETTINGS: ModelSettings = (
-    COPILOT_MODEL_SETTINGS
-    if LLM_PROVIDER in ("copilot", "github-models")
-    else REASONING_MODEL_SETTINGS
-)
+ACTIVE_MODEL_SETTINGS: ModelSettings = model_settings_for_provider(LLM_PROVIDER)

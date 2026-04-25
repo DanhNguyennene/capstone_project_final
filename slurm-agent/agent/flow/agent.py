@@ -17,80 +17,10 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents import Agent, Runner, RunState, SQLiteSession, ItemHelpers, handoff, SessionSettings
+from agents.extensions.handoff_filters import remove_all_tools
+from agents.handoffs import HandoffInputData
 from agents.mcp import MCPServerSse, ToolFilterContext
-
-# ── Monkey-patch: fix malformed tool call arguments from Ollama streaming ─────
-# Ollama/gemma4 sometimes streams the same JSON fragment multiple times
-# (e.g., '{}{}{}' instead of '{}'), which the SDK concatenates verbatim.
-# This causes 400 "invalid tool call arguments" on the next turn and
-# "Extra data" parse errors when the SDK invokes MCP tools.
-#
-# We patch two SDK sites:
-# 1. Converter.items_to_messages — fixes history replay to the model
-# 2. MCPUtil.invoke_mcp_tool — fixes tool invocation with bad args
-
-def _sanitize_json_args(raw: str) -> str:
-    """Extract the first valid JSON object from potentially concatenated duplicates."""
-    if not raw or not isinstance(raw, str):
-        return raw
-    raw = raw.strip()
-    if not raw:
-        return "{}"
-    try:
-        json.loads(raw)
-        return raw
-    except (json.JSONDecodeError, ValueError):
-        pass
-    if raw.startswith("{"):
-        depth = 0
-        for i, ch in enumerate(raw):
-            if ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    candidate = raw[: i + 1]
-                    try:
-                        json.loads(candidate)
-                        return candidate
-                    except (json.JSONDecodeError, ValueError):
-                        break
-    return "{}"
-
-
-def _patch_sdk_for_ollama():
-    # Patch 1: Converter — sanitize arguments in history messages
-    from agents.models.chatcmpl_converter import Converter
-    _orig_items_to_messages = Converter.items_to_messages.__func__
-
-    @classmethod
-    def _patched_items_to_messages(cls, *args, **kwargs):
-        messages = _orig_items_to_messages(cls, *args, **kwargs)
-        for msg in messages:
-            if not isinstance(msg, dict):
-                continue
-            for tc in msg.get("tool_calls", []):
-                fn = tc.get("function", {})
-                raw = fn.get("arguments", "")
-                if raw and isinstance(raw, str):
-                    fn["arguments"] = _sanitize_json_args(raw)
-        return messages
-
-    Converter.items_to_messages = _patched_items_to_messages
-
-    # Patch 2: MCPUtil.invoke_mcp_tool — sanitize arguments before JSON parse
-    from agents.mcp.util import MCPUtil
-    _orig_invoke = MCPUtil.invoke_mcp_tool.__func__
-
-    @classmethod
-    async def _patched_invoke_mcp_tool(cls, server, tool, context, input_json, **kwargs):
-        if input_json and isinstance(input_json, str):
-            input_json = _sanitize_json_args(input_json)
-        return await _orig_invoke(cls, server, tool, context, input_json, **kwargs)
-
-    MCPUtil.invoke_mcp_tool = _patched_invoke_mcp_tool
-
-_patch_sdk_for_ollama()
+from agents.model_settings import ModelSettings
 
 from .context import ChartFilteredSession, SlurmContext
 from .guardrails import guard_job_id  # imported so the guardrail registry is populated
@@ -101,10 +31,20 @@ from .instructions import (
     format_tool_call,
 )
 from .model import (
-    ACTIVE_MODEL_SETTINGS,
     DEFAULT_MODEL,
-    LLM_PROVIDER,
+    SPECIALIST_MODEL,
     OLLAMA_BASE_URL,
+    GITHUB_TOKEN,
+    COPILOT_BASE_URL,
+    COPILOT_MODEL,
+    GITHUB_MODELS_BASE_URL,
+    GITHUB_MODELS_MODEL,
+    OPENAI_BASE_URL,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    LLM_PROVIDER,
+    normalize_provider,
+    model_settings_for_provider,
     resolve_model,
 )
 from .skills import (
@@ -114,7 +54,7 @@ from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
     make_guarded_dangerous_tools,
-    make_manage_todos_tool,
+    make_operator_read_tools,
     make_skill_lookup_tool,
 )
 
@@ -129,9 +69,15 @@ class _StreamState:
     content_streamed: bool = False
     charts_emitted: int = 0
     hitl_tool_outputs: List[str] = field(default_factory=list)
-    saw_transfer_to_operator: bool = False
-    last_handoff_message: str = ""  # message sent to Operator via transfer_to_operator
     _is_first_agent_event: bool = True
+
+
+@dataclass
+class _OperatorHandoffPayload:
+    """Structured payload Observer must pass when handing off to Operator."""
+    action_request: str
+    required_tool: str
+    targets: List[str] = field(default_factory=list)
 
 
 def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -> MCPServerSse:
@@ -153,8 +99,9 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
-_OPERATOR_READ_TOOLS = {"scontrol_show"}
+_OPERATOR_READ_TOOLS = {"scontrol_show", "squeue"}
 _OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
+
 
 
 class SlurmAgentSystem:
@@ -183,12 +130,27 @@ class SlurmAgentSystem:
         mcp_url: str = "http://localhost:3002",
         session_id: str = "default",
         auto_approve: bool = False,
+        llm_provider: Optional[str] = None,
+        llm_model: Optional[str] = None,
+        specialist_model: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
     ):
         self.mcp_url      = mcp_url
         self.session_id   = session_id
         self.auto_approve = auto_approve
 
-        self._reasoning_model = resolve_model(reasoning_model)
+        self.llm_provider = normalize_provider(llm_provider or LLM_PROVIDER)
+        self.llm_model = (llm_model or reasoning_model or DEFAULT_MODEL).strip()
+        self.openai_api_key = openai_api_key or OPENAI_API_KEY
+        default_specialist = OPENAI_MODEL if self.llm_provider == "openai" else SPECIALIST_MODEL
+        self.specialist_model = (specialist_model or default_specialist).strip()
+
+        self._reasoning_model = resolve_model(
+            self.llm_model,
+            provider=self.llm_provider,
+            openai_api_key=self.openai_api_key,
+        )
+        self._active_model_settings = model_settings_for_provider(self.llm_provider)
 
         self._session: Optional[ChartFilteredSession] = None
         self._mcp_observer: Optional[MCPServerSse]    = None
@@ -200,7 +162,12 @@ class SlurmAgentSystem:
         self._ready          = False
 
         # Session-scoped task plan
-        self._todo = TodoTracker()
+        self._todo = TodoTracker(
+            llm_provider=self.llm_provider,
+            main_model=self.llm_model,
+            specialist_model=self.specialist_model,
+            openai_api_key=self.openai_api_key,
+        )
 
         # HITL: store RunState + interruptions between requests for approval flow
         self._pending_approvals: Dict[str, dict] = {}
@@ -228,18 +195,21 @@ class SlurmAgentSystem:
         observer_mcp_names = (self._catalog.analysis_names | self._catalog.safe_names) - _OBSERVER_HIDDEN_MCP_TOOLS
         self._mcp_observer = _make_mcp_server(self.mcp_url, observer_mcp_names, "slurm-observer-mcp")
 
-        operator_read_names = _OPERATOR_READ_TOOLS & (self._catalog.analysis_names | self._catalog.safe_names)
-        self._mcp_operator = _make_mcp_server(self.mcp_url, operator_read_names, "slurm-operator-mcp")
+        # Operator reads are exposed as guarded FunctionTools (not raw MCP tools)
+        # so we can enforce per-handoff policies.
+        self._mcp_operator = _make_mcp_server(self.mcp_url, set(), "slurm-operator-mcp")
 
         # 5. Guarded dangerous FunctionTools (HITL: needs_approval=True)
         dangerous_fns = make_guarded_dangerous_tools(self.mcp_url, self._catalog.dangerous)
+        operator_read_defs = [
+            t for t in (self._catalog.analysis + self._catalog.safe)
+            if t.name in _OPERATOR_READ_TOOLS
+        ]
+        operator_read_fns = make_operator_read_tools(self.mcp_url, operator_read_defs)
 
-        # 6. Shared todo management tool (same instance, both agents share the tracker)
-        manage_todos_tool = make_manage_todos_tool(self._todo)
-
-        # 7. Build agents with bidirectional handoffs
-        #    Create agents first (no handoffs), then wire handoffs after both exist.
-        _observer_tools = [manage_todos_tool]
+        # 6. Build agents with bidirectional handoffs
+        #    Keep Observer tool surface focused on operational tools.
+        _observer_tools: list = []
         if skill_lookup_tool:
             _observer_tools.append(skill_lookup_tool)
 
@@ -247,7 +217,9 @@ class SlurmAgentSystem:
             name="Observer",
             instructions=observer_instructions,
             model=self._reasoning_model,
-            model_settings=ACTIVE_MODEL_SETTINGS,
+            model_settings=self._active_model_settings.resolve(
+                ModelSettings(tool_choice="required")
+            ),
             mcp_servers=[self._mcp_observer],
             tools=_observer_tools,
             handoffs=[],  # filled below
@@ -257,33 +229,154 @@ class SlurmAgentSystem:
             name="Operator",
             instructions=operator_instructions,
             model=self._reasoning_model,
-            model_settings=ACTIVE_MODEL_SETTINGS,
+            model_settings=self._active_model_settings.resolve(
+                ModelSettings(tool_choice="required")
+            ),
             mcp_servers=[self._mcp_operator],
-            tools=dangerous_fns + [manage_todos_tool],
+            tools=dangerous_fns + operator_read_fns,
             handoffs=[],  # filled below
         )
 
         # Wire bidirectional handoffs
-        observer.handoffs = [
-            handoff(
+        def _capture_operator_handoff(ctx, payload: _OperatorHandoffPayload) -> None:
+            # Persist required action tool in run context so non-required dangerous
+            # tools are hidden from Operator during this handoff.
+            ctx_obj = ctx.context if hasattr(ctx, "context") else None
+            if ctx_obj is None:
+                return
+            required_tool = _normalize_tool_name(getattr(payload, "required_tool", ""))
+            raw_targets = getattr(payload, "targets", [])
+            if not isinstance(raw_targets, list):
+                raw_targets = [raw_targets] if raw_targets else []
+            targets = [str(t).strip() for t in raw_targets if str(t).strip()]
+            if hasattr(ctx_obj, "reset_operator_handoff_state"):
+                ctx_obj.reset_operator_handoff_state()
+            if hasattr(ctx_obj, "operator_required_tool"):
+                ctx_obj.operator_required_tool = required_tool
+            if hasattr(ctx_obj, "operator_targets"):
+                ctx_obj.operator_targets = targets
+
+        def _operator_handoff_input_filter(handoff_data: HandoffInputData) -> HandoffInputData:
+            """Provide Operator a canonical action request from handoff payload."""
+            canonical_text = ""
+            for run_item in getattr(handoff_data, "new_items", ()) or ():
+                run_item_type = getattr(run_item, "type", "")
+                if run_item_type != "handoff_call_item":
+                    continue
+                raw_item = getattr(run_item, "raw_item", None)
+                if getattr(raw_item, "name", "") != "transfer_to_operator":
+                    continue
+                raw_args = getattr(raw_item, "arguments", "{}") or "{}"
+                try:
+                    payload = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
+                except Exception:
+                    payload = {}
+                action_request = str(payload.get("action_request", "")).strip()
+                targets = payload.get("targets", [])
+                required_tool = _normalize_tool_name(str(payload.get("required_tool", "")).strip())
+                if not isinstance(targets, list):
+                    targets = [targets] if targets else []
+                targets = [str(t).strip() for t in targets if str(t).strip()]
+                if action_request:
+                    lines = [
+                        "Execute this exact cluster-state action now.",
+                        "Do not substitute a different action type.",
+                        f"Action request: {action_request}",
+                    ]
+                    if required_tool:
+                        lines.append(f"Required tool: {required_tool}")
+                    if targets:
+                        lines.append(f"Targets: {', '.join(targets)}")
+                    if required_tool:
+                        lines.append(f"First action tool call MUST use {required_tool}.")
+                    canonical_text = "\n".join(lines)
+                break
+
+            cleaned = remove_all_tools(handoff_data)
+            if canonical_text:
+                canonical_input = {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": canonical_text}],
+                }
+                return cleaned.clone(
+                    input_history=(canonical_input,),
+                    pre_handoff_items=(),
+                    input_items=(),
+                )
+            return cleaned
+
+        def _observer_handoff_input_filter(handoff_data: HandoffInputData) -> HandoffInputData:
+            """Give Observer only completion context to avoid action re-handoff loops."""
+            snippets: List[str] = []
+            for run_item in getattr(handoff_data, "new_items", ()) or ():
+                run_item_type = getattr(run_item, "type", "")
+                if run_item_type == "tool_call_output_item":
+                    out = _extract_tool_output_text(getattr(run_item, "output", None)).strip()
+                    if out:
+                        snippets.append(out)
+                elif run_item_type == "message_output_item":
+                    msg = _strip_hallucinated_calls(ItemHelpers.text_message_output(run_item) or "")
+                    if msg.strip():
+                        snippets.append(msg.strip())
+
+            seen = set()
+            compact_snippets: List[str] = []
+            for s in snippets:
+                norm = " ".join(s.split()).lower()
+                if norm in seen:
+                    continue
+                seen.add(norm)
+                compact_snippets.append(s[:500])
+                if len(compact_snippets) >= 3:
+                    break
+
+            lines = [
+                "Action execution phase is complete.",
+                "Prepare the final user-facing summary from these results.",
+                "Do NOT call transfer_to_operator again unless a NEW user message asks for another action.",
+            ]
+            if compact_snippets:
+                lines.append("Execution results:")
+                lines.extend(f"- {s}" for s in compact_snippets)
+
+            cleaned = remove_all_tools(handoff_data)
+            canonical_input = {
+                "role": "user",
+                "content": [{"type": "input_text", "text": "\n".join(lines)}],
+            }
+            return cleaned.clone(
+                input_history=(canonical_input,),
+                pre_handoff_items=(),
+                input_items=(),
+            )
+
+        def _build_transfer_to_operator_handoff():
+            return handoff(
                 operator,
                 tool_name_override="transfer_to_operator",
                 tool_description_override=(
                     "Hand off to the Operator to EXECUTE actions that modify the cluster. "
-                    "Your message to the Operator is its instruction — state the action "
-                    "and list ALL targets (file paths, job IDs). "
+                    "Call with structured args: action_request (required imperative action) "
+                    "required_tool (exact action tool name), and targets (optional list of job IDs / node names / user/account). "
+                    "Example: action_request='Cancel jobs 1001,1002', required_tool='scancel', targets=['1001','1002']. "
                     "The Operator will call the tools and report results."
                 ),
-            ),
-        ]
+                on_handoff=_capture_operator_handoff,
+                input_type=_OperatorHandoffPayload,
+                input_filter=_operator_handoff_input_filter,
+            )
+
+        observer.handoffs = [_build_transfer_to_operator_handoff()]
         # Guard: Operator can only hand back AFTER executing at least one action.
-        # is_enabled hides transfer_to_observer until an action tool has fired,
-        # forcing the model to use sbatch/scancel/etc. first.
+        # is_enabled hides transfer_to_observer until an action has fired OR
+        # discovery has confirmed there are no eligible targets this handoff.
         def _operator_handoff_enabled(ctx, _agent) -> bool:
             slurm_ctx = ctx.context if hasattr(ctx, 'context') else None
             if slurm_ctx and hasattr(slurm_ctx, 'operator_actions_taken'):
-                return slurm_ctx.operator_actions_taken > 0
-            return True  # fallback: allow if context is unavailable
+                actions_taken = int(getattr(slurm_ctx, 'operator_actions_taken', 0) or 0)
+                no_targets = bool(getattr(slurm_ctx, 'operator_no_targets_found', False))
+                return actions_taken > 0 or no_targets
+            return False  # strict: never allow handback before an action call
 
         operator.handoffs = [
             handoff(
@@ -296,15 +389,16 @@ class SlurmAgentSystem:
                     "You must call the action tools first."
                 ),
                 is_enabled=_operator_handoff_enabled,
+                input_filter=_observer_handoff_input_filter,
             ),
         ]
 
-        self.main_agent    = observer  # entry point
+        self.main_agent    = observer  # default entry point
         self.operator_agent = operator  # direct retry target
 
         self._ready = True
         obs_tools = len(observer_mcp_names) + len(_observer_tools)   # MCP + function tools
-        op_tools  = len(dangerous_fns) + len(operator_read_names) + 1  # dangerous + read MCP + manage_todos
+        op_tools  = len(dangerous_fns) + len(operator_read_fns)  # dangerous + guarded read tools
         logger.info(
             f"[SlurmAgentSystem] Ready — "
             f"Observer tools≈{obs_tools} Operator tools≈{op_tools} "
@@ -390,14 +484,29 @@ class SlurmAgentSystem:
         """Use a lightweight LLM call to produce a concise conversation summary."""
         from openai import AsyncOpenAI
         try:
-            if LLM_PROVIDER == "copilot":
-                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
+            provider = self.llm_provider
+            if provider == "copilot":
+                if not GITHUB_TOKEN:
+                    raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
                 client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
-                _model = COPILOT_MODEL
+                _model = self.llm_model or COPILOT_MODEL
                 _extra: dict = {}
+            elif provider == "github-models":
+                if not GITHUB_TOKEN:
+                    raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
+                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
+                _model = self.llm_model or GITHUB_MODELS_MODEL
+                _extra = {}
+            elif provider == "openai":
+                token = self.openai_api_key or OPENAI_API_KEY
+                if not token:
+                    raise RuntimeError("OPENAI_API_KEY missing for openai provider")
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token)
+                _model = self.llm_model or OPENAI_MODEL
+                _extra = {}
             else:
                 client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
-                _model = DEFAULT_MODEL
+                _model = self.llm_model or DEFAULT_MODEL
                 _extra = {"think": False}
             # Truncate input to avoid overloading the summarisation call itself
             if len(conversation_text) > 6000:
@@ -477,55 +586,6 @@ class SlurmAgentSystem:
         new_count = 1 + len(recent_items)
         logger.info(f"Session compacted: {old_count} → {new_count} items (summary: {len(summary)} chars)")
 
-    # ── HITL approval helpers ────────────────────────────────────────────────
-
-    @staticmethod
-    async def _classify_approval_llm(text: str) -> str:
-        """Classify user intent as 'approve', 'reject', or 'new_instruction'.
-
-        'new_instruction' means the user sent a completely different request
-        while a HITL prompt was pending — the pending action should be dropped
-        and the new message handled as a fresh input.
-        """
-        from openai import AsyncOpenAI
-        try:
-            if LLM_PROVIDER == "copilot":
-                from .model import GITHUB_TOKEN, COPILOT_BASE_URL, COPILOT_MODEL
-                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
-                _model = COPILOT_MODEL
-                _extra2: dict = {}
-            else:
-                client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
-                _model = DEFAULT_MODEL
-                _extra2 = {"think": False}
-            resp = await client.chat.completions.create(
-                model=_model,
-                messages=[
-                    {"role": "system", "content": (
-                        "A Slurm HPC assistant is waiting for the user to approve or reject a pending action. "
-                        "Classify the user's message as EXACTLY one of three words:\n"
-                        "  approve — the user confirms the action (yes, ok, confirm, do it, go ahead, etc.)\n"
-                        "  reject  — the user cancels the action (no, cancel, stop, don't, abort, etc.)\n"
-                        "  new_instruction — the user is asking something unrelated or giving a brand-new command "
-                        "                    instead of responding to the approval prompt\n"
-                        "Output EXACTLY one word. Nothing else."
-                    )},
-                    {"role": "user", "content": text},
-                ],
-                temperature=0,
-                max_tokens=10,
-                **(({"extra_body": _extra2}) if _extra2 else {}),
-            )
-            answer = (resp.choices[0].message.content or "").strip().lower()
-            if "approve" in answer:
-                return "approve"
-            if "new_instruction" in answer or "new instruction" in answer:
-                return "new_instruction"
-            return "reject"  # safe default
-        except Exception as e:
-            logger.warning(f"LLM approval classification failed: {e}")
-            return "reject"  # safe default: don't execute without clear confirmation
-
     # ── Reusable stream event processor ──────────────────────────────────────
 
     async def _emit_stream_events(
@@ -594,9 +654,6 @@ class SlurmAgentSystem:
                 except Exception:
                     args = {}
                 if name:
-                    if name == "transfer_to_operator":
-                        state.saw_transfer_to_operator = True
-                        state.last_handoff_message = args.get("message", augmented_message)
                     yield {"type": "status", "message": format_tool_call(name, args)}
                     todo.on_tool_start(name)
                     snap = todo.get_snapshot()
@@ -662,101 +719,83 @@ class SlurmAgentSystem:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         try:
             await self._init()
-            self._hallucination_retries = 0  # reset per request
             session = self._get_session()
             ctx     = self._new_context()
 
-            # Session-scoped plan tracker
+            # Session-scoped tracker (kept for explicit /todo commands only)
             todo = self._todo
 
-            # Track HITL-approved tools for better error recovery
+            # Track HITL-approved tools for fallback display
             hitl_approved_tools: List[str] = []
-            approval_decision: Optional[str] = None
             augmented_message = user_message
 
+            if self._mcp_observer is None or self._mcp_operator is None:
+                raise RuntimeError("MCP servers are not initialized")
             async with self._mcp_observer, self._mcp_operator:
 
                 # ── HITL resume: if a previous run paused for approval, resume it ──
                 approval_data = self._pending_approvals.pop(self.session_id, None)
 
-                # ── Todo tracking ──
                 if approval_data and "todo_items" in approval_data:
-                    # Restore plan saved before HITL pause
                     todo.restore(approval_data["todo_items"])
-                    snap = todo.get_items()
-                    if snap:
-                        yield {"type": "todo", "items": snap}
-                elif not approval_data and not todo.has_active_plan:
-                    # Only generate a new plan if there's no active one in progress
-                    await todo.generate_plan(user_message)
-                    plan_snapshot = todo.get_snapshot()
-                    if plan_snapshot:
-                        yield {"type": "todo", "items": plan_snapshot}
-                elif not approval_data and todo.has_active_plan:
-                    # Existing plan still in progress — send current state to frontend
-                    snap = todo.get_items()
-                    if snap:
-                        yield {"type": "todo", "items": snap}
 
                 if approval_data:
                     run_state     = approval_data["state"]
                     interruptions = approval_data["interruptions"]
 
-                    # Use structured decision from frontend buttons if available;
-                    # otherwise fall back to LLM classification of free-text
-                    if hitl_decision in ("approve", "reject"):
-                        decision = hitl_decision
-                    else:
-                        decision = await self._classify_approval_llm(user_message)
-                    approval_decision = decision
-
-                    # ── New instruction while HITL was pending ────────────────
-                    # User sent a brand-new request instead of approving/rejecting.
-                    # Drop the pending action entirely and handle the new message
-                    # as a fresh run so the user isn't stuck in the approval loop.
-                    if decision == "new_instruction":
-                        logger.info("HITL: new instruction detected — discarding pending action, starting fresh")
-                        todo.reset()
-                        approval_data = None
-                        await todo.generate_plan(user_message)
-                        plan_snapshot = todo.get_snapshot()
-                        if plan_snapshot:
-                            yield {"type": "todo", "items": plan_snapshot}
-                        plan_text = todo.format_for_llm()
-                        augmented_message = f"{user_message}\n\n{plan_text}" if plan_text else user_message
-                        result = Runner.run_streamed(
-                            starting_agent=self.main_agent,
-                            input=augmented_message,
-                            session=session,
-                            context=ctx,
-                            max_turns=30,
-                        )
-                    else:
+                    # Use explicit frontend HITL decision only (SDK-native flow).
+                    if hitl_decision not in ("approve", "reject"):
+                        self._pending_approvals[self.session_id] = {
+                            "state": run_state,
+                            "interruptions": list(interruptions),
+                        }
+                        actions = []
                         for item in interruptions:
                             name = getattr(item, "name", None) or getattr(item, "tool_name", "unknown")
-                            if decision == "approve":
-                                run_state.approve(item)
-                                hitl_approved_tools.append(name)
-                                logger.info(f"Approved: {name}")
-                            else:
-                                run_state.reject(item)
-                                logger.info(f"Rejected: {name}")
+                            raw_args = getattr(item, "arguments", None) or "{}"
+                            try:
+                                args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                            except Exception:
+                                args = {}
+                            args_str = ", ".join(f"{k}={v}" for k, v in args.items()) if args else ""
+                            actions.append({
+                                "tool": name,
+                                "args": args,
+                                "description": f"{name}({args_str})",
+                            })
 
-                        # IMPORTANT: do NOT pass context= here — the RunState already
-                        # carries the context with approval records. Passing a new context
-                        # would override it and lose the approve/reject decisions.
-                        result = Runner.run_streamed(
-                            starting_agent=self.main_agent,
-                            input=run_state,
-                            session=session,
-                            max_turns=30,
-                        )
-                        # Retrieve the context that the resumed run is using
-                        ctx = run_state._context.context if run_state._context else ctx
+                        desc_list = ", ".join(a["description"] for a in actions)
+                        yield {
+                            "type": "final_answer",
+                            "message": f"⚠️ **Pending approval:** {desc_list}\n\nPlease confirm or cancel.",
+                        }
+                        yield {"type": "done", "pending_actions": actions}
+                        return
+
+                    decision = hitl_decision
+                    for item in interruptions:
+                        name = getattr(item, "name", None) or getattr(item, "tool_name", "unknown")
+                        if decision == "approve":
+                            run_state.approve(item)
+                            hitl_approved_tools.append(name)
+                            logger.info(f"Approved: {name}")
+                        else:
+                            run_state.reject(item)
+                            logger.info(f"Rejected: {name}")
+
+                    # IMPORTANT: do NOT pass context= here — the RunState already
+                    # carries the context with approval records. Passing a new context
+                    # would override it and lose the approve/reject decisions.
+                    result = Runner.run_streamed(
+                        starting_agent=self.main_agent,
+                        input=run_state,
+                        session=session,
+                        max_turns=30,
+                    )
+                    # Retrieve the context that the resumed run is using
+                    ctx = run_state._context.context if run_state._context else ctx
                 else:
-                    # Inject plan into the message so the LLM follows it
-                    plan_text = todo.format_for_llm()
-                    augmented_message = f"{user_message}\n\n{plan_text}" if plan_text else user_message
+                    augmented_message = user_message
 
                     result = Runner.run_streamed(
                         starting_agent=self.main_agent,
@@ -775,6 +814,7 @@ class SlurmAgentSystem:
                         todo=todo, ctx=ctx,
                         approval_data=approval_data,
                         hitl_approved_tools=hitl_approved_tools,
+                        augmented_message=augmented_message,
                     ):
                         yield ev
 
@@ -784,155 +824,13 @@ class SlurmAgentSystem:
                         "invalid tool call arguments" in exc_msg
                         or ("400" in exc_msg and hitl_approved_tools)
                     )
-                    is_tool_not_found = "not found in agent" in exc_msg
-
-                    if is_tool_not_found:
-                        # Model called a tool on the wrong agent — retry with a nudge
-                        logger.warning(f"Tool not found on agent: {stream_exc}")
-                        bad_tool = ""
-                        bad_agent = ""
-                        import re as _re
-                        m = _re.search(r"Tool (\S+) not found in agent (\S+)", str(stream_exc))
-                        if m:
-                            bad_tool = m.group(1)
-                            bad_agent = m.group(2)
-
-                        # Determine if the tool exists on a different agent (cross-agent error)
-                        observer_tools = {
-                            "squeue", "sinfo", "sacct", "sacctmgr_list", "scontrol_show",
-                            "sdiag", "sprio", "sstat", "read_file", "web_search",
-                            "lookup_skill",
-                        }
-                        is_cross_agent = bad_tool in observer_tools and bad_agent == "Operator"
-
-                        if not hasattr(self, '_hallucination_retries'):
-                            self._hallucination_retries = 0
-
-                        if self._hallucination_retries < 1:
-                            self._hallucination_retries += 1
-                            try:
-                                await self.clear_session()
-                            except Exception:
-                                pass
-                            if is_cross_agent:
-                                if getattr(ctx, "operator_actions_taken", 0) > 0:
-                                    nudge = (
-                                        f"[SYSTEM: The Operator tried to call '{bad_tool}' which is an Observer-only tool. "
-                                        f"The required action is already complete. Report results to the user. "
-                                        f"Do NOT call '{bad_tool}'.]\n\n"
-                                    )
-                                else:
-                                    nudge = (
-                                        f"[SYSTEM: The Operator tried to call '{bad_tool}' which is an Observer-only tool. "
-                                        "Continue the same request and execute the required action tool(s) now "
-                                        "(sbatch/scancel/scontrol_* as appropriate) using existing targets from context. "
-                                        "Do not ask clarification and do not call Observer-only tools.]\n\n"
-                                    )
-                            else:
-                                nudge = (
-                                    f"[SYSTEM: You called '{bad_tool}' which does not exist on {bad_agent}. "
-                                    f"Use only the tools listed in your instructions.]\n\n"
-                                ) if bad_tool else ""
-                            retry_input = nudge + (augmented_message if not approval_data else user_message)
-                            logger.info(f"Retrying after tool-not-found: tool={bad_tool} agent={bad_agent} cross_agent={is_cross_agent}")
-                            yield {"type": "status", "message": f"Retrying ('{bad_tool}' is not available)…"}
-
-                            ctx = self._new_context()
-                            result = Runner.run_streamed(
-                                starting_agent=self.main_agent,
-                                input=retry_input,
-                                session=session,
-                                context=ctx,
-                                max_turns=30,
-                            )
-                            state = _StreamState()
-                            try:
-                                async for ev in self._emit_stream_events(
-                                    result, state, todo=todo, ctx=ctx,
-                                ):
-                                    yield ev
-                            except Exception as retry_exc:
-                                logger.warning(f"Retry also failed: {retry_exc}")
-                                yield {
-                                    "type": "final_answer",
-                                    "message": "I encountered a technical issue. Please try rephrasing your request.",
-                                }
-                                try:
-                                    await self.clear_session()
-                                except Exception:
-                                    pass
-                                yield {"type": "done", "pending_actions": []}
-                                return
-                        else:
-                            # Already retried once — give up
-                            yield {
-                                "type": "final_answer",
-                                "message": "I couldn't complete the request after retrying. Please try rephrasing.",
-                            }
-                            try:
-                                await self.clear_session()
-                            except Exception:
-                                pass
-                            yield {"type": "done", "pending_actions": []}
-                            return
-                    elif is_malformed_history:
+                    if is_malformed_history:
                         logger.warning(
                             f"Streaming interrupted after HITL (approved={hitl_approved_tools}): {stream_exc}"
                         )
                         stream_interrupted = True
                     else:
                         raise  # re-raise non-recoverable errors
-
-                # ── Structural recovery: handoff occurred but no action executed ──
-                no_action_after_handoff = (
-                    not stream_interrupted
-                    and
-                    state.saw_transfer_to_operator
-                    and getattr(ctx, "operator_actions_taken", 0) == 0
-                    and not result.interruptions
-                    and approval_decision != "reject"
-                )
-                if no_action_after_handoff:
-                    logger.warning("Handoff to Operator occurred but no action tool executed; retrying once")
-                    if self._hallucination_retries < 1:
-                        self._hallucination_retries += 1
-                        try:
-                            await self.clear_session()
-                        except Exception:
-                            pass
-                        # Retry directly from Operator with the original handoff message.
-                        # This avoids re-running Observer (which would just hand off again).
-                        handoff_msg = state.last_handoff_message or augmented_message
-                        operator_nudge = (
-                            "[SYSTEM: You are the Operator. You received this task but called NO tool. "
-                            "Your ONLY job right now: call the action tool immediately.\n"
-                            "• 'Submit: X' → sbatch(script='X')\n"
-                            "• 'Cancel: N' → scancel(job_id='N')\n"
-                            "• 'Hold: N' → scontrol_hold(job_id='N')\n"
-                            "Do NOT generate any text. Call the tool NOW.]\n\n"
-                        )
-                        retry_input = operator_nudge + handoff_msg
-                        yield {"type": "status", "message": "Retrying (no action executed)…"}
-                        ctx = self._new_context()
-                        result = Runner.run_streamed(
-                            starting_agent=self.operator_agent,
-                            input=retry_input,
-                            session=session,
-                            context=ctx,
-                            max_turns=10,
-                        )
-                        state = _StreamState()
-                        async for ev in self._emit_stream_events(
-                            result, state, todo=todo, ctx=ctx,
-                        ):
-                            yield ev
-                    else:
-                        yield {
-                            "type": "final_answer",
-                            "message": "I couldn't execute the requested action after retrying. Please restate the exact action and targets.",
-                        }
-                        yield {"type": "done", "pending_actions": []}
-                        return
 
                 # ── Post-error recovery ──
                 # Tool may have executed but Ollama rejected the next turn.
@@ -1074,17 +972,12 @@ class SlurmAgentSystem:
                         await self._compact_session()
                     except Exception as e:
                         logger.warning(f"Session compaction failed: {e}")
-                    todo.on_done()
-                    snap = todo.get_snapshot()
-                    if snap:
-                        yield {"type": "todo", "items": snap}
                     yield {"type": "done", "pending_actions": []}
                 else:
                     # ── Normal HITL: pause and ask user ──
                     self._pending_approvals[self.session_id] = {
                         "state": run_state,
                         "interruptions": list(result.interruptions),
-                        "todo_items": todo.get_items(),
                     }
 
                     # Build a readable summary — truncate long arg lists
@@ -1119,11 +1012,6 @@ class SlurmAgentSystem:
                         "type": "final_answer",
                         "message": f"⚠️ **Pending approval:** {desc_list}\n\nPlease confirm or cancel.",
                     }
-                    # Don't mark everything done — leave the action step as in-progress
-                    # so the spinner shows while the user decides to approve/reject.
-                    snap = todo.get_items()
-                    if snap:
-                        yield {"type": "todo", "items": snap}
                     yield {"type": "done", "pending_actions": actions}
             else:
                 # ── HITL fallback: if the Operator didn't generate a text
@@ -1140,10 +1028,6 @@ class SlurmAgentSystem:
                     await self._compact_session()
                 except Exception as e:
                     logger.warning(f"Session compaction failed: {e}")
-                todo.on_done()
-                snap = todo.get_snapshot()
-                if snap:
-                    yield {"type": "todo", "items": snap}
                 yield {"type": "done", "pending_actions": []}
 
         except Exception as exc:
@@ -1161,6 +1045,8 @@ class SlurmAgentSystem:
             session = self._get_session()
             ctx     = self._new_context()
 
+            if self._mcp_observer is None or self._mcp_operator is None:
+                raise RuntimeError("MCP servers are not initialized")
             async with self._mcp_observer, self._mcp_operator:
                 result = await Runner.run(
                     starting_agent=self.main_agent,
@@ -1223,6 +1109,15 @@ class SlurmAgentSystem:
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
+
+
+def _normalize_tool_name(name: str) -> str:
+    norm = re.sub(r"[^a-z0-9_]+", "_", (name or "").strip().lower()).strip("_")
+    norm = norm.replace("scontrol_hold_job", "scontrol_hold")
+    norm = norm.replace("scontrol_release_job", "scontrol_release")
+    norm = norm.replace("scontrol_requeue_job", "scontrol_requeue")
+    return norm
+
 
 def _extract_tool_output_text(output) -> str:
     """Extract plain text from tool output, which may be str, list of dicts, or other."""

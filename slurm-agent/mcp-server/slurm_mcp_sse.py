@@ -14,6 +14,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -92,6 +93,16 @@ class _ClusterState:
     def __init__(self):
         self._jobs: list[dict] = []
         self._nodes: list[dict] = []
+        self._reservations: list[dict] = []
+        self._triggers: list[dict] = []
+        self._partition_overrides: dict[str, dict] = {}
+        self._config: dict[str, str] = {
+            "SchedulerType": "sched/backfill",
+            "PriorityType": "priority/multifactor",
+            "SelectType": "select/cons_tres",
+            "SlurmctldDebug": "info",
+            "ClusterName": "mock-cluster",
+        }
         self._next_id: int = 2000
         self._log: list[str] = []    # action history for transparency
         self._initialized = False
@@ -101,6 +112,26 @@ class _ClusterState:
             import copy
             self._jobs  = copy.deepcopy(MOCK_JOBS.get(SCENARIO, []))
             self._nodes = copy.deepcopy(MOCK_NODES.get(SCENARIO, []))
+            self._partition_overrides = {}
+            self._triggers = []
+            self._reservations = [
+                {
+                    "ReservationName": "maintenance",
+                    "StartTime": "2026-04-22T00:00:00",
+                    "EndTime": "2026-04-22T08:00:00",
+                    "Nodes": "cpu-node-01",
+                    "Flags": "MAINT",
+                    "Users": "root",
+                    "State": "INACTIVE",
+                }
+            ]
+            self._config = {
+                "SchedulerType": "sched/backfill",
+                "PriorityType": "priority/multifactor",
+                "SelectType": "select/cons_tres",
+                "SlurmctldDebug": "info",
+                "ClusterName": "mock-cluster",
+            }
             # Determine next job id from existing max
             existing_ids = [int(j["job_id"]) for j in self._jobs if str(j.get("job_id","")).isdigit()]
             self._next_id = max(existing_ids, default=1000) + 1
@@ -171,6 +202,66 @@ class _ClusterState:
         self._log.append(f"[{_stamp()}] REQUEUE job {jid} ({prev} → PENDING)")
         return f"Job {jid} requeued."
 
+    def suspend(self, jid: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id", "")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        if j.get("state") != "RUNNING":
+            return f"scontrol: error: Job {jid} cannot be suspended — state is {j.get('state')}"
+        j["state"] = "SUSPENDED"
+        self._log.append(f"[{_stamp()}] SUSPEND job {jid} (RUNNING → SUSPENDED)")
+        return f"Job {jid} suspended."
+
+    def resume_job(self, jid: str) -> str:
+        self._ensure_init()
+        jobs = [j for j in self._jobs if str(j.get("job_id", "")) == jid]
+        if not jobs:
+            return f"scontrol: error: Invalid job id specified: {jid}"
+        j = jobs[0]
+        if j.get("state") != "SUSPENDED":
+            return f"scontrol: error: Job {jid} is not suspended — state is {j.get('state')}"
+        j["state"] = "RUNNING"
+        self._log.append(f"[{_stamp()}] RESUME job {jid} (SUSPENDED → RUNNING)")
+        return f"Job {jid} resumed."
+
+    def drain_node(self, name: str, reason: str = "admin") -> str:
+        self._ensure_init()
+        nodes = [n for n in self._nodes if n.get("name") == name]
+        if not nodes:
+            return f"scontrol: error: Invalid node name: {name}"
+        n = nodes[0]
+        prev = n.get("state", "idle")
+        n["state"] = "drain"
+        n["reason"] = reason or "admin"
+        self._log.append(f"[{_stamp()}] DRAIN node {name} ({prev} → drain) reason={reason}")
+        return f"Node {name} set to DRAIN. Reason: {reason or 'admin'}"
+
+    def set_node_down(self, name: str, reason: str = "admin") -> str:
+        self._ensure_init()
+        nodes = [n for n in self._nodes if n.get("name") == name]
+        if not nodes:
+            return f"scontrol: error: Invalid node name: {name}"
+        n = nodes[0]
+        prev = n.get("state", "idle")
+        n["state"] = "down"
+        n["reason"] = reason or "admin"
+        self._log.append(f"[{_stamp()}] DOWN node {name} ({prev} → down) reason={reason}")
+        return f"Node {name} set to DOWN. Reason: {reason or 'admin'}"
+
+    def resume_node(self, name: str) -> str:
+        self._ensure_init()
+        nodes = [n for n in self._nodes if n.get("name") == name]
+        if not nodes:
+            return f"scontrol: error: Invalid node name: {name}"
+        n = nodes[0]
+        prev = n.get("state", "drain")
+        n["state"] = "idle"
+        n.pop("reason", None)
+        self._log.append(f"[{_stamp()}] RESUME node {name} ({prev} → idle)")
+        return f"Node {name} resumed to idle."
+
     def update(self, jid: str, params: str) -> str:
         self._ensure_init()
         jobs = [j for j in self._jobs if str(j.get("job_id","")) == jid]
@@ -193,6 +284,136 @@ class _ClusterState:
                 j["nodes"] = val; changes.append(f"NumNodes={val}")
         self._log.append(f"[{_stamp()}] UPDATE job {jid}: {params}")
         return f"Job {jid} updated: {', '.join(changes) or params}"
+
+    def update_node(self, node_name: str, params: str) -> str:
+        self._ensure_init()
+        nodes = [n for n in self._nodes if str(n.get("name", "")).lower() == node_name.lower()]
+        if not nodes:
+            return f"scontrol: error: Invalid node name: {node_name}"
+        n = nodes[0]
+        import re as _re
+        changes = []
+        for m in _re.finditer(r"([\w]+)=(\S+)", params):
+            key = m.group(1).lower()
+            val = m.group(2)
+            if key == "state":
+                n["state"] = val.lower()
+                changes.append(f"State={val}")
+            elif key == "features":
+                n["features"] = val
+                changes.append(f"Features={val}")
+            elif key == "gres":
+                n["gres"] = val
+                changes.append(f"Gres={val}")
+            elif key == "weight":
+                n["weight"] = val
+                changes.append(f"Weight={val}")
+            elif key == "reason":
+                n["reason"] = val
+                changes.append(f"Reason={val}")
+        self._log.append(f"[{_stamp()}] UPDATE node {node_name}: {params}")
+        return f"Node {node_name} updated: {', '.join(changes) or params}"
+
+    def update_partition(self, partition_name: str, params: str) -> str:
+        self._ensure_init()
+        if not partition_name.strip():
+            return "scontrol: error: Partition name is required."
+        import re as _re
+        current = dict(self._partition_overrides.get(partition_name, {}))
+        changes = []
+        for m in _re.finditer(r"([\w]+)=(\S+)", params):
+            key = m.group(1)
+            val = m.group(2)
+            current[key] = val
+            changes.append(f"{key}={val}")
+        self._partition_overrides[partition_name] = current
+        self._log.append(f"[{_stamp()}] UPDATE partition {partition_name}: {params}")
+        return f"Partition {partition_name} updated: {', '.join(changes) or params}"
+
+    def create_reservation(self, params: str) -> str:
+        self._ensure_init()
+        import re as _re
+        if not params.strip():
+            return "scontrol: error: Reservation parameters are required."
+        fields = {m.group(1): m.group(2) for m in _re.finditer(r"([\w]+)=(\S+)", params)}
+        name = fields.get("ReservationName")
+        if not name:
+            return "scontrol: error: ReservationName is required."
+        existing = [r for r in self._reservations if str(r.get("ReservationName", "")).lower() == name.lower()]
+        if existing:
+            return f"scontrol: error: Reservation {name} already exists."
+        reservation = {
+            "ReservationName": name,
+            "StartTime": fields.get("StartTime", "now"),
+            "EndTime": fields.get("EndTime", "now+8hours"),
+            "Nodes": fields.get("Nodes", ""),
+            "Flags": fields.get("Flags", ""),
+            "Users": fields.get("Users", "root"),
+            "State": fields.get("State", "INACTIVE"),
+        }
+        self._reservations.append(reservation)
+        self._log.append(f"[{_stamp()}] CREATE reservation {name}")
+        return f"Reservation {name} created successfully."
+
+    def update_reservation(self, reservation: str, params: str) -> str:
+        self._ensure_init()
+        matches = [r for r in self._reservations if str(r.get("ReservationName", "")).lower() == reservation.lower()]
+        if not matches:
+            return f"scontrol: error: Reservation {reservation} not found."
+        import re as _re
+        r = matches[0]
+        changes = []
+        for m in _re.finditer(r"([\w]+)=(\S+)", params):
+            key = m.group(1)
+            val = m.group(2)
+            r[key] = val
+            changes.append(f"{key}={val}")
+        self._log.append(f"[{_stamp()}] UPDATE reservation {reservation}: {params}")
+        return f"Reservation {reservation} updated: {', '.join(changes) or params}"
+
+    def delete_reservation(self, reservation: str) -> str:
+        self._ensure_init()
+        before = len(self._reservations)
+        self._reservations = [
+            r for r in self._reservations
+            if str(r.get("ReservationName", "")).lower() != reservation.lower()
+        ]
+        if len(self._reservations) == before:
+            return f"scontrol: error: Reservation {reservation} not found."
+        self._log.append(f"[{_stamp()}] DELETE reservation {reservation}")
+        return f"Reservation {reservation} deleted."
+
+    def list_reservations(self) -> list[dict]:
+        self._ensure_init()
+        return list(self._reservations)
+
+    def create_trigger(self, spec: str) -> str:
+        self._ensure_init()
+        trig_id = str(len(self._triggers) + 1)
+        self._triggers.append({
+            "id": trig_id,
+            "spec": spec.strip(),
+        })
+        self._log.append(f"[{_stamp()}] TRIGGER set id={trig_id} spec={spec}")
+        return trig_id
+
+    def list_triggers(self) -> list[dict]:
+        self._ensure_init()
+        return list(self._triggers)
+
+    def clear_trigger(self, trigger_id: str = "") -> str:
+        self._ensure_init()
+        if not trigger_id.strip():
+            n = len(self._triggers)
+            self._triggers = []
+            self._log.append(f"[{_stamp()}] TRIGGER clear all ({n})")
+            return f"Cleared {n} trigger(s)."
+        before = len(self._triggers)
+        self._triggers = [t for t in self._triggers if str(t.get("id", "")) != trigger_id]
+        if len(self._triggers) == before:
+            return f"strigger: error: trigger id {trigger_id} not found."
+        self._log.append(f"[{_stamp()}] TRIGGER clear id={trigger_id}")
+        return f"Cleared trigger {trigger_id}."
 
     def submit(self, script_name: str, flags: str = "", user: str = "user") -> str:
         self._ensure_init()
@@ -234,6 +455,32 @@ class _ClusterState:
 
     def history(self) -> str:
         return "\n".join(self._log[-50:]) if self._log else "(no actions taken yet)"
+
+    def snapshot(self) -> dict:
+        """Serialize full mock state for deterministic restore."""
+        self._ensure_init()
+        jobs_by_id = {
+            str(j.get("job_id")): copy.deepcopy(j)
+            for j in self._jobs
+            if str(j.get("job_id", "")).strip()
+        }
+        nodes_by_name = {
+            str(n.get("name")): copy.deepcopy(n)
+            for n in self._nodes
+            if str(n.get("name", "")).strip()
+        }
+        return {
+            "scenario": SCENARIO,
+            "source_state": {
+                "jobs": jobs_by_id,
+                "nodes": nodes_by_name,
+                "partition_overrides": copy.deepcopy(self._partition_overrides),
+                "reservations": copy.deepcopy(self._reservations),
+                "triggers": copy.deepcopy(self._triggers),
+                "config": copy.deepcopy(self._config),
+                "next_id": self._next_id,
+            },
+        }
 
     def reset(self, scenario: str, source_state: dict | None = None) -> str:
         """Reset mock state to scenario defaults, optionally overridden by source_state.
@@ -293,8 +540,54 @@ class _ClusterState:
             self._jobs = tmpl_jobs
             self._nodes = tmpl_nodes
 
+        # Reset supplemental mock state (can be overridden by snapshot payload)
+        self._partition_overrides = {}
+        self._triggers = []
+        self._reservations = [
+            {
+                "ReservationName": "maintenance",
+                "StartTime": "2026-04-22T00:00:00",
+                "EndTime": "2026-04-22T08:00:00",
+                "Nodes": "cpu-node-01",
+                "Flags": "MAINT",
+                "Users": "root",
+                "State": "INACTIVE",
+            }
+        ]
+        self._config = {
+            "SchedulerType": "sched/backfill",
+            "PriorityType": "priority/multifactor",
+            "SelectType": "select/cons_tres",
+            "SlurmctldDebug": "info",
+            "ClusterName": "mock-cluster",
+        }
+
+        if source_state:
+            partition_overrides = source_state.get("partition_overrides")
+            if isinstance(partition_overrides, dict):
+                self._partition_overrides = copy.deepcopy(partition_overrides)
+
+            reservations = source_state.get("reservations")
+            if isinstance(reservations, list):
+                self._reservations = copy.deepcopy(reservations)
+
+            triggers = source_state.get("triggers")
+            if isinstance(triggers, list):
+                self._triggers = copy.deepcopy(triggers)
+
+            cfg = source_state.get("config")
+            if isinstance(cfg, dict):
+                self._config = copy.deepcopy(cfg)
+
         existing_ids = [int(j["job_id"]) for j in self._jobs if str(j.get("job_id", "")).isdigit()]
         self._next_id = max(existing_ids, default=1000) + 1
+        if source_state:
+            try:
+                next_id = int(source_state.get("next_id", 0) or 0)
+                if next_id > 0:
+                    self._next_id = next_id
+            except Exception:
+                pass
         self._initialized = True
         self._log.append(f"[{_stamp()}] RESET state to scenario={scenario} jobs={len(self._jobs)} nodes={len(self._nodes)}")
         return f"reset done: scenario={scenario}, jobs={len(self._jobs)}, nodes={len(self._nodes)}"
@@ -436,7 +729,12 @@ def squeue(user: str = "", state: str = "", partition: str = "", job_id: str = "
     if user:
         jobs = [j for j in jobs if j.get("user", "").lower() == user.lower()]
     if state:
-        jobs = [j for j in jobs if j.get("state", "").upper() == state.upper()]
+        wanted_states = {s.strip().upper() for s in str(state).split(",") if s.strip()}
+        jobs = [j for j in jobs if j.get("state", "").upper() in wanted_states]
+    else:
+        # Match real-world squeue behavior: hide terminal jobs by default.
+        terminal_states = {"CANCELLED", "COMPLETED", "FAILED", "TIMEOUT"}
+        jobs = [j for j in jobs if j.get("state", "").upper() not in terminal_states]
     if partition:
         jobs = [j for j in jobs if j.get("partition", "").lower() == partition.lower()]
     if job_id:
@@ -585,6 +883,38 @@ def scontrol_show(entity: str = "job", id: str = "") -> str:
             f"   Gres={n.get('gres','(null)')}\n"
             f"   Reason={n.get('reason','none')}"
         )
+    elif entity.lower() == "partition":
+        nodes = _nodes()
+        partitions = {}
+        for n in nodes:
+            p = n.get("partition", "unknown")
+            info = partitions.setdefault(p, {"nodes": 0, "idle": 0, "alloc": 0, "down": 0})
+            info["nodes"] += 1
+            state = str(n.get("state", "")).lower()
+            if "idle" in state:
+                info["idle"] += 1
+            elif "alloc" in state or "mix" in state:
+                info["alloc"] += 1
+            elif "down" in state or "drain" in state:
+                info["down"] += 1
+
+        if id:
+            part = partitions.get(id)
+            if not part:
+                return f"scontrol: error: Invalid partition name: {id}"
+            return (
+                f"PartitionName={id}\n"
+                f"   TotalNodes={part['nodes']} AllocNodes={part['alloc']} IdleNodes={part['idle']} DownNodes={part['down']}\n"
+                f"   State=UP"
+            )
+        lines = []
+        for pname, part in sorted(partitions.items()):
+            lines.append(
+                f"PartitionName={pname}\n"
+                f"   TotalNodes={part['nodes']} AllocNodes={part['alloc']} IdleNodes={part['idle']} DownNodes={part['down']}\n"
+                f"   State=UP"
+            )
+        return "\n\n".join(lines)
     return f"scontrol show {entity}: not supported in mock mode"
 
 
@@ -748,6 +1078,64 @@ def scancel(job_id: str, user: str = "") -> str:
 
 
 @mcp.tool()
+def srun(command: str = "", flags: str = "") -> str:
+    """Launch an interactive or one-off job step.
+    Real command: srun [flags] <command>."""
+    if REAL_MODE:
+        cmd = ["srun"]
+        if flags:
+            cmd += flags.split()
+        if command:
+            cmd += command.split()
+        return _run_cmd(cmd)
+    payload = f"srun {flags} {command}".strip()
+    _STATE._log.append(f"[{_stamp()}] SRUN {payload}")
+    return f"srun mock: launched step ({payload or 'no command provided'})."
+
+
+@mcp.tool()
+def salloc(flags: str = "") -> str:
+    """Request an interactive allocation.
+    Real command: salloc [flags]."""
+    if REAL_MODE:
+        cmd = ["salloc"]
+        if flags:
+            cmd += flags.split()
+        return _run_cmd(cmd)
+    _STATE._log.append(f"[{_stamp()}] SALLOC {flags}")
+    return "salloc mock: Granted job allocation 9001."
+
+
+@mcp.tool()
+def sattach(job_step: str) -> str:
+    """Attach I/O to a running job step.
+    Real command: sattach <jobid.stepid>."""
+    if not job_step.strip():
+        return "sattach: error: job_step is required (example: 1001.0)."
+    if REAL_MODE:
+        return _run_cmd(["sattach", job_step.strip()])
+    _STATE._log.append(f"[{_stamp()}] SATTACH {job_step.strip()}")
+    return f"sattach mock: attached to {job_step.strip()}."
+
+
+@mcp.tool()
+def sbcast(src_file: str, dest_path: str, job_id: str = "") -> str:
+    """Broadcast a file to all nodes in an allocation.
+    Real command: sbcast <src_file> <dest_path> [--jobid <id>]."""
+    if not src_file.strip() or not dest_path.strip():
+        return "sbcast: error: src_file and dest_path are required."
+    if REAL_MODE:
+        cmd = ["sbcast", src_file.strip(), dest_path.strip()]
+        if job_id.strip():
+            cmd += ["--jobid", job_id.strip()]
+        return _run_cmd(cmd)
+    _STATE._log.append(
+        f"[{_stamp()}] SBCAST src={src_file.strip()} dest={dest_path.strip()} job={job_id.strip() or 'auto'}"
+    )
+    return f"sbcast mock: copied {src_file.strip()} to {dest_path.strip()}."
+
+
+@mcp.tool()
 def scontrol_hold(job_id: str) -> str:
     """Hold a pending job so it won't be scheduled until released.
     job_id (REQUIRED): the numeric job ID. Only works on PENDING jobs."""
@@ -780,7 +1168,13 @@ def scontrol_update(entity: str, id: str, params: str) -> str:
         return _run_cmd(cmd)
     if entity.lower() == "job":
         return _STATE.update(id, params)
-    return f"scontrol update {entity} {id}: {params} — applied."
+    if entity.lower() == "node":
+        return _STATE.update_node(id, params)
+    if entity.lower() == "partition":
+        return _STATE.update_partition(id, params)
+    if entity.lower() == "reservation":
+        return _STATE.update_reservation(id, params)
+    return f"scontrol update {entity} {id}: {params} — unsupported entity in mock mode."
 
 
 @mcp.tool()
@@ -801,6 +1195,30 @@ def scontrol_requeue(job_id: str) -> str:
             return f"Job {job_id} requeued."
         return result
     return _STATE.requeue(str(job_id))
+
+
+@mcp.tool()
+def scontrol_suspend(job_id: str) -> str:
+    """Suspend a RUNNING job without cancelling it.
+    Real command: scontrol suspend <job_id>."""
+    if REAL_MODE:
+        result = _run_cmd(["scontrol", "suspend", job_id])
+        if "error" not in result.lower():
+            return f"Job {job_id} suspended."
+        return result
+    return _STATE.suspend(str(job_id))
+
+
+@mcp.tool()
+def scontrol_resume_job(job_id: str) -> str:
+    """Resume a SUSPENDED job back to RUNNING.
+    Real command: scontrol resume <job_id>."""
+    if REAL_MODE:
+        result = _run_cmd(["scontrol", "resume", job_id])
+        if "error" not in result.lower():
+            return f"Job {job_id} resumed."
+        return result
+    return _STATE.resume_job(str(job_id))
 
 
 @mcp.tool()
@@ -874,6 +1292,14 @@ def reset_mock_state(scenario: str = "", source_state_json: str = "") -> str:
             return f"reset_mock_state: invalid source_state_json: {e}"
 
     return _STATE.reset(target, source_state)
+
+
+@mcp.tool()
+def get_mock_state_snapshot() -> str:
+    """Return current mock-state snapshot JSON (for deterministic admin terminal restore)."""
+    if REAL_MODE:
+        return "get_mock_state_snapshot: unavailable in real mode"
+    return json.dumps(_STATE.snapshot())
 
 
 # ── Diagnostic / supplementary tools (not write-ops, supplement Slurm data) ──
@@ -956,28 +1382,738 @@ def read_file(file_path: str) -> str:
         return f"Error reading {file_path}: {e}"
 
 
-@mcp.tool()
-def web_search(query: str, search_type: str = "general") -> str:
-    """Search the web via DuckDuckGo for Slurm error codes, documentation, or general HPC topics.
-    search_type: general | slurm | error"""
+def _strip_html_text(raw_html: str) -> str:
+    """Extract readable text from HTML without external dependencies."""
+    import html as _html
+
+    text = re.sub(
+        r"(?is)<(script|style|noscript|svg|iframe|header|footer|nav|form).*?>.*?</\\1>",
+        " ",
+        raw_html,
+    )
+    text = re.sub(r"(?is)<br\\s*/?>", "\n", text)
+    text = re.sub(r"(?is)</p\\s*>", "\n", text)
+    text = re.sub(r"(?is)<[^>]+>", " ", text)
+    text = _html.unescape(text)
+    text = text.replace("\r", "")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _collect_duckduckgo_results(payload: dict[str, Any]) -> list[tuple[str, str]]:
+    """Collect (text, url) pairs from DuckDuckGo instant-answer payload."""
+    items: list[tuple[str, str]] = []
+    seen_urls: set[str] = set()
+
+    def _add_item(text: Any, url: Any) -> None:
+        txt = str(text or "").strip()
+        link = str(url or "").strip()
+        if not txt or not link or link in seen_urls:
+            return
+        seen_urls.add(link)
+        items.append((txt, link))
+
+    for row in payload.get("Results", []) or []:
+        if isinstance(row, dict):
+            _add_item(row.get("Text"), row.get("FirstURL"))
+
+    def _walk(rows: Any) -> None:
+        if not isinstance(rows, list):
+            return
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            _add_item(row.get("Text"), row.get("FirstURL"))
+            sub_topics = row.get("Topics")
+            if isinstance(sub_topics, list):
+                _walk(sub_topics)
+
+    _walk(payload.get("RelatedTopics", []))
+    return items
+
+
+def _fetch_url_text(url: str, max_chars: int = 4000) -> str:
+    """Fetch URL and return readable text payload."""
+    import urllib.parse
+    import urllib.request
+
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        return "Error: only http/https URLs are supported."
+
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "slurm-agent/1.0 (+mcp-web-fetch)"},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        content_type = str(resp.headers.get("Content-Type") or "").lower()
+        raw = resp.read(400_000)
+
+    charset = "utf-8"
+    if "charset=" in content_type:
+        charset = content_type.split("charset=", 1)[1].split(";", 1)[0].strip() or "utf-8"
+
+    body = raw.decode(charset, errors="replace")
+
+    title = ""
+    title_match = re.search(r"(?is)<title[^>]*>(.*?)</title>", body)
+    if title_match:
+        title = _strip_html_text(title_match.group(1))
+
+    if "html" in content_type or "<html" in body[:2000].lower():
+        text = _strip_html_text(body)
+    else:
+        text = body.strip()
+
     try:
-        import urllib.request, urllib.parse, html
-        q = urllib.parse.quote_plus(query)
+        limit = int(max_chars)
+    except Exception:
+        limit = 4000
+    limit = max(500, min(limit, 20000))
+
+    if len(text) > limit:
+        text = text[:limit].rstrip() + f"\n...[truncated {len(text) - limit} chars]"
+
+    lines = [f"URL: {url}"]
+    if title:
+        lines.append(f"Title: {title}")
+    if content_type:
+        lines.append(f"Content-Type: {content_type}")
+    lines.append("Content:")
+    lines.append(text or "(empty response body)")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def web_search(query: str, search_type: str = "general", max_results: int = 5) -> str:
+    """Search the web and return URL-bearing snippets.
+
+    search_type: general | slurm | error
+    max_results: number of link snippets to return (1..10)
+    """
+    try:
+        import urllib.parse
+        import urllib.request
+
+        raw_query = str(query or "").strip()
+        if not raw_query:
+            return "web_search: query is required."
+
+        mode = str(search_type or "general").strip().lower()
+        scoped_query = raw_query
+        if mode == "slurm":
+            scoped_query = f"site:slurm.schedmd.com {raw_query}"
+        elif mode == "error":
+            scoped_query = f"slurm {raw_query} error"
+
+        q = urllib.parse.quote_plus(scoped_query)
         url = f"https://api.duckduckgo.com/?q={q}&format=json&no_html=1&skip_disambig=1"
         req = urllib.request.Request(url, headers={"User-Agent": "slurm-agent/1.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
-        parts = []
-        if data.get("AbstractText"):
-            parts.append(data["AbstractText"])
-        for r in data.get("RelatedTopics", [])[:3]:
-            if isinstance(r, dict) and r.get("Text"):
-                parts.append(r["Text"])
-        if not parts:
-            return f"No results found for: {query}"
-        return "\n\n".join(parts[:4])
+
+        try:
+            limit = int(max_results)
+        except Exception:
+            limit = 5
+        limit = max(1, min(limit, 10))
+
+        lines = [
+            "[WEB_SEARCH]:",
+            f"Query: {raw_query}",
+            f"Search type: {mode}",
+        ]
+
+        abstract_text = str(data.get("AbstractText") or "").strip()
+        abstract_url = str(data.get("AbstractURL") or "").strip()
+        if abstract_text:
+            lines.append("Top summary:")
+            lines.append(abstract_text)
+            if abstract_url:
+                lines.append(f"URL: {abstract_url}")
+
+        hits = _collect_duckduckgo_results(data)
+        if hits:
+            lines.append("Results:")
+            for idx, (text, link) in enumerate(hits[:limit], start=1):
+                cleaned = " ".join(text.split())
+                if len(cleaned) > 220:
+                    cleaned = cleaned[:220].rstrip() + "..."
+                lines.append(f"{idx}. {cleaned}")
+                lines.append(f"URL: {link}")
+
+        if not abstract_text and not hits:
+            lines.append("No results found.")
+
+        lines.append("Tip: call fetch_web_content(url=...) to retrieve full page text.")
+        return "\n".join(lines)
     except Exception as e:
         return f"web_search failed: {e}"
+
+
+@mcp.tool()
+def fetch_web_content(url: str, max_chars: int = 4000) -> str:
+    """Fetch and extract readable text from a web page URL.
+
+    url: http/https URL to fetch
+    max_chars: truncate output to this many chars (500..20000)
+    """
+    target = str(url or "").strip()
+    if not target:
+        return "fetch_web_content: url is required."
+    try:
+        body = _fetch_url_text(target, max_chars=max_chars)
+        return "[WEB_FETCH]:\n" + body
+    except Exception as e:
+        return f"fetch_web_content failed: {e}"
+
+
+# ── Node management tools ─────────────────────────────────────────────────────
+
+@mcp.tool()
+def scontrol_node(node: str, state: str, reason: str = "") -> str:
+    """Set a node's administrative state (admin action).
+    node (REQUIRED): node name, e.g. 'gpu-node-01'.
+    state (REQUIRED): DRAIN | DOWN | RESUME | IDLE.
+      DRAIN  — stop scheduling new jobs; current jobs finish normally.
+      DOWN   — take node offline immediately.
+      RESUME — bring a drained/down node back online (alias: IDLE).
+    reason: short text shown in sinfo (required in production for DRAIN/DOWN)."""
+    state_upper = state.strip().upper()
+    if state_upper not in {"DRAIN", "DOWN", "RESUME", "IDLE"}:
+        return f"scontrol: error: Invalid state '{state}'. Use DRAIN, DOWN, RESUME, or IDLE."
+    if not node.strip():
+        return "scontrol: error: Node name is required."
+
+    if REAL_MODE:
+        cmd = ["scontrol", "update", f"NodeName={node}", f"State={state_upper}"]
+        if reason:
+            cmd += [f"Reason={reason}"]
+        return _run_cmd(cmd)
+
+    if state_upper == "DRAIN":
+        return _STATE.drain_node(node.strip(), reason)
+    elif state_upper == "DOWN":
+        return _STATE.set_node_down(node.strip(), reason)
+    else:
+        return _STATE.resume_node(node.strip())
+
+
+@mcp.tool()
+def scontrol_create_reservation(params: str) -> str:
+    """Create a Slurm reservation (admin only, requires HITL approval).
+    params: space-separated key=value pairs.
+    Example: "ReservationName=maint StartTime=2026-04-22T00:00:00 EndTime=2026-04-22T08:00:00 Nodes=cpu-node-01 Flags=MAINT Users=root"
+    Returns the name of the created reservation on success."""
+    if not params.strip():
+        return "scontrol: error: params are required. Include ReservationName, StartTime, EndTime, Nodes."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "create", "reservation"] + params.split())
+    return _STATE.create_reservation(params)
+
+
+@mcp.tool()
+def scontrol_delete_reservation(reservation: str) -> str:
+    """Delete a named Slurm reservation (admin only, requires HITL approval).
+    reservation (REQUIRED): exact name of the reservation to delete."""
+    if not reservation.strip():
+        return "scontrol: error: Reservation name is required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "delete", f"ReservationName={reservation}"])
+    return _STATE.delete_reservation(reservation.strip())
+
+
+# ── Read-only supplementary tools ─────────────────────────────────────────────
+
+@mcp.tool()
+def sreport(report_type: str = "cluster", params: str = "") -> str:
+    """Generate a Slurm usage report (CPU-hours, GPU-hours) by user, account, or partition.
+    report_type: cluster | user | account | job  (default: cluster)
+    params: optional filters, e.g. "Start=now-7days End=now TopCount=10"
+    Returns a tabular summary of resource consumption for the requested period."""
+    if REAL_MODE:
+        cmd = ["sreport", report_type, "utilization", "-t", "Hours", "--parsable2", "--noheader"]
+        if params:
+            cmd += params.split()
+        return _run_cmd(cmd)
+    # Mock usage table
+    return (
+        "Cluster Usage Report (last 7 days)\n"
+        f"{'User':<12} {'Account':<12} {'CPUHours':>10} {'GPUHours':>10} {'Jobs':>6}\n"
+        + "-" * 54 + "\n"
+        "alice        research          420        168     12\n"
+        "bob          general           280          0      8\n"
+        "charlie      general           140          0      5\n"
+        + "-" * 54 + "\n"
+        "Total                          840        168     25\n"
+    )
+
+
+@mcp.tool()
+def scontrol_license() -> str:
+    """Show available software licenses tracked by Slurm: name, total, in-use, and free count."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "licenses"])
+    return (
+        "LicenseName  Total  Used  Free  Remote\n"
+        "matlab          20    12     8  no\n"
+        "ansys            4     2     2  no\n"
+        "comsol           2     0     2  no\n"
+        "gaussian         8     5     3  no\n"
+    )
+
+
+@mcp.tool()
+def scontrol_reservation_show(reservation: str = "") -> str:
+    """List all Slurm reservations or show details of a specific one.
+    reservation: optional name to filter. Empty returns all reservations."""
+    if REAL_MODE:
+        cmd = ["scontrol", "show", "reservation"]
+        if reservation.strip():
+            cmd.append(reservation.strip())
+        return _run_cmd(cmd)
+    reservations = _STATE.list_reservations()
+    if reservation.strip():
+        reservations = [
+            r for r in reservations
+            if str(r.get("ReservationName", "")).lower() == reservation.strip().lower()
+        ]
+        if not reservations:
+            return f"scontrol: error: Reservation {reservation.strip()} not found."
+    if not reservations:
+        return "(0 reservations found)"
+    lines = []
+    for r in reservations:
+        lines.append(
+            f"ReservationName={r.get('ReservationName','?')} "
+            f"StartTime={r.get('StartTime','?')} EndTime={r.get('EndTime','?')}\n"
+            f"   Nodes={r.get('Nodes','')} Flags={r.get('Flags','')} Users={r.get('Users','')} "
+            f"State={r.get('State','INACTIVE')}"
+        )
+    lines.append(f"\n({len(reservations)} reservation{'s' if len(reservations) != 1 else ''} found)")
+    return "\n\n".join(lines)
+
+
+@mcp.tool()
+def sshare(user: str = "", account: str = "") -> str:
+    """Show fairshare usage and effective shares.
+    Real command: sshare -l."""
+    if REAL_MODE:
+        cmd = ["sshare", "-l"]
+        if user:
+            cmd += ["--users", user]
+        if account:
+            cmd += ["--accounts", account]
+        return _run_cmd(cmd)
+    rows = [
+        ("root", "root", 1.000, 1.000, 0.0),
+        ("research", "alice", 0.600, 0.420, 1.8),
+        ("general", "bob", 0.300, 0.380, 0.7),
+        ("general", "charlie", 0.100, 0.200, 0.4),
+    ]
+    if user:
+        rows = [r for r in rows if r[1].lower() == user.lower()]
+    if account:
+        rows = [r for r in rows if r[0].lower() == account.lower()]
+    if not rows:
+        return "No fairshare records found."
+    out = ["Account       User       RawShares  NormShares  EffectvUsage"]
+    out.append("-" * 60)
+    for acct, usr, raw_s, norm_s, usage in rows:
+        out.append(f"{acct:<12} {usr:<10} {raw_s:<9.3f} {norm_s:<10.3f} {usage:<12.3f}")
+    return "\n".join(out)
+
+
+@mcp.tool()
+def scontrol_show_config() -> str:
+    """Show Slurm controller configuration values.
+    Real command: scontrol show config."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "config"])
+    cfg = _STATE._config
+    lines = [f"{k}={v}" for k, v in sorted(cfg.items())]
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def scontrol_ping() -> str:
+    """Check whether slurmctld is responsive.
+    Real command: scontrol ping."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "ping"])
+    return "Slurmctld(primary) at mock-cluster is UP"
+
+
+@mcp.tool()
+def scontrol_show_topology() -> str:
+    """Show network topology as seen by Slurm.
+    Real command: scontrol show topology."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "topology"])
+    nodes = _nodes()
+    if not nodes:
+        return "No topology data available."
+    lines = ["SwitchName=switch0 Nodes=" + ",".join(sorted(n.get("name", "?") for n in nodes))]
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def scontrol_show_step(job_id: str) -> str:
+    """Show step-level information for a job.
+    Real command: scontrol show step <jobid>."""
+    if not job_id.strip():
+        return "scontrol: error: job_id is required for show step."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "step", job_id.strip()])
+    jobs = _jobs()
+    j = next((x for x in jobs if str(x.get("job_id", "")) == job_id.strip()), None)
+    if not j:
+        return f"scontrol: error: Invalid job id specified: {job_id}"
+    return (
+        f"StepId={job_id}.0 JobId={job_id} Name={j.get('name','?')}.batch\n"
+        f"   State={j.get('state','?')} Nodes={j.get('nodes','1')} CPUs={j.get('cpus','1')} Mem={j.get('mem','?')}"
+    )
+
+
+@mcp.tool()
+def scontrol_show_federation() -> str:
+    """Show federation status for multi-cluster Slurm.
+    Real command: scontrol show federation."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "federation"])
+    return "FederationName=mock-federation Clusters=mock-cluster State=ACTIVE"
+
+
+@mcp.tool()
+def scontrol_show_burstbuffer() -> str:
+    """Show burst buffer state.
+    Real command: scontrol show burst_buffer."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "burst_buffer"])
+    return "BurstBufferName=bb0 TotalSpace=100T FreeSpace=78T StageInOps=0 StageOutOps=0"
+
+
+@mcp.tool()
+def sinfo_reasons() -> str:
+    """List nodes in down/drain states with reasons.
+    Real command: sinfo -R."""
+    if REAL_MODE:
+        return _run_cmd(["sinfo", "-R"])
+    bad = [n for n in _nodes() if any(x in str(n.get("state", "")).lower() for x in ("down", "drain"))]
+    if not bad:
+        return "No nodes are down or drained."
+    lines = ["NODELIST        STATE     REASON"]
+    lines.append("-" * 56)
+    for n in bad:
+        lines.append(f"{n.get('name','?'):<14} {n.get('state','?'):<9} {n.get('reason','none')}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def sinfo_node(partition: str = "", state: str = "") -> str:
+    """Show one row per node.
+    Real command: sinfo --Node [--partition ...] [--states ...]."""
+    if REAL_MODE:
+        cmd = ["sinfo", "--Node"]
+        if partition:
+            cmd += ["--partition", partition]
+        if state:
+            cmd += ["--states", state]
+        return _run_cmd(cmd)
+    nodes = _nodes()
+    if partition:
+        nodes = [n for n in nodes if str(n.get("partition", "")).lower() == partition.lower()]
+    if state:
+        wanted = {x.strip().lower() for x in state.split(",") if x.strip()}
+        nodes = [n for n in nodes if str(n.get("state", "")).lower() in wanted]
+    return _fmt_nodes(nodes)
+
+
+@mcp.tool()
+def squeue_steps(job_id: str = "", user: str = "", state: str = "") -> str:
+    """Show job steps (not only top-level jobs).
+    Real command: squeue --steps."""
+    if REAL_MODE:
+        cmd = ["squeue", "--steps"]
+        if job_id:
+            cmd += ["--jobs", job_id]
+        if user:
+            cmd += ["--user", user]
+        if state:
+            cmd += ["--states", state]
+        return _run_cmd(cmd)
+    jobs = _jobs()
+    if job_id:
+        jobs = [j for j in jobs if str(j.get("job_id", "")) == str(job_id)]
+    if user:
+        jobs = [j for j in jobs if str(j.get("user", "")).lower() == user.lower()]
+    if state:
+        wanted = {x.strip().upper() for x in state.split(",") if x.strip()}
+        jobs = [j for j in jobs if str(j.get("state", "")).upper() in wanted]
+    if not jobs:
+        return "No job steps found."
+    lines = ["STEPID         JOBID    USER     STATE     PARTITION"]
+    lines.append("-" * 64)
+    for j in jobs:
+        jid = str(j.get("job_id", "?"))
+        lines.append(f"{jid}.0{'':<9} {jid:<8} {j.get('user','?'):<8} {j.get('state','?'):<9} {j.get('partition','?')}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def squeue_reservation(reservation: str) -> str:
+    """Show queue entries tied to a reservation.
+    Real command: squeue --reservation=<name>."""
+    if not reservation.strip():
+        return "squeue: error: reservation name is required."
+    if REAL_MODE:
+        return _run_cmd(["squeue", f"--reservation={reservation.strip()}"])
+    jobs = [j for j in _jobs() if str(j.get("reservation", "")).lower() == reservation.strip().lower()]
+    if not jobs:
+        return f"No jobs found in reservation {reservation.strip()}."
+    return _fmt_jobs(jobs)
+
+
+@mcp.tool()
+def sprio_weights() -> str:
+    """Show configured priority weights.
+    Real command: sprio --weights."""
+    if REAL_MODE:
+        return _run_cmd(["sprio", "--weights"])
+    return (
+        "Priority Weights\n"
+        "  PriorityWeightAge=1000\n"
+        "  PriorityWeightFairshare=10000\n"
+        "  PriorityWeightJobSize=100\n"
+        "  PriorityWeightPartition=500\n"
+        "  PriorityWeightQOS=1000\n"
+    )
+
+
+@mcp.tool()
+def scontrol_node_power_down(node: str, reason: str = "power_save") -> str:
+    """Power down a node administratively.
+    Real command: scontrol update NodeName=<node> State=POWER_DOWN [Reason=...]."""
+    if not node.strip():
+        return "scontrol: error: Node name is required."
+    if REAL_MODE:
+        cmd = ["scontrol", "update", f"NodeName={node.strip()}", "State=POWER_DOWN"]
+        if reason:
+            cmd.append(f"Reason={reason}")
+        return _run_cmd(cmd)
+    return _STATE.update_node(node.strip(), f"State=power_down Reason={reason or 'power_save'}")
+
+
+@mcp.tool()
+def scontrol_node_power_up(node: str) -> str:
+    """Power up a node administratively.
+    Real command: scontrol update NodeName=<node> State=POWER_UP."""
+    if not node.strip():
+        return "scontrol: error: Node name is required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "update", f"NodeName={node.strip()}", "State=POWER_UP"])
+    return _STATE.update_node(node.strip(), "State=idle")
+
+
+@mcp.tool()
+def scontrol_node_features(node: str, features: str) -> str:
+    """Set node feature labels.
+    Real command: scontrol update NodeName=<node> Features=<features>."""
+    if not node.strip() or not features.strip():
+        return "scontrol: error: node and features are required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "update", f"NodeName={node.strip()}", f"Features={features.strip()}"])
+    return _STATE.update_node(node.strip(), f"Features={features.strip()}")
+
+
+@mcp.tool()
+def scontrol_node_gres(node: str, gres: str) -> str:
+    """Set node GRES labels.
+    Real command: scontrol update NodeName=<node> Gres=<gres>."""
+    if not node.strip() or not gres.strip():
+        return "scontrol: error: node and gres are required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "update", f"NodeName={node.strip()}", f"Gres={gres.strip()}"])
+    return _STATE.update_node(node.strip(), f"Gres={gres.strip()}")
+
+
+@mcp.tool()
+def scontrol_node_weight(node: str, weight: int) -> str:
+    """Set scheduling weight for a node.
+    Real command: scontrol update NodeName=<node> Weight=<weight>."""
+    if not node.strip():
+        return "scontrol: error: node is required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "update", f"NodeName={node.strip()}", f"Weight={int(weight)}"])
+    return _STATE.update_node(node.strip(), f"Weight={int(weight)}")
+
+
+@mcp.tool()
+def scontrol_update_reservation(reservation: str, params: str) -> str:
+    """Update an existing reservation.
+    Real command: scontrol update ReservationName=<reservation> <params>."""
+    if not reservation.strip():
+        return "scontrol: error: reservation is required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "update", f"ReservationName={reservation.strip()}"] + params.split())
+    return _STATE.update_reservation(reservation.strip(), params)
+
+
+@mcp.tool()
+def scontrol_write_config() -> str:
+    """Persist current in-memory config.
+    Real command: scontrol write config."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "write", "config"])
+    _STATE._log.append(f"[{_stamp()}] WRITE_CONFIG")
+    return "scontrol write config: configuration persisted (mock)."
+
+
+@mcp.tool()
+def scontrol_setdebug(level: str) -> str:
+    """Set slurmctld debug level.
+    Real command: scontrol setdebug <level>."""
+    if not level.strip():
+        return "scontrol: error: debug level is required."
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "setdebug", level.strip()])
+    _STATE._config["SlurmctldDebug"] = level.strip().lower()
+    _STATE._log.append(f"[{_stamp()}] SETDEBUG {level.strip().lower()}")
+    return f"SlurmctldDebug set to {level.strip().lower()}."
+
+
+@mcp.tool()
+def scontrol_token(lifespan: str = "3600") -> str:
+    """Generate an auth token for Slurm REST API.
+    Real command: scontrol token lifespan=<seconds>."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "token", f"lifespan={lifespan}"])
+    ttl = lifespan.strip() or "3600"
+    return f"SLURM_JWT=mock-token-{ttl}-seconds"
+
+
+@mcp.tool()
+def scontrol_shutdown(mode: str = "graceful") -> str:
+    """Shutdown Slurm controllers.
+    Real command: scontrol shutdown [mode]."""
+    if REAL_MODE:
+        cmd = ["scontrol", "shutdown"]
+        if mode.strip():
+            cmd.append(mode.strip())
+        return _run_cmd(cmd)
+    _STATE._log.append(f"[{_stamp()}] SHUTDOWN mode={mode.strip() or 'graceful'}")
+    return f"scontrol shutdown ({mode.strip() or 'graceful'}) accepted (mock)."
+
+
+@mcp.tool()
+def scontrol_show_aliases() -> str:
+    """Show configured command aliases.
+    Real command: scontrol show aliases."""
+    if REAL_MODE:
+        return _run_cmd(["scontrol", "show", "aliases"])
+    return "alias cancel_gpu='scancel --partition=gpu'\nalias quick_sinfo='sinfo --Node'"
+
+
+@mcp.tool()
+def sacctmgr_show_problems() -> str:
+    """Show accounting DB consistency problems.
+    Real command: sacctmgr show problems."""
+    if REAL_MODE:
+        return _run_cmd(["sacctmgr", "show", "problems"])
+    return "No accounting problems found."
+
+
+@mcp.tool()
+def sacctmgr_recalc(scope: str = "") -> str:
+    """Recalculate fairshare/accounting usage.
+    Real command: sacctmgr recalc [scope]."""
+    if REAL_MODE:
+        cmd = ["sacctmgr", "recalc"]
+        if scope:
+            cmd += scope.split()
+        return _run_cmd(cmd)
+    _STATE._log.append(f"[{_stamp()}] SACCTMGR RECALC {scope}".rstrip())
+    return "sacctmgr recalc completed (mock)."
+
+
+@mcp.tool()
+def sacctmgr_archive(params: str = "") -> str:
+    """Archive accounting records.
+    Real command: sacctmgr archive <params>."""
+    if REAL_MODE:
+        cmd = ["sacctmgr", "archive"]
+        if params:
+            cmd += params.split()
+        return _run_cmd(cmd)
+    _STATE._log.append(f"[{_stamp()}] SACCTMGR ARCHIVE {params}".rstrip())
+    return "sacctmgr archive completed (mock)."
+
+
+@mcp.tool()
+def sacctmgr_load(file_path: str) -> str:
+    """Load archived accounting data.
+    Real command: sacctmgr load <file>."""
+    if not file_path.strip():
+        return "sacctmgr load: error: file_path is required."
+    if REAL_MODE:
+        return _run_cmd(["sacctmgr", "load", file_path.strip()])
+    _STATE._log.append(f"[{_stamp()}] SACCTMGR LOAD {file_path.strip()}")
+    return f"sacctmgr load completed from {file_path.strip()} (mock)."
+
+
+@mcp.tool()
+def sacctmgr_dump(file_path: str = "") -> str:
+    """Dump accounting DB snapshot.
+    Real command: sacctmgr dump [file]."""
+    if REAL_MODE:
+        cmd = ["sacctmgr", "dump"]
+        if file_path.strip():
+            cmd.append(file_path.strip())
+        return _run_cmd(cmd)
+    target = file_path.strip() or "/tmp/sacctmgr_dump.mock"
+    _STATE._log.append(f"[{_stamp()}] SACCTMGR DUMP {target}")
+    return f"sacctmgr dump written to {target} (mock)."
+
+
+@mcp.tool()
+def strigger_set(spec: str) -> str:
+    """Create a Slurm trigger.
+    Real command: strigger --set <spec>."""
+    if not spec.strip():
+        return "strigger: error: trigger spec is required."
+    if REAL_MODE:
+        return _run_cmd(["strigger", "--set"] + spec.split())
+    trig_id = _STATE.create_trigger(spec)
+    return f"Trigger {trig_id} set: {spec.strip()}"
+
+
+@mcp.tool()
+def strigger_get() -> str:
+    """List active triggers.
+    Real command: strigger --get."""
+    if REAL_MODE:
+        return _run_cmd(["strigger", "--get"])
+    triggers = _STATE.list_triggers()
+    if not triggers:
+        return "No active triggers."
+    lines = ["TRIGGERID   SPEC"]
+    lines.append("-" * 64)
+    for t in triggers:
+        lines.append(f"{t.get('id','?'):<10} {t.get('spec','')}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def strigger_clear(trigger_id: str = "") -> str:
+    """Clear one trigger or all triggers.
+    Real command: strigger --clear [--id=<id>]."""
+    if REAL_MODE:
+        cmd = ["strigger", "--clear"]
+        if trigger_id.strip():
+            cmd += [f"--id={trigger_id.strip()}"]
+        return _run_cmd(cmd)
+    return _STATE.clear_trigger(trigger_id.strip())
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

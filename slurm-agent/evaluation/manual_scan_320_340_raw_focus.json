@@ -1,0 +1,525 @@
+[
+  {
+    "index": 321,
+    "id": "read_all_mixed_v3",
+    "input": "squeue",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "4002",
+        "4003",
+        "4004",
+        "4005",
+        "4006"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 332,
+    "id": "diag_pending_4003_mixed_v1",
+    "input": "Why is this job stuck?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 335,
+    "id": "action_cancel_4001_mixed_v1",
+    "input": "Kill that job",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 336,
+    "id": "action_cancel_4001_mixed_v2",
+    "input": "Stop that job now",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "4001": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "ml_training",
+          "partition": "gpu"
+        },
+        "4002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "etl_pipeline",
+          "partition": "cpu"
+        },
+        "4003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "4004": {
+          "state": "COMPLETED",
+          "user": "alice",
+          "name": "data_export",
+          "partition": "cpu"
+        },
+        "4005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "model_eval",
+          "partition": "gpu"
+        },
+        "4006": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "mix",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "idle",
+          "partition": "cpu"
+        }
+      }
+    }
+  }
+]

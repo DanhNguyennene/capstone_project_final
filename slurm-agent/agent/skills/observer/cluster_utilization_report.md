@@ -1,6 +1,8 @@
 # Cluster Utilization Report
 
-**When to use:** User asks about cluster efficiency, how busy the cluster is, idle time, down time, or historical utilization over a time period.
+**When to use:** User asks for historical utilization over a time period, efficiency trends, idle/down percentages, or explicit accounting reports.
+
+**Important routing:** For real-time questions like "Is the cluster overloaded?" or "How busy is the cluster right now?", use `squeue` + `sinfo` first. Do not use `sreport` as the only tool for "right now" load checks.
 
 ## Key Concepts
 - `sreport cluster utilization` breaks time into: Allocated, Down, PlannedDown, Idle, Planned (backfill reserved), Reported.
@@ -13,6 +15,14 @@
 - Reports use hourly rollup granularity; periods < 1 hour are rounded.
 
 ## Steps
+
+### Real-time overload check (current state, not historical)
+```
+sinfo()
+squeue()
+```
+
+Use this path for "overloaded now" or "busy now" prompts.
 
 ### Quick utilization (yesterday by default)
 ```

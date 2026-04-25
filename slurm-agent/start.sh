@@ -15,6 +15,10 @@
 
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+KEY_FILE_LOCAL="$ROOT/.key"
+KEY_FILE_PARENT="$ROOT/../.key"
+ENV_FILE_LOCAL="$ROOT/.env"
+ENV_FILE_PARENT="$ROOT/../.env"
 
 # ── Colours ────────────────────────────────────────────────────────────────────
 GRN='\033[0;32m'; YEL='\033[1;33m'; RED='\033[0;31m'; BLU='\033[0;34m'; NC='\033[0m'
@@ -22,6 +26,88 @@ info()  { echo -e "${BLU}[start]${NC} $*"; }
 ok()    { echo -e "${GRN}[start]${NC} $*"; }
 warn()  { echo -e "${YEL}[start]${NC} $*"; }
 die()   { echo -e "${RED}[start]${NC} $*" >&2; exit 1; }
+
+# ── Optional local key bootstrap (.key/.env are gitignored) ─────────────────
+trim_ws() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+load_env_like_file() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+
+  local raw line key value loaded=0
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    line="$(trim_ws "$raw")"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+
+    if [[ "$line" == export\ * ]]; then
+      line="${line#export }"
+    fi
+
+    if [[ "$line" == *=* ]]; then
+      key="$(trim_ws "${line%%=*}")"
+      value="$(trim_ws "${line#*=}")"
+
+      if [[ ( "$value" == \"*\" && "$value" == *\" ) || ( "$value" == \'*\' && "$value" == *\' ) ]]; then
+        value="${value:1:${#value}-2}"
+      fi
+
+      case "$key" in
+        OPEN_AI_KEY)
+          export OPENAI_API_KEY="$value"
+          loaded=1
+          ;;
+        GH_TOKEN|GH_PAT|GITHUB_PAT)
+          export GITHUB_TOKEN="$value"
+          loaded=1
+          ;;
+        *)
+          if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            export "$key=$value"
+            loaded=1
+          else
+            warn "Skipping invalid key name in $(basename "$file"): $key"
+          fi
+          ;;
+      esac
+      continue
+    fi
+
+    # Accept single-token files and infer provider key by token prefix.
+    if [[ "$line" == sk-* ]]; then
+      export OPENAI_API_KEY="$line"
+      loaded=1
+    elif [[ "$line" == ghp_* || "$line" == github_pat_* || "$line" == gho_* || "$line" == ghu_* || "$line" == ghs_* ]]; then
+      export GITHUB_TOKEN="$line"
+      loaded=1
+    fi
+  done < "$file"
+
+  [[ $loaded -eq 1 ]] && ok "Loaded local secrets from: $file"
+  return 0
+}
+
+for f in "$KEY_FILE_LOCAL" "$KEY_FILE_PARENT" "$ENV_FILE_LOCAL" "$ENV_FILE_PARENT"; do
+  load_env_like_file "$f" || true
+done
+
+if [[ -z "${OPENAI_API_KEY:-}" && -n "${OPEN_AI_KEY:-}" ]]; then
+  export OPENAI_API_KEY="$OPEN_AI_KEY"
+fi
+
+if [[ -z "${GITHUB_TOKEN:-}" && -n "${GH_TOKEN:-}" ]]; then
+  export GITHUB_TOKEN="$GH_TOKEN"
+fi
+
+if [[ -n "${OPENAI_API_KEY:-}" && -z "${LLM_PROVIDER:-}" ]]; then
+  export LLM_PROVIDER="openai"
+  export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
+  ok "Detected OPENAI_API_KEY; defaulting LLM_PROVIDER=openai"
+fi
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 MCP_PORT="${MCP_PORT:-3002}"

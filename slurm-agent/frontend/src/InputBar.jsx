@@ -95,7 +95,7 @@ export default function InputBar({ onSend, disabled, onStop, agentUrl }) {
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
           </svg>
         </button>
-        <input ref={fileRef} type="file" hidden multiple accept=".sh,.bash,.py,.txt,.sbatch,.job,.slurm"
+        <input ref={fileRef} type="file" hidden multiple accept=".sh,.bash,.py,.txt,.sbatch,.job,.slurm,image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff"
           onChange={handleFileInput} />
         <textarea
           ref={ref}
@@ -111,7 +111,7 @@ export default function InputBar({ onSend, disabled, onStop, agentUrl }) {
           : <button className="send-btn" onClick={submit} title="Send (Enter)">↑</button>
         }
       </div>
-      <p className="input-hint">{disabled ? 'Click ■ to stop · response streaming…' : 'Enter to send · Shift+Enter for newline · Drop or 📎 to attach scripts'}</p>
+      <p className="input-hint">{disabled ? 'Click ■ to stop · response streaming…' : 'Enter to send · Shift+Enter for newline · Drop or 📎 to attach files/images · /todo and /skill commands supported'}</p>
     </div>
   )
 }

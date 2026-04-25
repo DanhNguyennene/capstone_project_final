@@ -8,6 +8,10 @@ import { loadSessions, mkMsg } from '../lib/storage'
 export function useStream({
   agentUrl,
   mcpUrl,
+  llmProvider,
+  llmMainModel,
+  llmSpecialistModel,
+  llmJudgeModel,
   activeIdRef,
   setSessions,
   setStreaming,
@@ -59,7 +63,18 @@ export function useStream({
       let charts   = []
       let inThink  = false
 
-      for await (const delta of streamChat(agentUrl, sid, text, controller.signal, mcpUrl, hitlDecision)) {
+      for await (const delta of streamChat(
+        agentUrl,
+        sid,
+        text,
+        controller.signal,
+        mcpUrl,
+        llmProvider,
+        llmMainModel,
+        llmSpecialistModel,
+        llmJudgeModel,
+        hitlDecision,
+      )) {
         // Reasoning tokens
         if (delta.reasoning_content || delta.reasoning)
           thinking += delta.reasoning_content ?? delta.reasoning

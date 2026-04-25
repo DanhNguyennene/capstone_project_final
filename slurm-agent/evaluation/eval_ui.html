@@ -252,7 +252,7 @@ function runAll() {
   const noVariants = document.getElementById('chk-no-variants').checked;
   const params = new URLSearchParams({
     agent_url: agentUrl, auto_approve: approve,
-    use_judge: judge, no_variants: noVariants,
+    use_judge: judge, no_variants: noVariants, resume: 'true',
   });
   if (activeFilter.scenario) params.set('scenario', activeFilter.scenario);
   if (activeFilter.category) params.set('category', activeFilter.category);
@@ -306,7 +306,7 @@ function runAll() {
   const noVariants = document.getElementById('chk-no-variants').checked;
   const params = new URLSearchParams({
     agent_url: agentUrl, auto_approve: approve,
-    use_judge: judge, no_variants: noVariants,
+    use_judge: judge, no_variants: noVariants, resume: 'true',
   });
   if (activeFilter.scenario) params.set('scenario', activeFilter.scenario);
   if (activeFilter.category) params.set('category', activeFilter.category);
@@ -348,7 +348,10 @@ function runAll() {
 
 function onSSE(evt, data) {
   if (evt === 'start') {
-    document.getElementById('progress-fill').style.width = '0%';
+    const total = Number(data.total || dataset.length || 1);
+    const done = Number(data.already_done || 0);
+    const pct = ((done / total) * 100).toFixed(0);
+    document.getElementById('progress-fill').style.width = pct + '%';
   }
   else if (evt === 'test_start') {
     // Mark running in sidebar
@@ -387,8 +390,7 @@ function onRunComplete() {
 }
 
 function stopEval() {
-  // Can't truly stop server-side, but close the connection
-  onRunComplete();
+  fetch(`${API}/api/stop`, {method: 'POST'}).finally(() => onRunComplete());
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
