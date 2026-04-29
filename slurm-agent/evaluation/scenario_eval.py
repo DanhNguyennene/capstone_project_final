@@ -287,6 +287,25 @@ def _completion_gate_job_ids(prompt: str) -> List[str]:
     return list(dict.fromkeys(ids))
 
 
+def _job_state(job: dict) -> str:
+    return str(job.get("state", "")).strip().upper()
+
+
+def _is_terminal_job_state(state: str) -> bool:
+    return state in {"COMPLETED", "FAILED", "CANCELLED", "TIMEOUT"}
+
+
+def _job_has_submit_time(job: dict) -> bool:
+    return any(
+        str(job.get(key, "")).strip()
+        for key in ("submit_time", "SubmitTime", "eligible_time", "EligibleTime", "submit", "eligible")
+    )
+
+
+def _gt_keywords(gt: dict) -> List[str]:
+    return [str(k).strip().lower() for k in gt.get("keywords", []) if str(k).strip()]
+
+
 def _test_case_logic_issues(test: dict) -> List[str]:
     """Detect internally inconsistent/ambiguous test definitions."""
     issues: List[str] = []
@@ -319,6 +338,7 @@ def _test_case_logic_issues(test: dict) -> List[str]:
     tokens = re.findall(r"[a-z0-9_]+", prompt)
     has_action_intent = any(t in _ACTION_VERBS for t in tokens)
     explicit_ids = re.findall(r"\b\d+\b", prompt)
+    keyword_text = " ".join(_gt_keywords(gt))
 
     if prompt in {"cancel", "stop", "hold", "release", "requeue"} and expects_destructive:
         issues.append("underspecified destructive prompt with destructive ground truth expectations")
@@ -327,6 +347,48 @@ def _test_case_logic_issues(test: dict) -> List[str]:
         if any(pat in prompt for pat in _DEICTIC_TARGET_PATTERNS):
             issues.append(
                 "destructive prompt uses deictic target without explicit reference (ambiguous single-turn target binding)"
+            )
+
+    if not expects_destructive and not explicit_ids and any(pat in prompt for pat in _DEICTIC_TARGET_PATTERNS):
+        if re.search(r"\b\d+\b", keyword_text):
+            issues.append(
+                "deictic read-only prompt expects a specific job ID without prior single-turn context"
+            )
+
+    destructive_words = {"remove", "delete", "wipe", "nuke", "kill", "cancel", "terminate"}
+    read_only_words = {"show", "list", "display", "view", "what", "which", "status", "why", "explain"}
+    if not expects_destructive and any(w in tokens for w in destructive_words) and not any(w in tokens for w in read_only_words):
+        issues.append(
+            "prompt uses destructive wording but ground truth expects only read-only behavior"
+        )
+
+    if expects_destructive and explicit_ids:
+        terminal_targets = [jid for jid in explicit_ids if jid in src_jobs and _is_terminal_job_state(_job_state(src_jobs[jid]))]
+        if terminal_targets and len(terminal_targets) == len([jid for jid in explicit_ids if jid in src_jobs]):
+            issues.append(
+                "destructive action targets only terminal jobs that are not mutable active queue jobs"
+            )
+
+    if expects_destructive and changed_jobs:
+        terminal_changed = [jid for jid in changed_jobs if _is_terminal_job_state(_job_state(src_jobs.get(jid, {})))]
+        if terminal_changed:
+            issues.append(
+                "target_state mutates terminal job records; real Slurm actions apply to active jobs, not completed accounting history"
+            )
+
+    current_queue_prompt = any(word in tokens for word in ("queue", "queued", "current", "active", "running", "pending"))
+    if current_queue_prompt and "squeue" in gt_tools and "sacct" not in gt_tools:
+        terminal_keyword_ids = [jid for jid, job in src_jobs.items() if _is_terminal_job_state(_job_state(job)) and str(jid).lower() in keyword_text]
+        if terminal_keyword_ids:
+            issues.append(
+                "current queue ground truth expects terminal jobs that default squeue should hide; sacct is required for history"
+            )
+
+    submit_time_condition = "submitted" in prompt and any(token in prompt for token in ("before", "after", "older than", "newer than"))
+    if expects_destructive and submit_time_condition:
+        if not any(_job_has_submit_time(j) for j in src_jobs.values()):
+            issues.append(
+                "submission-time destructive condition lacks submit/eligible-time evidence in source_state"
             )
 
     # Dependency-gated actions in a single-turn eval should not require immediate mutation

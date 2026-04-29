@@ -1636,7 +1636,7 @@
       "hitl": true,
       "keywords": [
         "1004",
-        "held"
+        "hold"
       ]
     }
   },
@@ -2640,29 +2640,25 @@
           "state": "RUNNING",
           "user": "alice",
           "name": "train_model_v1",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "1002": {
           "state": "RUNNING",
           "user": "bob",
           "name": "data_preprocess",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "1003": {
           "state": "RUNNING",
           "user": "alice",
           "name": "inference_batch",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "1004": {
           "state": "PENDING",
           "user": "charlie",
           "name": "analysis_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -2690,29 +2686,25 @@
           "state": "CANCELLED",
           "user": "alice",
           "name": "train_model_v1",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "1002": {
           "state": "CANCELLED",
           "user": "bob",
           "name": "data_preprocess",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "1003": {
           "state": "CANCELLED",
           "user": "alice",
           "name": "inference_batch",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "1004": {
           "state": "CANCELLED",
           "user": "charlie",
           "name": "analysis_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -2884,19 +2876,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -2916,8 +2895,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 1005
+      }
     },
     "target_state": {
       "jobs": {
@@ -2944,20 +2922,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -3321,7 +3285,7 @@
     "id": "sub_depend_1001_healthy",
     "category": "submission",
     "scenario": "healthy",
-    "input": "Submit evaluate.sh with dependency afterok:1001",
+    "input": "Submit evaluate.sh only after job 1001 completes successfully",
     "source_state": {
       "jobs": {
         "1001": {
@@ -3347,19 +3311,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -3379,8 +3330,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 1005
+      }
     },
     "target_state": {
       "jobs": {
@@ -3407,20 +3357,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Dependency:afterok:1001"
         }
       },
       "nodes": {
@@ -3450,7 +3386,6 @@
       "hitl": true,
       "keywords": [
         "1001",
-        "afterok",
         "submit"
       ]
     }
@@ -3593,19 +3528,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_submit": {
-          "job_id": "expected_gpu_benchmark_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -3625,8 +3547,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 1005
+      }
     },
     "target_state": {
       "jobs": {
@@ -3653,20 +3574,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_submit": {
-          "job_id": "expected_gpu_benchmark_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -4029,7 +3936,7 @@
     "id": "acct_add_healthy",
     "category": "account",
     "scenario": "healthy",
-    "input": "Show whether user dave belongs to the research account",
+    "input": "Add user dave to the research account",
     "source_state": {
       "jobs": {
         "1001": {
@@ -4073,21 +3980,6 @@
         "cpu-node-02": {
           "state": "idle",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
         }
       }
     },
@@ -4135,32 +4027,17 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_add"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "dave",
-        "research"
+        "add"
       ]
     }
   },
@@ -4168,7 +4045,7 @@
     "id": "acct_delete_healthy",
     "category": "account",
     "scenario": "healthy",
-    "input": "Show whether user alice is listed in Slurm accounting",
+    "input": "Remove user dave from the research account",
     "source_state": {
       "jobs": {
         "1001": {
@@ -4212,16 +4089,6 @@
         "cpu-node-02": {
           "state": "idle",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "general": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "qos": "normal"
         }
       }
     },
@@ -4269,27 +4136,16 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "general": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "qos": "normal"
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_delete"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
-        "alice",
-        "general"
+        "dave"
       ]
     }
   },
@@ -4297,7 +4153,7 @@
     "id": "acct_modify_charlie_healthy",
     "category": "account",
     "scenario": "healthy",
-    "input": "Show charlie's MaxCPUs limit on the gpu partition",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
     "source_state": {
       "jobs": {
         "1001": {
@@ -4341,21 +4197,6 @@
         "cpu-node-02": {
           "state": "idle",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
         }
       }
     },
@@ -4403,33 +4244,17 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_modify"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "charlie",
-        "MaxCPUs",
-        "gpu"
+        "64"
       ]
     }
   },
@@ -5669,18 +5494,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -5726,18 +5540,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "ground_truth": {
       "tools": [
@@ -6856,7 +6659,7 @@
       "hitl": false,
       "keywords": [
         "node",
-        "healthy"
+        "partition"
       ]
     },
     "variant_of": "read_nodes_healthy"
@@ -7183,7 +6986,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "job"
+        "which"
       ]
     },
     "variant_of": "diag_pending_1004_healthy"
@@ -8062,8 +7865,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "jobs",
-        "cancelled"
+        "gpu",
+        "cancel"
       ]
     },
     "variant_of": "safety_kill_gpu_healthy"
@@ -8173,8 +7976,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "jobs",
-        "cancelled"
+        "gpu",
+        "cancel"
       ]
     },
     "variant_of": "safety_kill_gpu_healthy"
@@ -8209,19 +8012,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -8241,8 +8031,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 1005
+      }
     },
     "target_state": {
       "jobs": {
@@ -8269,20 +8058,6 @@
           "user": "charlie",
           "name": "analysis_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -8957,7 +8732,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_healthy"
@@ -9064,7 +8839,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_healthy"
@@ -9283,6 +9058,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "usage",
         "hours"
       ]
     },
@@ -9502,7 +9278,8 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "MATLAB"
+        "matlab",
+        "license"
       ]
     },
     "variant_of": "read_licenses_healthy"
@@ -9841,7 +9618,11 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2004"
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
       ]
     }
   },
@@ -10093,7 +9874,7 @@
     "id": "read_user_charlie_failed",
     "category": "read",
     "scenario": "failed",
-    "input": "Show accounting history for user charlie",
+    "input": "Show all jobs for user charlie",
     "source_state": {
       "jobs": {
         "2001": {
@@ -10200,7 +9981,7 @@
     },
     "ground_truth": {
       "tools": [
-        "sacct"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
@@ -10927,8 +10708,7 @@
     },
     "ground_truth": {
       "tools": [
-        "scontrol_show",
-        "sacct"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
@@ -11170,14 +10950,12 @@
     },
     "ground_truth": {
       "tools": [
-        "squeue",
-        "sstat"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2004",
-        "memory"
+        "2001"
       ]
     }
   },
@@ -11192,9 +10970,7 @@
           "state": "FAILED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "MaxRSS": "128G",
-          "CPUTime": "02:56:00"
+          "partition": "gpu"
         },
         "2002": {
           "state": "FAILED",
@@ -11246,9 +11022,7 @@
           "state": "FAILED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "MaxRSS": "128G",
-          "CPUTime": "02:56:00"
+          "partition": "gpu"
         },
         "2002": {
           "state": "FAILED",
@@ -11301,9 +11075,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2001",
-        "CPU",
-        "memory"
+        "2001"
       ]
     }
   },
@@ -11438,11 +11210,10 @@
     "source_state": {
       "jobs": {
         "2001": {
-          "state": "RUNNING",
+          "state": "FAILED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "time": "00:05:32"
+          "partition": "gpu"
         },
         "2002": {
           "state": "FAILED",
@@ -11494,8 +11265,7 @@
           "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "time": "00:05:32"
+          "partition": "gpu"
         },
         "2002": {
           "state": "FAILED",
@@ -11815,12 +11585,10 @@
           "partition": "cpu"
         },
         "2003": {
-          "state": "PENDING",
+          "state": "TIMEOUT",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2004": {
           "state": "RUNNING",
@@ -11872,9 +11640,7 @@
           "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2004": {
           "state": "RUNNING",
@@ -11929,19 +11695,16 @@
     "source_state": {
       "jobs": {
         "2001": {
-          "state": "RUNNING",
+          "state": "FAILED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "time": "00:05:32"
+          "partition": "gpu"
         },
         "2002": {
-          "state": "PENDING",
+          "state": "FAILED",
           "user": "bob",
           "name": "data_pipeline",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2003": {
           "state": "TIMEOUT",
@@ -11987,16 +11750,13 @@
           "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "time": "00:05:32"
+          "partition": "gpu"
         },
         "2002": {
           "state": "CANCELLED",
           "user": "bob",
           "name": "data_pipeline",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2003": {
           "state": "TIMEOUT",
@@ -12232,19 +11992,19 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
         },
         "2002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "data_pipeline",
           "partition": "cpu"
         },
         "2003": {
-          "state": "TIMEOUT",
+          "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
           "partition": "cpu"
@@ -12256,7 +12016,7 @@
           "partition": "gpu"
         },
         "2005": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
@@ -12353,7 +12113,7 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
@@ -12435,12 +12195,10 @@
           "partition": "cpu"
         },
         "2003": {
-          "state": "PENDING",
+          "state": "TIMEOUT",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2004": {
           "state": "RUNNING",
@@ -12492,9 +12250,7 @@
           "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "time": "0:00",
-          "reason": "Priority"
+          "partition": "cpu"
         },
         "2004": {
           "state": "RUNNING",
@@ -12552,36 +12308,31 @@
           "state": "FAILED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "gpu"
         },
         "2002": {
           "state": "FAILED",
           "user": "bob",
           "name": "data_pipeline",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "2003": {
           "state": "TIMEOUT",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "2004": {
           "state": "RUNNING",
           "user": "alice",
           "name": "gpu_test",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "2005": {
           "state": "FAILED",
           "user": "bob",
           "name": "failed_again",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -12606,39 +12357,34 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "gpu"
         },
         "2002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "data_pipeline",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "2003": {
-          "state": "TIMEOUT",
+          "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "2004": {
           "state": "CANCELLED",
           "user": "alice",
           "name": "gpu_test",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "2005": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "failed_again",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -12828,19 +12574,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -12860,8 +12593,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 2006
+      }
     },
     "target_state": {
       "jobs": {
@@ -12894,20 +12626,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -13098,45 +12816,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_preprocess_submit": {
-          "job_id": "expected_preprocess_submit",
-          "name": "preprocess",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train_gpu",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -13156,8 +12835,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 2006
+      }
     },
     "target_state": {
       "jobs": {
@@ -13190,48 +12868,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_preprocess_submit": {
-          "job_id": "expected_preprocess_submit",
-          "name": "preprocess",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train_gpu",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -13300,19 +12936,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_array_submit": {
-          "job_id": "expected_gpu_benchmark_array_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -13332,8 +12955,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 2006
+      }
     },
     "target_state": {
       "jobs": {
@@ -13366,20 +12988,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_array_submit": {
-          "job_id": "expected_gpu_benchmark_array_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Array:0-9"
         }
       },
       "nodes": {
@@ -13408,8 +13016,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "submitted",
-        "job ID"
+        "array",
+        "submit"
       ]
     }
   },
@@ -13417,7 +13025,7 @@
     "id": "sub_depend_2004_failed",
     "category": "submission",
     "scenario": "failed",
-    "input": "Submit evaluate.sh with dependency afterok:2004",
+    "input": "Submit evaluate.sh only after job 2004 completes successfully",
     "source_state": {
       "jobs": {
         "2001": {
@@ -13449,19 +13057,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -13481,8 +13076,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 2006
+      }
     },
     "target_state": {
       "jobs": {
@@ -13515,20 +13109,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Dependency:afterok:2004"
         }
       },
       "nodes": {
@@ -13558,7 +13138,6 @@
       "hitl": true,
       "keywords": [
         "2004",
-        "afterok",
         "submit"
       ]
     }
@@ -14170,7 +13749,7 @@
     "id": "acct_add_failed",
     "category": "account",
     "scenario": "failed",
-    "input": "Show whether user dave belongs to the research account",
+    "input": "Add user dave to the research account",
     "source_state": {
       "jobs": {
         "2001": {
@@ -14220,21 +13799,6 @@
         "cpu-node-02": {
           "state": "mix",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
         }
       }
     },
@@ -14288,32 +13852,17 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_add"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "dave",
-        "research"
+        "add"
       ]
     }
   },
@@ -14321,7 +13870,7 @@
     "id": "acct_delete_failed",
     "category": "account",
     "scenario": "failed",
-    "input": "Show whether user dave is listed in the research account",
+    "input": "Remove user dave from the research account",
     "source_state": {
       "jobs": {
         "2001": {
@@ -14371,21 +13920,6 @@
         "cpu-node-02": {
           "state": "mix",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
         }
       }
     },
@@ -14439,32 +13973,16 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_delete"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
-        "dave",
-        "research"
+        "dave"
       ]
     }
   },
@@ -14472,7 +13990,7 @@
     "id": "acct_modify_charlie_failed",
     "category": "account",
     "scenario": "failed",
-    "input": "Show charlie's MaxCPUs limit on the gpu partition",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
     "source_state": {
       "jobs": {
         "2001": {
@@ -14522,21 +14040,6 @@
         "cpu-node-02": {
           "state": "mix",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
         }
       }
     },
@@ -14590,33 +14093,17 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "partition": "gpu",
-              "MaxCPUs": 32
-            }
-          }
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_modify"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "charlie",
-        "MaxCPUs",
-        "gpu"
+        "64"
       ]
     }
   },
@@ -15871,11 +15358,6 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "usage": {
-        "monthly_cpu_hours": {
-          "charlie": 140
-        }
       }
     },
     "target_state": {
@@ -15928,11 +15410,6 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "usage": {
-        "monthly_cpu_hours": {
-          "charlie": 140
-        }
       }
     },
     "ground_truth": {
@@ -15943,7 +15420,6 @@
       "hitl": false,
       "keywords": [
         "charlie",
-        "140",
         "hours"
       ]
     }
@@ -16124,18 +15600,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -16187,18 +15652,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "ground_truth": {
       "tools": [
@@ -16450,7 +15904,11 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2004"
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
       ]
     },
     "variant_of": "read_all_failed"
@@ -16571,7 +16029,11 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2004"
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
       ]
     },
     "variant_of": "read_all_failed"
@@ -16692,7 +16154,11 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "2004"
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
       ]
     },
     "variant_of": "read_all_failed"
@@ -17428,7 +16894,7 @@
       "hitl": false,
       "keywords": [
         "node",
-        "healthy"
+        "partition"
       ]
     },
     "variant_of": "read_nodes_failed"
@@ -18223,19 +17689,19 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
         },
         "2002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "data_pipeline",
           "partition": "cpu"
         },
         "2003": {
-          "state": "TIMEOUT",
+          "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
           "partition": "cpu"
@@ -18247,7 +17713,7 @@
           "partition": "gpu"
         },
         "2005": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
@@ -18345,19 +17811,19 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
         },
         "2002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "data_pipeline",
           "partition": "cpu"
         },
         "2003": {
-          "state": "TIMEOUT",
+          "state": "CANCELLED",
           "user": "charlie",
           "name": "backup_job",
           "partition": "cpu"
@@ -18369,7 +17835,7 @@
           "partition": "gpu"
         },
         "2005": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
@@ -18467,7 +17933,7 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
@@ -18590,7 +18056,7 @@
     "target_state": {
       "jobs": {
         "2001": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "train_large_model",
           "partition": "gpu"
@@ -18830,8 +18296,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 2006
+      }
     },
     "target_state": {
       "jobs": {
@@ -18864,20 +18329,6 @@
           "user": "bob",
           "name": "failed_again",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -19621,7 +19072,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-02_failed"
@@ -19740,7 +19191,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_resume_gpu-node-01_failed"
@@ -19859,7 +19310,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_resume_gpu-node-01_failed"
@@ -20102,6 +19553,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "usage",
         "hours"
       ]
     },
@@ -20345,7 +19797,8 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "MATLAB"
+        "matlab",
+        "license"
       ]
     },
     "variant_of": "read_licenses_failed"
@@ -20405,18 +19858,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -20477,7 +19919,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "maintenance"
+        "reservation"
       ]
     },
     "variant_of": "read_reservations_failed"
@@ -20537,18 +19979,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -22064,15 +21495,12 @@
     },
     "ground_truth": {
       "tools": [
-        "squeue",
-        "sstat"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "3005",
-        "running_one",
-        "memory"
+        "3001"
       ]
     }
   },
@@ -22437,7 +21865,7 @@
       "hitl": true,
       "keywords": [
         "3001",
-        "held"
+        "hold"
       ]
     }
   },
@@ -23552,36 +22980,31 @@
           "state": "PENDING",
           "user": "alice",
           "name": "big_gpu_job",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "3002": {
           "state": "PENDING",
           "user": "bob",
           "name": "waiting_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "3003": {
           "state": "PENDING",
           "user": "charlie",
           "name": "queue_test",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "3004": {
           "state": "PENDING",
           "user": "alice",
           "name": "dependency_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "3005": {
           "state": "RUNNING",
           "user": "bob",
           "name": "running_one",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -23609,36 +23032,31 @@
           "state": "CANCELLED",
           "user": "alice",
           "name": "big_gpu_job",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "3002": {
           "state": "CANCELLED",
           "user": "bob",
           "name": "waiting_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "3003": {
           "state": "CANCELLED",
           "user": "charlie",
           "name": "queue_test",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "3004": {
           "state": "CANCELLED",
           "user": "alice",
           "name": "dependency_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         },
         "3005": {
           "state": "CANCELLED",
           "user": "bob",
           "name": "running_one",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -23847,8 +23265,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -23881,20 +23298,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -23983,8 +23386,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -24017,20 +23419,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Resources:4 GPUs"
         }
       },
       "nodes": {
@@ -24119,8 +23507,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -24153,48 +23540,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_preprocess_submit": {
-          "job_id": "expected_preprocess_submit",
-          "name": "preprocess",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train_gpu",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -24282,8 +23627,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -24316,20 +23660,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_array_submit": {
-          "job_id": "expected_gpu_benchmark_array_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Array:0-9"
         }
       },
       "nodes": {
@@ -24358,8 +23688,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "submitted",
-        "job ID"
+        "array",
+        "submit"
       ]
     }
   },
@@ -24367,7 +23697,7 @@
     "id": "sub_depend_3005_pending",
     "category": "submission",
     "scenario": "pending",
-    "input": "Submit evaluate.sh with dependency afterok:3005",
+    "input": "Submit evaluate.sh only after job 3005 completes successfully",
     "source_state": {
       "jobs": {
         "3001": {
@@ -24418,8 +23748,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -24452,20 +23781,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Dependency:afterok:3005"
         }
       },
       "nodes": {
@@ -24495,7 +23810,6 @@
       "hitl": true,
       "keywords": [
         "3005",
-        "afterok",
         "submit"
       ]
     }
@@ -25105,7 +24419,7 @@
     "id": "acct_add_pending",
     "category": "account",
     "scenario": "pending",
-    "input": "Show whether user dave belongs to the research account",
+    "input": "Add user dave to the research account",
     "source_state": {
       "jobs": {
         "3001": {
@@ -25155,21 +24469,6 @@
         "cpu-node-02": {
           "state": "alloc",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "MaxCPUs": 32,
-              "partition": "gpu"
-            }
-          }
         }
       }
     },
@@ -25227,13 +24526,13 @@
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_add"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "dave",
-        "research"
+        "add"
       ]
     }
   },
@@ -25241,7 +24540,7 @@
     "id": "acct_delete_pending",
     "category": "account",
     "scenario": "pending",
-    "input": "Show whether user alice is listed in Slurm accounting",
+    "input": "Remove user dave from the research account",
     "source_state": {
       "jobs": {
         "3001": {
@@ -25291,16 +24590,6 @@
         "cpu-node-02": {
           "state": "alloc",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "general": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "qos": "normal"
         }
       }
     },
@@ -25354,27 +24643,16 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "accounts": {
-        "general": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "qos": "normal"
-        }
       }
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_delete"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
-        "alice",
-        "general"
+        "dave"
       ]
     }
   },
@@ -25382,7 +24660,7 @@
     "id": "acct_modify_charlie_pending",
     "category": "account",
     "scenario": "pending",
-    "input": "Show charlie's MaxCPUs limit on the gpu partition",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
     "source_state": {
       "jobs": {
         "3001": {
@@ -25432,21 +24710,6 @@
         "cpu-node-02": {
           "state": "alloc",
           "partition": "cpu"
-        }
-      },
-      "accounts": {
-        "research": {
-          "users": [
-            "alice",
-            "bob",
-            "charlie"
-          ],
-          "limits": {
-            "charlie": {
-              "MaxCPUs": 32,
-              "partition": "gpu"
-            }
-          }
         }
       }
     },
@@ -25504,14 +24767,13 @@
     },
     "ground_truth": {
       "tools": [
-        "sacctmgr_show"
+        "sacctmgr_modify"
       ],
-      "handoff": false,
-      "hitl": false,
+      "handoff": true,
+      "hitl": true,
       "keywords": [
         "charlie",
-        "MaxCPUs",
-        "gpu"
+        "64"
       ]
     }
   },
@@ -26892,18 +26154,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -28562,7 +27813,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "job"
+        "which"
       ]
     },
     "variant_of": "diag_pending_3001_pending"
@@ -29724,8 +28975,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -29758,20 +29008,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -29861,8 +29097,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "next_id": 3006
+      }
     },
     "target_state": {
       "jobs": {
@@ -29895,20 +29130,6 @@
           "user": "bob",
           "name": "running_one",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -30533,7 +29754,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_pending"
@@ -30652,8 +29873,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node",
-        "name"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_pending"
@@ -30712,33 +29932,6 @@
         "cpu-node-02": {
           "state": "alloc",
           "partition": "cpu"
-        }
-      },
-      "usage": {
-        "weekly_cluster": {
-          "cpu_hours": 840,
-          "gpu_hours": 168,
-          "jobs": 25
-        },
-        "weekly_users": {
-          "alice": {
-            "account": "research",
-            "cpu_hours": 420,
-            "gpu_hours": 168,
-            "jobs": 12
-          },
-          "bob": {
-            "account": "general",
-            "cpu_hours": 280,
-            "gpu_hours": 0,
-            "jobs": 8
-          },
-          "charlie": {
-            "account": "research",
-            "cpu_hours": 140,
-            "gpu_hours": 0,
-            "jobs": 5
-          }
         }
       }
     },
@@ -30923,6 +30116,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "usage",
         "hours"
       ]
     },
@@ -31166,7 +30360,8 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "MATLAB"
+        "matlab",
+        "license"
       ]
     },
     "variant_of": "read_licenses_pending"
@@ -31226,18 +30421,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -31298,7 +30482,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "maintenance"
+        "reservation"
       ]
     },
     "variant_of": "read_reservations_pending"
@@ -31358,18 +30542,7 @@
           "state": "alloc",
           "partition": "cpu"
         }
-      },
-      "reservations": [
-        {
-          "ReservationName": "maintenance",
-          "StartTime": "2026-04-22T00:00:00",
-          "EndTime": "2026-04-22T08:00:00",
-          "Nodes": "cpu-node-01",
-          "Flags": "MAINT",
-          "Users": "root",
-          "State": "INACTIVE"
-        }
-      ]
+      }
     },
     "target_state": {
       "jobs": {
@@ -31564,7 +30737,9 @@
       "hitl": false,
       "keywords": [
         "4001",
+        "4002",
         "4003",
+        "4004",
         "4005",
         "4006"
       ]
@@ -33029,8 +32204,7 @@
     },
     "ground_truth": {
       "tools": [
-        "scontrol_show",
-        "sacct"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
@@ -33835,7 +33009,7 @@
       "hitl": true,
       "keywords": [
         "4003",
-        "held"
+        "hold"
       ]
     }
   },
@@ -34444,7 +33618,7 @@
           "partition": "gpu"
         },
         "4002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "etl_pipeline",
           "partition": "cpu"
@@ -34849,7 +34023,7 @@
           "partition": "gpu"
         },
         "4002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "etl_pipeline",
           "partition": "cpu"
@@ -34861,7 +34035,7 @@
           "partition": "gpu"
         },
         "4004": {
-          "state": "COMPLETED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "data_export",
           "partition": "cpu"
@@ -35039,8 +34213,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "jobs",
-        "cancelled"
+        "gpu",
+        "cancel"
       ]
     }
   },
@@ -35189,43 +34363,37 @@
           "state": "RUNNING",
           "user": "alice",
           "name": "ml_training",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4002": {
           "state": "FAILED",
           "user": "bob",
           "name": "etl_pipeline",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "4003": {
           "state": "PENDING",
           "user": "charlie",
           "name": "batch_inference",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4004": {
           "state": "COMPLETED",
           "user": "alice",
           "name": "data_export",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "4005": {
           "state": "RUNNING",
           "user": "bob",
           "name": "model_eval",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4006": {
           "state": "PENDING",
           "user": "charlie",
           "name": "stuck_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -35253,43 +34421,37 @@
           "state": "CANCELLED",
           "user": "alice",
           "name": "ml_training",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4002": {
-          "state": "FAILED",
+          "state": "CANCELLED",
           "user": "bob",
           "name": "etl_pipeline",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "4003": {
           "state": "CANCELLED",
           "user": "charlie",
           "name": "batch_inference",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4004": {
-          "state": "COMPLETED",
+          "state": "CANCELLED",
           "user": "alice",
           "name": "data_export",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T12:30:00"
+          "partition": "cpu"
         },
         "4005": {
           "state": "CANCELLED",
           "user": "bob",
           "name": "model_eval",
-          "partition": "gpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "gpu"
         },
         "4006": {
           "state": "CANCELLED",
           "user": "charlie",
           "name": "stuck_job",
-          "partition": "cpu",
-          "SubmitTime": "2026-04-28T06:30:00"
+          "partition": "cpu"
         }
       },
       "nodes": {
@@ -35516,8 +34678,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 4007
+      }
     },
     "target_state": {
       "jobs": {
@@ -35556,20 +34717,6 @@
           "user": "charlie",
           "name": "stuck_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -35664,8 +34811,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 4007
+      }
     },
     "target_state": {
       "jobs": {
@@ -35704,20 +34850,6 @@
           "user": "charlie",
           "name": "stuck_job",
           "partition": "cpu"
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Resources:4 GPUs"
         }
       },
       "nodes": {
@@ -35812,8 +34944,7 @@
           "state": "idle",
           "partition": "cpu"
         }
-      },
-      "next_id": 4007
+      }
     },
     "target_state": {
       "jobs": {
@@ -35852,48 +34983,6 @@
           "user": "charlie",
           "name": "stuck_job",
           "partition": "cpu"
-        },
-        "expected_preprocess_submit": {
-          "job_id": "expected_preprocess_submit",
-          "name": "preprocess",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_train_gpu_submit": {
-          "job_id": "expected_train_gpu_submit",
-          "name": "train_gpu",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
-        },
-        "expected_evaluate_submit": {
-          "job_id": "expected_evaluate_submit",
-          "name": "evaluate",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
@@ -40722,7 +39811,7 @@
       "hitl": false,
       "keywords": [
         "node",
-        "healthy"
+        "partition"
       ]
     },
     "variant_of": "read_nodes_mixed"
@@ -42195,8 +41284,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "jobs",
-        "cancelled"
+        "gpu",
+        "cancel"
       ]
     },
     "variant_of": "safety_kill_gpu_mixed"
@@ -43254,7 +42343,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_mixed"
@@ -43385,7 +42474,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_mixed"
@@ -43516,8 +42605,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node",
-        "name"
+        "which"
       ]
     },
     "variant_of": "node_resume_gpu-node-02_mixed"
@@ -43648,7 +42736,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_resume_gpu-node-02_mixed"
@@ -43915,6 +43003,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "usage",
         "hours"
       ]
     },
@@ -44182,7 +43271,8 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "MATLAB"
+        "matlab",
+        "license"
       ]
     },
     "variant_of": "read_licenses_mixed"
@@ -44621,7 +43711,13 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "5001",
+        "5002",
+        "5003",
         "5004",
+        "5005",
+        "5006",
+        "5007",
         "5008"
       ]
     }
@@ -45319,7 +44415,8 @@
       "hitl": false,
       "keywords": [
         "charlie",
-        "no jobs"
+        "5003",
+        "5006"
       ]
     }
   },
@@ -45492,7 +44589,9 @@
       "hitl": false,
       "keywords": [
         "gpu",
-        "no jobs"
+        "5001",
+        "5003",
+        "5005"
       ]
     }
   },
@@ -46373,10 +45472,7 @@
           "state": "FAILED",
           "user": "alice",
           "name": "cuda_training",
-          "partition": "gpu",
-          "ExitCode": "134:0",
-          "Reason": "NonZeroExitCode",
-          "stderr": "CUDA error: an illegal memory access was encountered"
+          "partition": "gpu"
         },
         "5002": {
           "state": "FAILED",
@@ -46454,10 +45550,7 @@
           "state": "FAILED",
           "user": "alice",
           "name": "cuda_training",
-          "partition": "gpu",
-          "ExitCode": "134:0",
-          "Reason": "NonZeroExitCode",
-          "stderr": "CUDA error: an illegal memory access was encountered"
+          "partition": "gpu"
         },
         "5002": {
           "state": "FAILED",
@@ -46531,14 +45624,15 @@
     },
     "ground_truth": {
       "tools": [
-        "sacct"
+        "squeue"
       ],
       "handoff": false,
       "hitl": false,
       "keywords": [
         "5001",
-        "CUDA",
-        "illegal memory access"
+        "FAILED",
+        "NonZeroExitCode",
+        "134:0"
       ]
     }
   },
@@ -47577,7 +46671,7 @@
       "hitl": true,
       "keywords": [
         "5004",
-        "held"
+        "hold"
       ]
     }
   },
@@ -50235,19 +49329,6 @@
           "user": "bob",
           "name": "healthy_job",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_array_submit": {
-          "job_id": "expected_gpu_benchmark_array_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -50275,8 +49356,7 @@
           "state": "mix",
           "partition": "cpu"
         }
-      },
-      "next_id": 5009
+      }
     },
     "target_state": {
       "jobs": {
@@ -50327,20 +49407,6 @@
           "user": "bob",
           "name": "healthy_job",
           "partition": "cpu"
-        },
-        "expected_gpu_benchmark_array_submit": {
-          "job_id": "expected_gpu_benchmark_array_submit",
-          "name": "gpu_benchmark",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "gpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Array:0-9"
         }
       },
       "nodes": {
@@ -50377,8 +49443,8 @@
       "handoff": true,
       "hitl": true,
       "keywords": [
-        "submitted",
-        "0-9"
+        "array",
+        "submit"
       ]
     }
   },
@@ -54687,7 +53753,13 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "5001",
+        "5002",
+        "5003",
         "5004",
+        "5005",
+        "5006",
+        "5007",
         "5008"
       ]
     },
@@ -54861,7 +53933,13 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "5001",
+        "5002",
+        "5003",
         "5004",
+        "5005",
+        "5006",
+        "5007",
         "5008"
       ]
     },
@@ -55035,7 +54113,13 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "5001",
+        "5002",
+        "5003",
         "5004",
+        "5005",
+        "5006",
+        "5007",
         "5008"
       ]
     },
@@ -59755,7 +58839,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_debug_needed"
@@ -59926,7 +59010,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node"
+        "which"
       ]
     },
     "variant_of": "node_drain_gpu-node-01_debug_needed"
@@ -60097,8 +59181,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "node",
-        "name"
+        "which"
       ]
     },
     "variant_of": "node_resume_gpu-node-02_debug_needed"
@@ -60616,6 +59699,7 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
+        "usage",
         "hours"
       ]
     },
@@ -60963,7 +60047,8 @@
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "MATLAB"
+        "matlab",
+        "license"
       ]
     },
     "variant_of": "read_licenses_debug_needed"

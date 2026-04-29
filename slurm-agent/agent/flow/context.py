@@ -236,9 +236,12 @@ class SlurmContext:
     chart_artifacts: List[str] = field(default_factory=list)
     operator_actions_taken: int = 0  # count of dangerous tools executed this run
     operator_required_tool: str = ""  # optional per-handoff required action tool
+    operator_action_request: str = ""  # latest natural-language action request from Observer handoff
     operator_targets: List[str] = field(default_factory=list)  # targets captured at latest handoff
     operator_discovery_calls: int = 0  # bounded pre-action discovery reads per handoff
     operator_no_targets_found: bool = False  # set when discovery confirms no eligible targets
+    operator_blocked_reason: str = ""  # set when a handoff/action is unsafe or underspecified
+    operator_last_discovery_output: str = ""  # latest Operator-side read output for eligibility checks
 
     def mark_operator_action(self):
         self.operator_actions_taken += 1
@@ -246,13 +249,23 @@ class SlurmContext:
     def mark_operator_discovery(self):
         self.operator_discovery_calls += 1
 
+    def record_operator_discovery_output(self, output: str):
+        self.operator_last_discovery_output = output or ""
+
     def mark_no_targets_found(self):
+        self.operator_no_targets_found = True
+
+    def mark_operator_blocked(self, reason: str):
+        self.operator_blocked_reason = reason or "Action blocked by safety policy."
         self.operator_no_targets_found = True
 
     def reset_operator_handoff_state(self):
         self.operator_actions_taken = 0
+        self.operator_action_request = ""
         self.operator_discovery_calls = 0
         self.operator_no_targets_found = False
+        self.operator_blocked_reason = ""
+        self.operator_last_discovery_output = ""
 
     # ── chart artifacts ──────────────────────────────────────────────────────
     def add_chart_artifact(self, mermaid_code: str):

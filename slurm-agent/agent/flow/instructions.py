@@ -11,6 +11,7 @@ Display helpers:
   - format_tool_call(name, args) → one-line terminal step label
   - brief_output_summary(output)  → short result annotation or None
 """
+import json
 import re
 
 
@@ -35,18 +36,26 @@ For both explicit and broad/implicit action targets:
 
 RULE 1B — AMBIGUOUS / INVALID ACTION TARGETS:
 If the user intent is destructive but target is missing/unclear/invalid (e.g., "Cancel", "cancel job abc"),
-ask one concise clarification question (prefer wording that starts with "Which ...?") and stop.
+state invalid targets explicitly when applicable, then ask one concise clarification question
+(prefer wording that starts with "Which ...?") and stop.
 Do not call tools for that clarification turn.
+If the request uses a deictic target without prior explicit context (e.g., "that job", "that one", "stop it"),
+ask for the concrete job ID and stop.
+If a node action lacks a concrete node name (e.g., "drain the node", "resume it", "put node into maintenance mode"),
+ask for the concrete node name and stop.
 Treat broad scope requests as explicit targets, not ambiguity (e.g., "cancel all pending jobs",
-"cancel all running gpu jobs", "cancel all of alice's jobs").
+"cancel all running gpu jobs", "cancel all of alice's jobs", "kill everything").
 Do NOT ask clarification for explicit cluster-control intents that require no target IDs
 (e.g., "reconfigure scheduler", "shutdown controller"): transfer immediately.
 
 RULE 2 — READ-ONLY REQUESTS:
 Use real Slurm read tools directly:
 - queue/jobs/status/runtime -> squeue
+- current failed jobs in queue -> squeue with state=FAILED first; add sacct only for accounting/history details
 - cluster/node/partition state -> sinfo
+- node health / "are nodes healthy" -> sinfo first; add sinfo_reasons only when reasons are requested or nodes are down/drained
 - current cluster load/busyness/overload (now) -> squeue + sinfo
+- cluster health/overview/"how is the cluster doing" -> squeue + sinfo
 - historical/completed -> sacct
 - detailed job config -> scontrol_show
 - scheduler diagnostics -> sdiag / sprio / sstat / sprio_weights
@@ -63,7 +72,8 @@ Use real Slurm read tools directly:
 - alias introspection -> scontrol_show_aliases
 
 RULE 3 — KNOWLEDGE / HOW-TO:
-For pure explanatory questions, answer directly without tools.
+For capability questions about what you can do, answer directly without tools.
+For pure explanatory/tutorial/how-to questions, answer directly without tools.
 Use lookup_skill only when the user explicitly asks for docs/runbook/manual/reference text.
 For general best-practice/how-to guidance, do NOT call lookup_skill.
 For external web evidence, use a 2-step flow:
@@ -81,6 +91,11 @@ If results are empty, say so clearly. Never fabricate.
 RULE 5 — OUTPUT:
 Keep responses concise, concrete, and grounded in fetched results.
 For specific job status/runtime answers, include both job ID and job name when available.
+For node health answers, include partition context from sinfo.
+For license answers, include the word "license" and the concrete license name when known.
+For reservation or maintenance-window answers, include the word "reservation".
+For usage/resource reports, include the word "usage" and concrete CPU/GPU/job totals when available.
+For completed action summaries, include the exact action verb family requested (cancel/cancelled, hold/held, release/released, submit/submitted), target IDs, and any requested broad scope terms (user, partition, gpu/cpu, state) when known.
 """
 
 
@@ -167,12 +182,18 @@ RULE 3 — TARGET RESOLUTION:
 After transfer_to_operator for an action intent, you MUST execute at least one action tool
 before transfer_to_observer.
 
+If the handoff says it is blocked by safety policy, do NOT call action tools. Hand back with the blocked reason.
+
 If explicit targets are provided (job IDs, script path, named user/account/node),
 execute the action tool directly. Do not block on pre-check reads.
 
 If action scope is broad and IDs are not explicit:
 - call at most ONE discovery read (typically squeue or scontrol_show),
 - then execute the action tool with resolved targets.
+- for broad job cancellation/hold/requeue scopes, resolve RUNNING and PENDING jobs unless the request explicitly names another state.
+
+If the action is conditional (e.g., over/longer than a runtime threshold, submitted before/after a time window),
+execute only targets whose eligibility is proven by discovery output. If eligibility cannot be proven, do not mutate state.
 
 If no eligible targets are found after that one discovery read:
 - return a concise "no eligible targets found" result,
@@ -186,8 +207,10 @@ For "submit ... only after job X completes successfully":
 
 RULE 4 — EXECUTION:
 Use provided script paths as-is.
+For "run/submit/sbatch <script>" requests, call sbatch with script set to that script path.
 For multi-ID cancel, prefer one scancel call with comma-separated IDs.
 When actions are complete, return a brief result then transfer_to_observer.
+The brief result must mention the action verb, concrete IDs affected, and relevant scope such as user, partition, or state.
 Do not loop after transfer_to_observer.
 Never run repeated polling loops (e.g., repeated squeue checks) inside one request.
 
@@ -220,11 +243,17 @@ MAIN_AGENT_INSTRUCTIONS = build_observer_instructions()
 
 # ── Streaming display helpers ─────────────────────────────────────────────────
 
-def format_tool_call(tool_name: str, args: dict) -> str:
+def format_tool_call(tool_name: str, args: dict | str | None) -> str:
     """
     One-line terminal-style label shown as an active step while a tool runs.
     e.g.  "$ squeue --user alice --state PENDING"
     """
+    if not isinstance(args, dict):
+        try:
+            parsed = json.loads(args) if isinstance(args, str) else {}
+        except Exception:
+            parsed = {}
+        args = parsed if isinstance(parsed, dict) else {"value": parsed}
 
     if tool_name in ("squeue", "sacct", "sinfo"):
         parts = [tool_name] + [f"--{k} {v}" for k, v in list(args.items())[:3] if v]
@@ -265,8 +294,14 @@ def format_tool_call(tool_name: str, args: dict) -> str:
 
     if tool_name == "manage_todos":
         items = args.get("todoList", [])
-        in_prog = next((i["title"] for i in items if i.get("status") == "in-progress"), None)
-        done = sum(1 for i in items if i.get("status") == "completed")
+        if not isinstance(items, list):
+            items = []
+        normalized_items = [i for i in items if isinstance(i, dict)]
+        in_prog = next(
+            (str(i.get("title", "")) for i in normalized_items if i.get("status") == "in-progress"),
+            None,
+        )
+        done = sum(1 for i in normalized_items if i.get("status") == "completed")
         total = len(items)
         label = f"→ {in_prog}" if in_prog else f"{done}/{total} done"
         return f"$ manage_todos [{label}]"

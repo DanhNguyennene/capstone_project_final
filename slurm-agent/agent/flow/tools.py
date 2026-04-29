@@ -8,7 +8,8 @@ Each factory is a plain function — easy to test, easy to replace.
 """
 import json
 import logging
-from typing import List
+import re
+from typing import Any, List
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -25,6 +26,149 @@ from .guardrails import (
 from .tool_discovery import DiscoveredTool
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_tool_args(args_json: str | dict | None) -> dict[str, Any]:
+    """Parse SDK FunctionTool arguments into a dict.
+
+    Some models/providers occasionally pass a JSON string literal where the
+    tool schema expects an object, e.g. '"QOS and Account Limits"' instead of
+    '{"title":"QOS and Account Limits"}'.  Tool handlers must never assume
+    json.loads(...) returned a dict.
+    """
+    if args_json is None or args_json == "":
+        return {}
+    if isinstance(args_json, dict):
+        return args_json
+
+    try:
+        parsed = json.loads(args_json) if isinstance(args_json, str) else args_json
+    except Exception:
+        return {"value": str(args_json)}
+
+    if isinstance(parsed, dict):
+        return parsed
+    if isinstance(parsed, str):
+        stripped = parsed.strip()
+        if not stripped:
+            return {}
+        # Handle double-encoded objects: '"{\\\"title\\\": ...}"'.
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                reparsed = json.loads(stripped)
+                if isinstance(reparsed, dict):
+                    return reparsed
+            except Exception:
+                pass
+        return {"value": stripped}
+    return {"value": parsed}
+
+
+def _coerce_single_required_arg(args: dict[str, Any], required_args: set[str]) -> dict[str, Any]:
+    """Map a raw scalar fallback to the sole required schema field, if unambiguous."""
+    if "value" not in args or len(required_args) != 1:
+        return args
+    required_name = next(iter(required_args))
+    if args.get(required_name):
+        return args
+    return {**args, required_name: args["value"]}
+
+
+def _looks_like_job_id(value: str) -> bool:
+    text = (value or "").strip()
+    return bool(re.fullmatch(r"\d+(?:_\d+|_\[\d+(?:-\d+)?\])?", text))
+
+
+def _job_id_list_is_valid(value: Any) -> bool:
+    parts = [p.strip() for p in str(value or "").split(",") if p.strip()]
+    return bool(parts) and all(_looks_like_job_id(p) for p in parts)
+
+
+def _runtime_threshold_hours(text: str) -> float | None:
+    match = re.search(
+        r"\b(?:over|more than|longer than|above|exceed(?:ing)?)\s*(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b",
+        text or "",
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return None
+
+
+def _requires_submission_time_evidence(text: str) -> bool:
+    lowered = (text or "").lower()
+    return "submitted" in lowered and any(token in lowered for token in ("before", "after", "older than", "newer than"))
+
+
+def _has_submission_time_evidence(text: str) -> bool:
+    """Return True only when discovery output contains a real submit/eligible timestamp."""
+    haystack = text or ""
+    if re.search(
+        r"\b(?:SubmitTime|EligibleTime|submit_time|eligible_time)\s*[=:]\s*\d{4}-\d{2}-\d{2}",
+        haystack,
+        flags=re.IGNORECASE,
+    ):
+        return True
+    if re.search(
+        r"\b(?:submitted|eligible)\b[^\n]*(?:\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}:\d{2})",
+        haystack,
+        flags=re.IGNORECASE,
+    ):
+        return True
+    return False
+
+
+def _action_requires_precondition_evidence(text: str) -> bool:
+    """Return True when a destructive action is conditional on state/time evidence."""
+    return _runtime_threshold_hours(text) is not None or _requires_submission_time_evidence(text)
+
+
+def _parse_runtime_seconds(value: str) -> int | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    days = 0
+    if "-" in text:
+        day_text, text = text.split("-", 1)
+        if not day_text.isdigit():
+            return None
+        days = int(day_text)
+    parts = text.split(":")
+    try:
+        if len(parts) == 3:
+            hours, minutes, seconds = map(int, parts)
+        elif len(parts) == 2:
+            hours = 0
+            minutes, seconds = map(int, parts)
+        else:
+            return None
+    except ValueError:
+        return None
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
+
+
+def _extract_job_runtimes(squeue_output: str) -> dict[str, int]:
+    runtimes: dict[str, int] = {}
+    for raw_line in (squeue_output or "").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("JOBID") or set(line) <= {"-"}:
+            continue
+        columns = line.split()
+        if len(columns) < 5 or not _looks_like_job_id(columns[0]):
+            continue
+        seconds = _parse_runtime_seconds(columns[4])
+        if seconds is not None:
+            runtimes[columns[0]] = seconds
+    return runtimes
+
+
+def _block_operator_action(ctx_obj: Any, reason: str) -> str:
+    if ctx_obj is not None and hasattr(ctx_obj, "mark_operator_blocked"):
+        ctx_obj.mark_operator_blocked(reason)
+    return f"❌ Action blocked: {reason}"
 
 
 async def _mcp_call(base: str, tool_name: str, arguments: dict) -> list:
@@ -59,10 +203,12 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
     for dtool in dangerous_tools:
         def _make_invoke(captured_name: str, required_args: set):
             async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
-                try:
-                    args = json.loads(args_json) if args_json else {}
-                except Exception:
-                    args = {}
+                args = _coerce_single_required_arg(_parse_tool_args(args_json), required_args)
+                ctx_obj = ctx.context if hasattr(ctx, "context") else None
+
+                blocked_reason = str(getattr(ctx_obj, "operator_blocked_reason", "") or "").strip()
+                if blocked_reason:
+                    return _block_operator_action(ctx_obj, blocked_reason)
 
                 # Early validation: reject missing required args with actionable message
                 missing = [k for k in required_args if not args.get(k)]
@@ -74,10 +220,38 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                             ' Example: sbatch(script="train.sh") or '
                             'sbatch(script="/tmp/slurm_uploads/train.sh").'
                         )
-                    return (
-                        f"❌ {captured_name}() — missing required: {', '.join(missing)}. "
-                        f"Provide: {hint}.{extra}"
+                    return _block_operator_action(
+                        ctx_obj,
+                        f"{captured_name}() is missing required fields: {', '.join(missing)}. "
+                        f"Provide: {hint}.{extra}",
                     )
+
+                if "job_id" in args and not _job_id_list_is_valid(args.get("job_id")):
+                    return _block_operator_action(
+                        ctx_obj,
+                        "Job actions require concrete Slurm numeric job IDs; unresolved labels or invalid IDs are not executable.",
+                    )
+
+                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                discovery_output = str(getattr(ctx_obj, "operator_last_discovery_output", "") or "")
+                if captured_name == "scancel" and _requires_submission_time_evidence(action_request):
+                    if not _has_submission_time_evidence(discovery_output):
+                        return _block_operator_action(
+                            ctx_obj,
+                            "Submission-time condition was not proven by discovery results; refusing destructive action.",
+                        )
+
+                threshold_h = _runtime_threshold_hours(action_request)
+                if captured_name == "scancel" and threshold_h is not None:
+                    job_ids = [p.strip() for p in str(args.get("job_id", "")).split(",") if p.strip()]
+                    runtimes = _extract_job_runtimes(discovery_output)
+                    threshold_s = threshold_h * 3600
+                    eligible = [jid for jid in job_ids if runtimes.get(jid, -1) > threshold_s]
+                    if not job_ids or len(eligible) != len(job_ids):
+                        return _block_operator_action(
+                            ctx_obj,
+                            "Conditional runtime action was not proven eligible by the latest discovery results.",
+                        )
 
                 args_str    = ", ".join(f"{k}={v}" for k, v in args.items()) if args else ""
                 description = f"{captured_name}({args_str})"
@@ -92,8 +266,8 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                     if is_error:
                         return f"❌ {description}: {text}"
                     # Track that the Operator actually executed an action tool
-                    if hasattr(ctx, 'context') and hasattr(ctx.context, 'mark_operator_action'):
-                        ctx.context.mark_operator_action()
+                    if ctx_obj is not None and hasattr(ctx_obj, 'mark_operator_action'):
+                        ctx_obj.mark_operator_action()
                     return f"✅ {description}: {text}"
                 except Exception as exc:
                     logger.error(f"Action failed: {description}: {exc}")
@@ -103,6 +277,8 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
         def _make_is_enabled(captured_name: str):
             def _is_enabled(run_ctx, _agent) -> bool:
                 ctx_obj = run_ctx.context if hasattr(run_ctx, "context") else None
+                if bool(getattr(ctx_obj, "operator_blocked_reason", "") or ""):
+                    return False
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
                 if not required:
                     return True
@@ -148,10 +324,7 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
 
         def _make_invoke(captured_name: str, required_args: set):
             async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
-                try:
-                    args = json.loads(args_json) if args_json else {}
-                except Exception:
-                    args = {}
+                args = _coerce_single_required_arg(_parse_tool_args(args_json), required_args)
 
                 missing = [k for k in required_args if not args.get(k)]
                 if missing:
@@ -162,11 +335,16 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                     )
 
                 ctx_obj = ctx.context if hasattr(ctx, "context") else None
+                blocked_reason = str(getattr(ctx_obj, "operator_blocked_reason", "") or "").strip()
+                if blocked_reason:
+                    return blocked_reason
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
                 targets = list(getattr(ctx_obj, "operator_targets", []) or [])
                 discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
+                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                needs_evidence = _action_requires_precondition_evidence(action_request)
 
-                if required and targets:
+                if required and targets and not needs_evidence:
                     return (
                         "❌ Discovery read tools are disabled for explicit targets. "
                         "Execute the required action tool now."
@@ -183,11 +361,13 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                     text = " ".join(
                         getattr(c, "text", "") for c in content if hasattr(c, "text")
                     ).strip() or "No output"
-                    if hasattr(ctx_obj, "mark_operator_discovery"):
+                    if ctx_obj is not None and hasattr(ctx_obj, "mark_operator_discovery"):
                         ctx_obj.mark_operator_discovery()
+                    if ctx_obj is not None and hasattr(ctx_obj, "record_operator_discovery_output"):
+                        ctx_obj.record_operator_discovery_output(text)
                     lowered = text.lower()
                     if "no jobs found" in lowered or "no matching jobs" in lowered:
-                        if hasattr(ctx_obj, "mark_no_targets_found"):
+                        if ctx_obj is not None and hasattr(ctx_obj, "mark_no_targets_found"):
                             ctx_obj.mark_no_targets_found()
                     return text
                 except Exception as exc:
@@ -200,9 +380,12 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                 ctx_obj = run_ctx.context if hasattr(run_ctx, "context") else None
                 if ctx_obj is None:
                     return True
+                if bool(getattr(ctx_obj, "operator_blocked_reason", "") or ""):
+                    return False
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
                 targets = list(getattr(ctx_obj, "operator_targets", []) or [])
-                if required and targets:
+                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                if required and targets and not _action_requires_precondition_evidence(action_request):
                     return False
                 discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
                 return discovery_calls < 1
@@ -260,7 +443,7 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
 
     def _parse_limit(raw_limit: object, default: int = 12) -> int:
         try:
-            n = int(raw_limit)
+            n = int(str(raw_limit))
         except Exception:
             n = default
         return max(1, min(50, n))
@@ -277,14 +460,12 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
         if not sorted_names:
             return "No local skill guides are loaded."
 
-        try:
-            args = json.loads(args_json) if args_json else {}
-        except json.JSONDecodeError:
-            args = {}
+        args = _parse_tool_args(args_json)
 
+        raw_value = str(args.get("value", "")).strip()
         raw_mode = str(args.get("mode", "")).strip().lower()
         query = str(args.get("query", "")).strip()
-        title = str(args.get("title") or args.get("skill_name") or "").strip()
+        title = str(args.get("title") or args.get("skill_name") or raw_value or "").strip()
         limit = _parse_limit(args.get("limit", 12))
 
         if raw_mode and raw_mode not in {"list", "search", "read"}:
@@ -421,10 +602,7 @@ def make_manage_todos_tool(todo: TodoTracker) -> FunctionTool:
     """
 
     async def _invoke(ctx, args_json: str) -> str:
-        try:
-            args = json.loads(args_json) if args_json else {}
-        except json.JSONDecodeError:
-            args = {}
+        args = _parse_tool_args(args_json)
 
         todo_list = args.get("todoList", [])
         if not isinstance(todo_list, list):

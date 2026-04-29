@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const EVAL_URL = 'http://10.0.0.1:8080'
+const evalHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+const EVAL_URL = `http://${evalHost}:8080`
 const LS_OPTS_KEY = 'evalPage.opts.v1'
 const LS_FILTERS_KEY = 'evalPage.filters.v1'
 
@@ -718,12 +719,13 @@ export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = t
           <aside className="eval-admin-sidebar">
             <div className="eval-admin-head">
               <div>
-                <h3 className="eval-section-title" style={{ marginBottom: 2 }}>Admin Terminal</h3>
+                <h3 className="eval-section-title" style={{ marginBottom: 2 }}>Human Eval Terminal</h3>
                 <div className="eval-admin-sub">
                   {terminalTestId
                     ? `Context: ${terminalTestId} (isolated per test)`
                     : 'Select a test to start terminal'}
                 </div>
+                <div className="eval-admin-sub">On smaller screens this panel moves below the detail view.</div>
               </div>
               <select
                 className="eval-admin-select"

@@ -679,13 +679,17 @@ def _get_nodes():
 def _fmt_jobs(jobs: list) -> str:
     if not jobs:
         return "No jobs found."
-    lines = ["JOBID    NAME                USER     STATE     TIME      NODES CPUS MEM  PARTITION"]
+    has_submit_time = any(j.get("submit_time") or j.get("SubmitTime") for j in jobs)
+    suffix = "  SUBMIT_TIME" if has_submit_time else ""
+    lines = ["JOBID    NAME                USER     STATE     TIME      NODES CPUS MEM  PARTITION" + suffix]
     lines.append("-" * 88)
     for j in jobs:
+        submit_time = j.get("submit_time") or j.get("SubmitTime") or ""
+        submit_part = f"  {submit_time}" if has_submit_time else ""
         lines.append(
             f"{j.get('job_id','?'):<8} {j.get('name','?'):<20} {j.get('user','?'):<8} "
             f"{j.get('state','?'):<9} {j.get('time','?'):<9} {j.get('nodes','?'):<5} "
-            f"{j.get('cpus','?'):<4} {j.get('mem','?'):<4} {j.get('partition','?')}"
+            f"{j.get('cpus','?'):<4} {j.get('mem','?'):<4} {j.get('partition','?')}{submit_part}"
         )
     return "\n".join(lines)
 
@@ -710,6 +714,7 @@ def squeue(user: str = "", state: str = "", partition: str = "", job_id: str = "
     """Show current job queue with JOBID, name, user, state, time, resources.
     Filter: user="alice", state="RUNNING|PENDING|FAILED|COMPLETED", partition="gpu", job_id="1001".
     Returns pipe-delimited table. job_id returns info for a specific job (or 'No such job' if not found)."""
+    normalized_state = re.sub(r"\s*[|]\s*", ",", str(state or "").strip())
     if REAL_MODE:
         cmd = [
             "squeue",
@@ -717,7 +722,7 @@ def squeue(user: str = "", state: str = "", partition: str = "", job_id: str = "
             "--noheader",
         ]
         if user: cmd += ["--user", user]
-        if state: cmd += ["--state", state]
+        if normalized_state: cmd += ["--state", normalized_state]
         if partition: cmd += ["--partition", partition]
         if job_id: cmd += ["--jobs", job_id]
         raw = _run_cmd(cmd)
@@ -728,9 +733,10 @@ def squeue(user: str = "", state: str = "", partition: str = "", job_id: str = "
     jobs = _jobs()
     if user:
         jobs = [j for j in jobs if j.get("user", "").lower() == user.lower()]
-    if state:
-        wanted_states = {s.strip().upper() for s in str(state).split(",") if s.strip()}
-        jobs = [j for j in jobs if j.get("state", "").upper() in wanted_states]
+    if normalized_state:
+        wanted_states = {s.strip().upper() for s in normalized_state.split(",") if s.strip()}
+        if wanted_states != {"ALL"}:
+            jobs = [j for j in jobs if j.get("state", "").upper() in wanted_states]
     else:
         # Match real-world squeue behavior: hide terminal jobs by default.
         terminal_states = {"CANCELLED", "COMPLETED", "FAILED", "TIMEOUT"}
@@ -866,6 +872,7 @@ def scontrol_show(entity: str = "job", id: str = "") -> str:
             f"   MinMemoryNode={j.get('mem','0')}\n"
             f"   Partition={j.get('partition','?')}\n"
             f"   RunTime={j.get('time','0:00:00')}\n"
+            f"   SubmitTime={j.get('submit_time') or j.get('SubmitTime') or 'Unknown'}\n"
             f"   ExitCode={j.get('exit_code','0:0')}"
         )
     elif entity.lower() == "node":

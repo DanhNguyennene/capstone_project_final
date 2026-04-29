@@ -480,6 +480,82 @@ def _handle_skill_command(user_message: str) -> Optional[Dict[str, str]]:
     return {"rewritten_message": rewritten}
 
 
+def _direct_intent_response(user_message: str) -> Optional[str]:
+    """Deterministic front-door handling for prompts that should not spend a tool call.
+
+    This is not an evaluator shortcut: these are generic safety and UX policies
+    that should hold before any model/tool orchestration starts.
+    """
+    raw = (user_message or "").strip()
+    lowered = raw.lower()
+    if not lowered:
+        return None
+    has_numeric_job_id = bool(re.search(r"\b\d+(?:_\d+|_\[\d+(?:-\d+)?\])?\b", raw))
+
+    # Capability/help prompts should be answered directly. They are not cluster
+    # state queries and forcing a tool call makes the system brittle.
+    if lowered in {"help", "what can you help me with?", "what can you do?", "capabilities"}:
+        return (
+            "I can help with Slurm jobs, queues, nodes, partitions, licenses, reservations, "
+            "accounting/usage reports, and scheduler diagnostics. I can also route safe, "
+            "approval-gated actions such as submit, cancel, hold, release, requeue, and node or reservation changes."
+        )
+
+    # Broad tutorial/how-to prompts should be answered without local runbook
+    # retrieval unless the user explicitly asks for docs/runbook/manual text.
+    if re.fullmatch(r"(?:slurm\s+)?(?:tutorial|guide|overview|how\s+to|how-to)", lowered):
+        return (
+            "Slurm tutorial overview: write a batch script with `#SBATCH` resource requests, "
+            "submit it with `sbatch`, monitor with `squeue`, inspect details with `scontrol show job`, "
+            "review history with `sacct`, and cancel with `scancel` when needed. For jobs, start by "
+            "choosing partition, time limit, CPU/GPU count, memory, and output/error paths."
+        )
+
+    # Deictic action targets without prior context should not be executed.
+    deictic_phrases = (
+        "that job", "this job", "that node", "this node", "that one",
+        "cancel it", "stop it", "kill it", "hold it", "release it", "requeue it",
+        "suspend it", "resume it",
+    )
+    if not has_numeric_job_id and any(phrase in lowered for phrase in deictic_phrases):
+        if any(verb in lowered for verb in ("cancel", "stop", "kill", "hold", "release", "requeue", "drain", "resume")):
+            target_kind = "node name" if "node" in lowered else "job ID"
+            return f"Which {target_kind} should I target? Please provide the concrete identifier."
+
+    # Invalid scalar job IDs are not ambiguous executable targets. Be explicit
+    # that they are invalid, then ask for a concrete numeric Slurm ID.
+    invalid_job = None
+    if not has_numeric_job_id:
+        invalid_job = re.search(
+            r"\b(?:cancel|stop|kill|hold|release|requeue|resume|suspend)\s+job\s+([A-Za-z][A-Za-z0-9_.:-]*)\b",
+            raw,
+            flags=re.IGNORECASE,
+        )
+        if invalid_job is None:
+            invalid_job = re.search(
+                r"\b(?:cancel|stop|kill|hold|release|requeue|resume|suspend)\s+([A-Za-z][A-Za-z0-9_.:-]*)\b",
+                raw,
+                flags=re.IGNORECASE,
+            )
+    if invalid_job and not any(word in lowered for word in (" all ", " every ", " any ")):
+        bad_id = invalid_job.group(1)
+        non_id_words = {
+            "job", "jobs", "the", "it", "this", "that", "one", "everything",
+            "all", "every", "any", "queue", "partition", "gpu", "cpu", "running",
+            "pending", "failed", "waiting", "hold",
+        }
+        if bad_id.lower() not in non_id_words and not re.fullmatch(r"\d+(?:_\d+|_\[\d+(?:-\d+)?\])?", bad_id):
+            return f"Invalid job ID `{bad_id}`. Slurm job IDs must be numeric. Which job ID should I use?"
+
+    # Node actions without a concrete node name are unsafe; ask for the target.
+    node_action = any(token in lowered for token in ("drain", "maintenance", "resume", "power down", "power up"))
+    concrete_node = bool(re.search(r"\b[a-z0-9_.-]*node[a-z0-9_.-]*\b", lowered))
+    if node_action and "node" in lowered and not concrete_node:
+        return "Which node should I target? Please provide the concrete node name."
+
+    return None
+
+
 async def _describe_image(
     path: str,
     llm_provider: Optional[str] = None,
@@ -687,6 +763,12 @@ async def chat(request: ChatRequest, raw_request: Request):
             return _direct_completion(msg)
         if skill_cmd.get("rewritten_message"):
             user_message = str(skill_cmd["rewritten_message"])
+
+    direct_intent = _direct_intent_response(user_message)
+    if direct_intent is not None:
+        if request.stream:
+            return StreamingResponse(_direct_stream(direct_intent), media_type="text/event-stream")
+        return _direct_completion(direct_intent)
 
     user_message = _preprocess_attachments(user_message)
     user_message = await _augment_with_image_descriptions(

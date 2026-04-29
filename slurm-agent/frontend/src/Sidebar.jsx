@@ -1,5 +1,7 @@
 export default function Sidebar({
-  open, sessions, activeId, onNew, onSelect, onDelete, mcpUrl, onMcpUrlChange,
+  open, sessions, activeId, onNew, onSelect, onDelete,
+  agentUrl, onAgentUrlChange,
+  mcpUrl, onMcpUrlChange,
   llmProvider,
   onLlmProviderChange,
   mainModel,
@@ -82,6 +84,16 @@ export default function Sidebar({
       )}
 
       <div className="sidebar-footer">
+        <label className="footer-label">Agent API</label>
+        <input
+          className="url-input"
+          type="text"
+          value={agentUrl}
+          onChange={e => onAgentUrlChange(e.target.value)}
+          placeholder="http://localhost:8000"
+          spellCheck={false}
+        />
+
         <label className="footer-label">MCP Server</label>
         <input
           className="url-input"

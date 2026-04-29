@@ -34,9 +34,13 @@ const OPENAI_MODEL_OPTIONS = [
   'o4-mini',
 ]
 
+const browserHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+const defaultAgentUrl = `http://${browserHost}:8000`
+const defaultMcpUrl = `http://${browserHost}:3002`
+
 export default function App() {
-  const [agentUrl]    = useState(() => localStorage.getItem(URL_KEY) || 'http://localhost:8000')
-  const [mcpUrl,      setMcpUrl]      = useState(() => localStorage.getItem(MCP_URL_KEY) || 'http://localhost:3002')
+  const [agentUrl,    setAgentUrl]    = useState(() => localStorage.getItem(URL_KEY) || defaultAgentUrl)
+  const [mcpUrl,      setMcpUrl]      = useState(() => localStorage.getItem(MCP_URL_KEY) || defaultMcpUrl)
   const [llmProvider, setLlmProvider] = useState(() => localStorage.getItem(LLM_PROVIDER_KEY) || 'ollama')
   const [ollamaMainModel, setOllamaMainModel] = useState(() => localStorage.getItem(OLLAMA_MODEL_KEY) || 'qwen3.5:9b')
   const [openaiMainModel, setOpenaiMainModel] = useState(() => localStorage.getItem(OPENAI_MODEL_KEY) || 'gpt-4o-mini')
@@ -154,6 +158,8 @@ export default function App() {
         onNew={createSession}
         onSelect={selectSession}
         onDelete={deleteSession}
+        agentUrl={agentUrl}
+        onAgentUrlChange={setAgentUrl}
         mcpUrl={mcpUrl}
         onMcpUrlChange={setMcpUrl}
         llmProvider={llmProvider}
