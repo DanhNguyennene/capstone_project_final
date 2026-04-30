@@ -99,7 +99,7 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
-_OPERATOR_READ_TOOLS = {"scontrol_show", "squeue"}
+_OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo"}
 _OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
 
 

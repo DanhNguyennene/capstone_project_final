@@ -106,6 +106,10 @@ def _requires_submission_time_evidence(text: str) -> bool:
 def _has_submission_time_evidence(text: str) -> bool:
     """Return True only when discovery output contains a real submit/eligible timestamp."""
     haystack = text or ""
+    if re.search(r"\b(?:SUBMIT[_ ]?TIME|ELIGIBLE[_ ]?TIME)\b", haystack, flags=re.IGNORECASE) and re.search(
+        r"\b\d{4}-\d{2}-\d{2}", haystack
+    ):
+        return True
     if re.search(
         r"\b(?:SubmitTime|EligibleTime|submit_time|eligible_time)\s*[=:]\s*\d{4}-\d{2}-\d{2}",
         haystack,
@@ -165,6 +169,101 @@ def _extract_job_runtimes(squeue_output: str) -> dict[str, int]:
     return runtimes
 
 
+def _extract_script_paths(text: str) -> list[str]:
+    seen: set[str] = set()
+    scripts: list[str] = []
+    for match in re.finditer(r"(?<![\w./-])([\w./-]+\.sh)(?![\w./-])", text or ""):
+        script = match.group(1).strip()
+        if script and script not in seen:
+            seen.add(script)
+            scripts.append(script)
+    return scripts
+
+
+def _extract_squeue_rows(squeue_output: str) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    headers: list[str] = []
+    for raw_line in (squeue_output or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("JOBID"):
+            headers = [h.upper() for h in line.split()]
+            continue
+        if not headers or set(line) <= {"-"}:
+            continue
+        parts = line.split()
+        if len(parts) < 4 or not _looks_like_job_id(parts[0]):
+            continue
+        row = {headers[i]: parts[i] for i in range(min(len(headers), len(parts)))}
+        rows.append(row)
+    return rows
+
+
+def _filter_rows_for_action(action_request: str, rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    lowered = (action_request or "").lower()
+    result: list[dict[str, str]] = []
+    threshold_h = _runtime_threshold_hours(action_request)
+    threshold_s = threshold_h * 3600 if threshold_h is not None else None
+
+    for row in rows:
+        state = row.get("STATE", "").upper()
+        user = row.get("USER", "").lower()
+        partition = row.get("PARTITION", "").lower()
+        runtime = _parse_runtime_seconds(row.get("TIME", ""))
+
+        if "pending" in lowered and state != "PENDING":
+            continue
+        if "running" in lowered and state != "RUNNING":
+            continue
+        if "active" in lowered and state not in {"RUNNING", "PENDING"}:
+            continue
+        if "gpu" in lowered and partition != "gpu":
+            continue
+        if "cpu" in lowered and partition != "cpu":
+            continue
+        if user and re.search(rf"\b{re.escape(user)}\b", lowered) is None:
+            known_users = {r.get("USER", "").lower() for r in rows if r.get("USER")}
+            mentioned_known_user = any(re.search(rf"\b{re.escape(u)}\b", lowered) for u in known_users)
+            if mentioned_known_user:
+                continue
+        if threshold_s is not None and (runtime is None or runtime <= threshold_s):
+            continue
+        result.append(row)
+    return result
+
+
+def _should_expand_broad_job_scope(action_request: str) -> bool:
+    padded = f" {(action_request or '').lower()} "
+    markers = (
+        " all ", " every ", " each ", " active ", " running ", " pending ",
+        " gpu ", " cpu ", " partition ", " submitted ", " before ", " after ",
+    )
+    return any(marker in padded for marker in markers)
+
+
+def _expand_broad_job_args(tool_name: str, args: dict[str, Any], action_request: str, discovery_output: str) -> dict[str, Any]:
+    if tool_name not in {"scancel", "scontrol_hold", "scontrol_release", "scontrol_requeue"}:
+        return args
+    if not _should_expand_broad_job_scope(action_request):
+        return args
+    rows = _extract_squeue_rows(discovery_output)
+    if not rows:
+        return args
+    selected = _filter_rows_for_action(action_request, rows)
+    if not selected:
+        return args
+    ids = [row["JOBID"] for row in selected if row.get("JOBID")]
+    if not ids:
+        return args
+    current = [p.strip() for p in str(args.get("job_id", "")).split(",") if p.strip()]
+    merged = []
+    for job_id in current + ids:
+        if job_id and job_id not in merged:
+            merged.append(job_id)
+    return {**args, "job_id": ",".join(merged)}
+
+
 def _block_operator_action(ctx_obj: Any, reason: str) -> str:
     if ctx_obj is not None and hasattr(ctx_obj, "mark_operator_blocked"):
         ctx_obj.mark_operator_blocked(reason)
@@ -178,6 +277,12 @@ async def _mcp_call(base: str, tool_name: str, arguments: dict) -> list:
             await session.initialize()
             result = await session.call_tool(tool_name, arguments)
             return result.content
+
+
+def _content_text(content: list) -> str:
+    return " ".join(
+        getattr(c, "text", "") for c in content if hasattr(c, "text")
+    ).strip() or "done"
 
 
 # ── Dangerous-action queuing tools (built from discovered schemas) ────────────
@@ -210,6 +315,10 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                 if blocked_reason:
                     return _block_operator_action(ctx_obj, blocked_reason)
 
+                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                discovery_output = str(getattr(ctx_obj, "operator_last_discovery_output", "") or "")
+                args = _expand_broad_job_args(captured_name, args, action_request, discovery_output)
+
                 # Early validation: reject missing required args with actionable message
                 missing = [k for k in required_args if not args.get(k)]
                 if missing:
@@ -232,8 +341,37 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                         "Job actions require concrete Slurm numeric job IDs; unresolved labels or invalid IDs are not executable.",
                     )
 
-                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
-                discovery_output = str(getattr(ctx_obj, "operator_last_discovery_output", "") or "")
+                if captured_name == "sbatch":
+                    scripts = _extract_script_paths(action_request)
+                    provided_script = str(args.get("script", "") or "").strip()
+                    if len(scripts) > 1:
+                        ordered_scripts = []
+                        for script in [provided_script] + scripts:
+                            if script and script in scripts and script not in ordered_scripts:
+                                ordered_scripts.append(script)
+                        outputs: list[str] = []
+                        had_success = False
+                        for script in ordered_scripts:
+                            call_args = {**args, "script": script}
+                            args_str = ", ".join(f"{k}={v}" for k, v in call_args.items())
+                            description = f"{captured_name}({args_str})"
+                            logger.info(f"Executing approved action: {description}")
+                            try:
+                                text = _content_text(await _mcp_call(base, captured_name, call_args))
+                            except Exception as exc:
+                                logger.error(f"Action failed: {description}: {exc}")
+                                outputs.append(f"❌ {description}: {exc}")
+                                continue
+                            is_error = any(w in text.lower() for w in ("error", "failed", "invalid", "not found"))
+                            if is_error:
+                                outputs.append(f"❌ {description}: {text}")
+                            else:
+                                had_success = True
+                                outputs.append(f"✅ {description}: {text}")
+                        if had_success and ctx_obj is not None and hasattr(ctx_obj, 'mark_operator_action'):
+                            ctx_obj.mark_operator_action()
+                        return "\n".join(outputs) or "done"
+
                 if captured_name == "scancel" and _requires_submission_time_evidence(action_request):
                     if not _has_submission_time_evidence(discovery_output):
                         return _block_operator_action(
@@ -258,9 +396,7 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                 logger.info(f"Executing approved action: {description}")
                 try:
                     content = await _mcp_call(base, captured_name, args)
-                    text = " ".join(
-                        getattr(c, "text", "") for c in content if hasattr(c, "text")
-                    ).strip() or "done"
+                    text = _content_text(content)
                     # Detect MCP-level errors returned as text
                     is_error = any(w in text.lower() for w in ("error", "failed", "invalid", "not found"))
                     if is_error:
@@ -319,7 +455,7 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
     result: List[FunctionTool] = []
 
     for rtool in read_tools:
-        if rtool.name not in {"squeue", "scontrol_show"}:
+        if rtool.name not in {"squeue", "scontrol_show", "sinfo"}:
             continue
 
         def _make_invoke(captured_name: str, required_args: set):

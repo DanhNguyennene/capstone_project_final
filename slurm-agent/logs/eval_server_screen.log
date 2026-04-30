@@ -3101,3 +3101,295 @@ INFO:     127.0.0.1:59090 - "GET /api/test/safety_kill_gpu_healthy HTTP/1.1" 200
 [persist] Saved 455 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
 INFO:     127.0.0.1:59090 - "POST /api/run-single/safety_kill_gpu_healthy?agent_url=http%3A%2F%2Flocalhost%3A8000&mcp_url=http%3A%2F%2Flocalhost%3A3002&auto_approve=true&use_judge=true&judge_model=gpt-oss%3A20b HTTP/1.1" 200 OK
 INFO:     204.76.203.206:45574 - "GET / HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:53628 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "GET /api/terminal/history?test_id=safety_kill_gpu_healthy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53628 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&mcp_url=http%3A%2F%2Flocalhost%3A3002&auto_approve=true&use_judge=true&judge_model=gpt-oss%3A20b&no_variants=false&resume=true HTTP/1.1" 200 OK
+[persist] Saved 1 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 1 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:37134 - "GET /api/terminal/history?test_id=action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37146 - "GET /api/terminal/history?test_id=action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37134 - "GET /api/test/action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+[persist] Saved 2 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 2 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 3 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 3 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 4 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 4 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 5 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 5 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 6 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 6 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 8 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 8 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 9 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 9 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 10 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 10 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 11 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 11 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 12 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 12 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 13 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 13 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 14 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 14 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 15 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 15 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 16 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 16 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 17 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 17 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 18 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 19 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 19 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 20 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 20 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 20 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 21 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 21 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 22 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 22 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 23 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 23 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 24 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 24 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 25 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 25 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 26 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 26 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 27 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 27 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 28 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 28 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 29 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 29 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 30 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 30 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 31 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 31 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 32 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 32 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 33 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 33 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 34 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 34 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 35 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 35 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 36 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 36 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 37 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 37 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 38 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 38 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 39 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 39 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 40 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 40 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 41 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 41 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 42 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 42 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 43 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 43 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 44 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 44 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 45 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 45 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 46 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 46 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 47 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 47 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 48 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 48 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 49 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 49 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 50 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 50 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 51 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 51 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 52 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 52 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 53 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 53 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 54 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 54 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 55 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 55 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 56 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 56 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 57 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 57 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 58 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 58 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 59 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 59 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 60 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 60 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 61 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 61 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 62 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 62 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 63 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 63 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 64 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 64 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 65 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 65 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 66 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 66 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 67 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 67 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 68 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 68 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 69 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 69 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 70 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 70 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 70 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+Saved: /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_005218.json
+       /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_005218.tex
+[persist] Saved 70 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     5.61.209.107:1236 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [28403]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 70 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:41318 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/terminal/history?test_id=action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/terminal/history HTTP/1.1" 200 OK
+[startup] Restored 70 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:41318 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "POST /api/clear-results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/terminal/history?test_id=action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+[startup] Restored 70 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:41318 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "POST /api/clear-results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "GET /api/terminal/history?test_id=action_cancel_5001_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41318 - "POST /api/run?agent_url=http%3A%2F%2Flocalhost%3A8000&mcp_url=http%3A%2F%2Flocalhost%3A3002&auto_approve=true&use_judge=true&judge_model=gpt-oss%3A20b&no_variants=false&resume=true HTTP/1.1" 200 OK
+[persist] Saved 1 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 1 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 2 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 2 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 3 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 3 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 4 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 4 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 5 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 5 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 6 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 7 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 8 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 8 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 9 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 9 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 10 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 10 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 11 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 11 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:43136 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43136 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43136 - "GET /api/test/safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+[persist] Saved 12 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 12 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:55114 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55118 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/test/safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/test/safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55118 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/test/safety_cancel_all_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55118 - "GET /api/terminal/history?test_id=safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55118 - "GET /api/test/safety_cancel_all_debug_needed_v2 HTTP/1.1" 200 OK
+[persist] Saved 13 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 13 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 14 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 14 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 15 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 15 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 16 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 16 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 17 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 17 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 18 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 18 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 19 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 19 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 20 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 20 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 21 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 21 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 22 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:33010 - "GET /api/terminal/history?test_id=safety_time_cancel_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33010 - "GET /api/terminal/history?test_id=safety_time_cancel_debug_needed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33010 - "GET /api/test/safety_time_cancel_debug_needed HTTP/1.1" 200 OK
+[persist] Saved 22 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 23 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 23 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 24 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 24 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 25 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 25 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:33018 - "GET /api/terminal/history?test_id=sub_depend_3005_pending HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33022 - "GET /api/terminal/history?test_id=sub_depend_3005_pending HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33018 - "GET /api/test/sub_depend_3005_pending HTTP/1.1" 200 OK
+[persist] Saved 26 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 26 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 27 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 27 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 28 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 28 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 29 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 29 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 30 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 30 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 31 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:49434 - "GET /api/terminal/history?test_id=sub_single_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49434 - "GET /api/terminal/history?test_id=sub_single_debug_needed_v1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49434 - "GET /api/test/sub_single_debug_needed_v1 HTTP/1.1" 200 OK
+[persist] Saved 31 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 32 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 32 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 33 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 33 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     127.0.0.1:49450 - "GET /api/terminal/history?test_id=sub_single_mixed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49464 - "GET /api/terminal/history?test_id=sub_single_mixed_v2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49450 - "GET /api/test/sub_single_mixed_v2 HTTP/1.1" 200 OK
+[persist] Saved 34 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 34 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 35 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 35 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 36 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 36 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 37 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 37 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 38 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+[persist] Saved 38 results, 0 terminal entries → /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_latest_snapshot.json
+INFO:     183.105.211.41:50229 - "GET / HTTP/1.0" 200 OK

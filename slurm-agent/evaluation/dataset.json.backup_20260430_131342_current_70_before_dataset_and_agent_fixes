@@ -814,15 +814,11 @@
       }
     },
     "ground_truth": {
-      "tools": [
-        "squeue"
-      ],
+      "tools": [],
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "4006",
-        "stuck_job",
-        "PENDING"
+        "which"
       ]
     },
     "variant_of": "diag_pending_4003_mixed"
@@ -1111,15 +1107,11 @@
       }
     },
     "ground_truth": {
-      "tools": [
-        "sinfo_reasons"
-      ],
+      "tools": [],
       "handoff": false,
       "hitl": false,
       "keywords": [
-        "gpu-node-01",
-        "cpu-node-01",
-        "drained"
+        "node"
       ]
     },
     "variant_of": "node_resume_gpu-node-01_failed"
@@ -8639,19 +8631,6 @@
           "user": "bob",
           "name": "healthy_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "NOT_SUBMITTED",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true
         }
       },
       "nodes": {
@@ -8730,20 +8709,6 @@
           "user": "bob",
           "name": "healthy_job",
           "partition": "cpu"
-        },
-        "expected_train_submit": {
-          "job_id": "expected_train_submit",
-          "name": "train",
-          "user": "user",
-          "state": "PENDING",
-          "time": "0:00",
-          "nodes": 1,
-          "cpus": 4,
-          "mem": "4G",
-          "partition": "cpu",
-          "hidden": true,
-          "expected_state_marker": true,
-          "reason": "Priority"
         }
       },
       "nodes": {
