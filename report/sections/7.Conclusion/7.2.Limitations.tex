@@ -1,31 +1,37 @@
 \section{Limitations}
 \label{sec:limitations}
 
-The current Slurm Agent demonstrates promising behavior, but several limitations remain before production-grade deployment.
+The current Slurm Agent demonstrates promising behavior on the curated benchmark, but it is not guaranteed to handle arbitrary Slurm requests. Several limitations remain before claims of broad robustness or production-grade deployment would be justified.
 
 \subsection{Evaluation Realism Limitations}
 
 \textbf{Mock-state dominance.} The benchmark primarily uses deterministic mock scenarios. This is valuable for reproducibility, but does not fully capture live cluster volatility, scheduler dynamics, and user concurrency.
 
-\textbf{Single benchmark snapshot emphasis.} Current reporting centers on the latest full snapshot. Broader confidence intervals across repeated full runs are not yet fully reported in the thesis body.
+\textbf{Curated-benchmark emphasis.} The 93.6\% pass rate is measured on the curated 455-case benchmark. Because this benchmark informed development, it should not be interpreted as proof that the agent is robust to all Slurm phrasings or workflows.
+
+\textbf{Held-out paraphrase coverage is still small.} A separate 40-case paraphrase/generalization split has been added, but it is a first robustness probe rather than an exhaustive natural-language evaluation.
 
 \textbf{Limited human-subject evaluation.} Automated scoring is comprehensive, but formal user studies with HPC practitioners are still missing.
 
 \subsection{Behavioral Reliability Limitations}
 
-The latest 367-case results expose reliability gaps in specific categories:
+The latest curated 455-case results still expose reliability gaps in specific categories:
 
 \begin{itemize}
-    \item \textbf{multi\_step}: 0\% pass in the latest snapshot,
-    \item \textbf{safety}: 53\% pass,
-    \item \textbf{submission}: 51\% pass.
+    \item \textbf{submission}: 77\% pass in the curated snapshot,
+    \item \textbf{action}: 83\% pass,
+    \item residual failures involving release/update actions, dependency submissions, and strict keyword/scorer alignment.
 \end{itemize}
 
 These failures are predominantly structural (tool/routing/HITL/state mismatches) rather than simple response-text issues.
 
+\textbf{Policy-rail sensitivity.} The system uses explicit handoff policies, required-tool hints, and regex-like intent detection to improve determinism. These choices are useful for safety and evaluation, but can be brittle when users phrase requests differently from the benchmark.
+
 \subsection{Operational Scope Limitations}
 
 \textbf{Read-heavy maturity.} Read and account workflows are stronger than mutation-heavy workflows. Complex write operations still require additional hardening and policy controls.
+
+\textbf{No universal Slurm coverage.} The current implementation covers common monitoring, diagnosis, submission, job-control, and accounting workflows. It does not cover every Slurm plugin, site-specific wrapper, federation policy, reservation convention, or local administrative procedure.
 
 \textbf{Narrow deployment validation.} The current system is validated mainly in development-style environments; multi-cluster and production HPC integration is incomplete.
 
@@ -47,10 +53,13 @@ These failures are predominantly structural (tool/routing/HITL/state mismatches)
 
 \textbf{Judge dependence.} Some quality dimensions rely on LLM-as-judge scoring, which introduces model-dependent variance and potential evaluator bias.
 
+\textbf{Metric interpretation.} The correct claim is that the agent passes 93.6\% on the curated benchmark. Robustness remains partially evaluated until the held-out paraphrase split, repeated runs, and live-cluster user prompts are reported.
+
 \subsection{TODO for Limitation Mitigation}
 
 \begin{itemize}
-    \item Add repeated full-run statistics (pass\textasciicircum{}k and confidence intervals) under fixed model/provider settings.
+    \item Add repeated full-run statistics (pass\textasciicircum{}k and confidence intervals) under the pinned local-Ollama model stack.
+    \item Run and publish the separate 40-case paraphrase/generalization split.
     \item Execute controlled live-cluster pilot tests with strict permission boundaries.
     \item Add production-oriented authz/audit requirements and verification checklist.
 \end{itemize}

@@ -14,7 +14,16 @@ function isPlaceholderJudgeReason(reason) {
   return squashed.length < 10
 }
 
-export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, specialistModel, judgeModel, sidebarOpen = true, onToggleGlobalSidebar = null }) {
+export default function EvalPage({
+  agentUrl,
+  mcpUrl,
+  llmProvider,
+  mainModel,
+  specialistModel,
+  judgeModel,
+  sidebarOpen = true,
+  onToggleGlobalSidebar = null,
+}) {
   const [dataset, setDataset]     = useState([])
   const [results, setResults]     = useState({})
   const [metrics, setMetrics]     = useState(null)
@@ -322,12 +331,12 @@ export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, spe
     const p = new URLSearchParams({
       agent_url: agentUrl,
       mcp_url: mcpUrl,
-      llm_provider: llmProvider,
-      main_model: mainModel,
-      specialist_model: specialistModel,
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
+      llm_provider: llmProvider,
+      main_model: mainModel,
+      specialist_model: specialistModel,
       no_variants: opts.noVariants,
       resume: 'true',
     })
@@ -357,12 +366,12 @@ export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, spe
     const p = new URLSearchParams({
       agent_url: agentUrl,
       mcp_url: mcpUrl,
-      llm_provider: llmProvider,
-      main_model: mainModel,
-      specialist_model: specialistModel,
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
+      llm_provider: llmProvider,
+      main_model: mainModel,
+      specialist_model: specialistModel,
     })
     const r = await fetch(`${EVAL_URL}/api/run-single/${id}?${p}`, { method: 'POST' })
     const d = await r.json()
@@ -442,12 +451,12 @@ export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, spe
           const p = new URLSearchParams({
             agent_url: agentUrl,
             mcp_url: mcpUrl,
-            llm_provider: llmProvider,
-            main_model: mainModel,
-            specialist_model: specialistModel,
             auto_approve: opts.approve,
             use_judge: opts.judge,
             judge_model: judgeModel,
+            llm_provider: llmProvider,
+            main_model: mainModel,
+            specialist_model: specialistModel,
             no_variants: opts.noVariants,
             resume: 'true',
           })
@@ -585,6 +594,9 @@ export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, spe
               <span className="eval-check">Judge model: {judgeModel}</span>
             </div>
           )}
+          <div className="eval-ctrl-row">
+            <span className="eval-check">Eval model: {llmProvider} / {mainModel}</span>
+          </div>
           <div className="eval-ctrl-row">
             <button className="eval-btn eval-btn-run" onClick={runAll} disabled={running || !dataset.length}>
               ▶ Run All

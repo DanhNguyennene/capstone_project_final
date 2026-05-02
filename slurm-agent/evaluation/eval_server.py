@@ -75,6 +75,21 @@ state = EvalState()
 _mcp_state_lock = asyncio.Lock()
 
 
+def _model_config() -> dict:
+    return {
+        "llm_provider": state.llm_provider,
+        "main_model": state.main_model,
+        "specialist_model": state.specialist_model,
+        "judge_model": state.judge_model,
+        "runtime_defaults": {
+            "llm_provider": CHAT_LLM_PROVIDER,
+            "main_model": MAIN_MODEL,
+            "specialist_model": SPECIALIST_MODEL,
+            "judge_model": JUDGE_MODEL,
+        },
+    }
+
+
 def _normalize_judge_model(requested_model: str) -> str:
     """Ensure judge model/provider combination is executable in current env."""
     model = (requested_model or "").strip() or JUDGE_MODEL
@@ -771,6 +786,7 @@ async def _run_eval_background(
             "judge": use_judge,
             "judge_total": judge_total,
             "judge_resume_pending": len(pending_judge_items),
+            "model_config": _model_config(),
             "run_id": run_id,
         },
         run_id,
@@ -930,17 +946,7 @@ async def _run_eval_background(
 
         # Save to disk (timestamped copy + rolling snapshot)
         if scoped_results:
-            save_results(
-                scoped_results,
-                metrics,
-                scenario_label,
-                model_config={
-                    "llm_provider": llm_provider,
-                    "main_model": main_model,
-                    "specialist_model": specialist_model,
-                    "judge_model": state.judge_model if use_judge else "",
-                },
-            )
+            save_results(scoped_results, metrics, scenario_label)
         _persist_state()
         state.progress = len(scope_ds)
 
@@ -1081,12 +1087,7 @@ def _persist_state() -> None:
             "metrics": state.metrics,
             "pass_k": {},
             "weights": WEIGHTS,
-            "model_config": {
-                "llm_provider": state.llm_provider,
-                "main_model": state.main_model,
-                "specialist_model": state.specialist_model,
-                "judge_model": state.judge_model if state.use_judge else "",
-            },
+            "model_config": _model_config(),
             "results": list(state.results.values()),
             "terminal_histories": state.terminal_histories,
             "terminal_snapshots": state.terminal_snapshots,
@@ -1309,6 +1310,7 @@ async def get_results():
     return {
         "results": list(state.results.values()),
         "metrics": state.metrics,
+        "model_config": _model_config(),
         "count": len(state.results),
         "total": len(state.dataset),
     }
@@ -1328,7 +1330,13 @@ async def get_status():
         "dataset_loaded": len(state.dataset) > 0,
         "results_count": len(state.results),
         "terminal_count": sum(len(v) for v in state.terminal_histories.values() if isinstance(v, list)),
+        "model_config": _model_config(),
     }
+
+
+@app.get("/api/runtime-config")
+async def get_runtime_config():
+    return _model_config()
 
 
 @app.get("/api/terminal/history")
@@ -1442,12 +1450,12 @@ async def run_eval(
     no_variants: bool = False,
     agent_url: str = AGENT_URL,
     mcp_url: str = "",
-    llm_provider: str = CHAT_LLM_PROVIDER,
-    main_model: str = MAIN_MODEL,
-    specialist_model: str = SPECIALIST_MODEL,
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = JUDGE_MODEL,
+    llm_provider: str = CHAT_LLM_PROVIDER,
+    main_model: str = MAIN_MODEL,
+    specialist_model: str = SPECIALIST_MODEL,
     resume: bool = True,
     force: bool = False,
 ):
@@ -1479,11 +1487,11 @@ async def run_eval(
         return JSONResponse({"error": "no dataset loaded"}, 400)
 
     state.agent_url = agent_url
+    if mcp_url:
+        state.mcp_url = mcp_url
     state.llm_provider = (llm_provider or CHAT_LLM_PROVIDER).strip().lower() or CHAT_LLM_PROVIDER
     state.main_model = (main_model or MAIN_MODEL).strip() or MAIN_MODEL
     state.specialist_model = (specialist_model or SPECIALIST_MODEL).strip() or SPECIALIST_MODEL
-    if mcp_url:
-        state.mcp_url = mcp_url
     state.use_judge = use_judge
     state.judge_model = _normalize_judge_model(judge_model)
     state.auto_approve = auto_approve
@@ -1578,12 +1586,12 @@ async def run_single(
     test_id: str,
     agent_url: str = AGENT_URL,
     mcp_url: str = "",
-    llm_provider: str = CHAT_LLM_PROVIDER,
-    main_model: str = MAIN_MODEL,
-    specialist_model: str = SPECIALIST_MODEL,
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = "",
+    llm_provider: str = CHAT_LLM_PROVIDER,
+    main_model: str = MAIN_MODEL,
+    specialist_model: str = SPECIALIST_MODEL,
 ):
     """Run a single test case."""
     test = next((t for t in state.dataset if t["id"] == test_id), None)

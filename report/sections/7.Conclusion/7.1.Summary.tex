@@ -7,7 +7,7 @@ This project developed and evaluated a stateful Slurm Agent that enables natural
 
 This work contributes the following practical outcomes:
 
-\textbf{1. Scenario-Grid Evaluation for Agentic Slurm Workflows.} The project introduces a dataset-driven evaluation design (367 cases) that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, and response quality.
+\textbf{1. Scenario-Grid Evaluation for Agentic Slurm Workflows.} The project introduces a dataset-driven evaluation design (455 curated cases plus a separate 40-case paraphrase split) that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, and response quality.
 
 \textbf{2. Stateful MCP-Centered Integration.} Slurm interactions are exposed through MCP tools and exercised in deterministic mock scenarios with per-test reset, enabling reproducible behavioral testing.
 
@@ -39,18 +39,18 @@ This work contributes the following practical outcomes:
         \hline
         \textbf{Metric} & \textbf{Value} \\
         \hline
-        Dataset size & 367 tests \\
-        Pass rate ($\geq 0.80$) & 64.6\% (237/367) \\
-        Average overall score & 0.775 \\
-        BAR & 0.684 \\
-        SVR & 0.359 \\
-        CSR & 0.825 \\
-        Average latency & 12.92s \\
+        Dataset size & 455 curated tests \\
+        Pass rate ($\geq 0.80$) & 93.6\% (426/455) \\
+        Average overall score & 0.936 \\
+        BAR & 0.908 \\
+        SVR & 0.161 \\
+        CSR & 0.934 \\
+        Average latency & 22.59s \\
         \hline
     \end{tabular}
 \end{table}
 
-These results show strong capability in read/account workflows and acceptable cross-scenario stability, while also exposing clear weaknesses in multi-step and safety-sensitive categories.
+These results show strong capability on the curated benchmark and acceptable cross-scenario stability. They do not by themselves prove unrestricted robustness to arbitrary Slurm requests; that question is addressed separately through the held-out paraphrase split and future live-cluster validation.
 
 \subsection{Main Findings}
 
@@ -75,6 +75,7 @@ The repository contains the backend, MCP server, React frontend, evaluation fram
 \subsection{TODO for Final Thesis Freeze}
 
 \begin{itemize}
-    \item Freeze one final benchmark snapshot under pinned model/provider versions and update all chapter references to that single run.
+    \item Freeze one final 455-case curated benchmark snapshot under the pinned local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-oss:20b judge) and update all chapter references to that single run.
+    \item Run the 40-case held-out paraphrase split and report it separately from the curated benchmark.
     \item Add one concise reliability paragraph interpreting pass\textasciicircum{}k once repeat-run data is finalized.
 \end{itemize}

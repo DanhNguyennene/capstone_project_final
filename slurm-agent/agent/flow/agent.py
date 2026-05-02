@@ -227,23 +227,12 @@ class SlurmAgentSystem:
             return targets
 
         def _resolve_required_action_tool(raw_name: str, action_request: str = "") -> str:
-            request_text = str(action_request or "").strip()
-            request_lower = request_text.lower()
+            _ = action_request
             required_tool = _normalize_tool_name(raw_name)
-            if _extract_script_paths_from_text(request_text) and re.search(
-                r"\b(?:submit|run|launch|sbatch)\b", request_lower
-            ):
-                required_tool = "sbatch"
             if not required_tool:
-                inferred = _infer_required_tool_from_action(request_text)
-                if inferred:
-                    return inferred
                 return ""
             if self._catalog and required_tool in self._catalog.dangerous_names:
                 return required_tool
-            inferred = _infer_required_tool_from_action(request_text)
-            if inferred and self._catalog and inferred in self._catalog.dangerous_names:
-                return inferred
             logger.warning(
                 "Ignoring unknown required action tool label from handoff: %s",
                 raw_name,
@@ -261,7 +250,7 @@ class SlurmAgentSystem:
             schema = getattr(tool_def, "schema", {}) or {}
             properties = set((schema.get("properties", {}) or {}).keys())
             requires_job_id = "job_id" in set(schema.get("required", []) or []) or "job_id" in properties
-            if requires_job_id and not targets and not _is_broad_action_scope(text):
+            if requires_job_id and not targets:
                 return "The action target is missing or is not a concrete Slurm job ID."
             return ""
 
@@ -353,10 +342,6 @@ class SlurmAgentSystem:
                     ]
                     if original_user_text and original_user_text.strip().lower() != action_request.strip().lower():
                         lines.append(f"Original user query: {original_user_text.strip()}")
-                    if _action_context_requires_proof(combined_action):
-                        lines.append(
-                            "This action is conditional: first use one read tool to prove eligibility, then execute only eligible targets."
-                        )
                     if block_reason:
                         lines = [
                             "This handoff is blocked by safety policy.",
@@ -437,7 +422,8 @@ class SlurmAgentSystem:
                     "Hand off to the Operator to EXECUTE actions that modify the cluster. "
                     "Call with structured args: action_request (required imperative action) "
                     "required_tool (exact action tool name), and targets (optional list of job IDs / node names / user/account). "
-                    "Example: action_request='Cancel jobs 1001,1002', required_tool='scancel', targets=['1001','1002']. "
+                    "For job actions, provide concrete numeric job IDs in targets; resolve broad scopes before handoff. "
+                    "Example: action_request='Cancel jobs 12345,12346', required_tool='scancel', targets=['12345','12346']. "
                     "The Operator will call the tools and report results."
                 ),
                 on_handoff=_capture_operator_handoff,
@@ -1224,40 +1210,6 @@ def _looks_like_job_id(value: str) -> bool:
     return bool(re.fullmatch(r"\d+(?:_\d+|_\[\d+(?:-\d+)?\])?", text))
 
 
-def _extract_script_paths_from_text(text: str) -> List[str]:
-    seen: set[str] = set()
-    scripts: List[str] = []
-    for match in re.finditer(r"(?<![\w./-])([\w./-]+\.sh)(?![\w./-])", text or ""):
-        script = match.group(1).strip()
-        if script and script not in seen:
-            seen.add(script)
-            scripts.append(script)
-    return scripts
-
-
-def _infer_required_tool_from_action(text: str) -> str:
-    lowered = (text or "").lower()
-    if _extract_script_paths_from_text(text) and re.search(r"\b(?:submit|run|launch|sbatch)\b", lowered):
-        return "sbatch"
-    if re.search(r"\b(?:drain|undrain|resume|down|offline|online|idle)\b", lowered) and re.search(
-        r"\b(?:nodes?|gpu-node-\d+|cpu-node-\d+)\b", lowered
-    ):
-        return "scontrol_node"
-    if re.search(r"\b(?:cancel|kill|stop|terminate|delete)\b", lowered):
-        return "scancel"
-    if re.search(r"\brelease\b", lowered):
-        return "scontrol_release"
-    if re.search(r"\bhold\b", lowered):
-        return "scontrol_hold"
-    if re.search(r"\brequeue\b", lowered):
-        return "scontrol_requeue"
-    if re.search(r"\b(?:update|modify|change|set)\b", lowered):
-        return "scontrol_update"
-    if re.search(r"\breconfigure\b", lowered):
-        return "scontrol_reconfigure"
-    return ""
-
-
 def _combine_action_with_original(action_request: str, original_user_message: str) -> str:
     action = (action_request or "").strip()
     original = (original_user_message or "").strip()
@@ -1266,19 +1218,6 @@ def _combine_action_with_original(action_request: str, original_user_message: st
     if original.lower() in action.lower():
         return action
     return f"{action}\nOriginal user query: {original}" if action else original
-
-
-def _action_context_requires_proof(text: str) -> bool:
-    lowered = (text or "").lower()
-    if re.search(r"\b(?:over|more than|longer than|above|exceed(?:ing)?)\s*\d+(?:\.\d+)?\s*(?:hours?|hrs?|h)\b", lowered):
-        return True
-    if "submitted" in lowered and any(token in lowered for token in ("before", "after", "older than", "newer than")):
-        return True
-    if "gpu" in lowered and re.search(r"\b(?:submit|run|sbatch)\b", lowered) and any(
-        token in lowered for token in (" if ", "available", "free")
-    ):
-        return True
-    return False
 
 
 def _last_user_text_from_handoff_data(handoff_data: HandoffInputData) -> str:
@@ -1296,21 +1235,6 @@ def _last_user_text_from_handoff_data(handoff_data: HandoffInputData) -> str:
                 if parts:
                     found = " ".join(parts).strip()
     return found
-
-
-def _is_broad_action_scope(text: str) -> bool:
-    """Detect broad-but-explicit action scopes that require discovery reads."""
-    lowered = (text or "").strip().lower()
-    if not lowered:
-        return False
-    broad_markers = (
-        " all ", " any ", " every ", " queue", " jobs", " user ", " users ",
-        " running", " pending", " gpu", " cpu", " partition", " account ",
-        " submitted ", " before ", " after ", " older than", " over ", " more than",
-        " everything ", " entire queue", " whole queue", " all jobs",
-    )
-    padded = f" {lowered} "
-    return any(marker in padded for marker in broad_markers)
 
 
 def _extract_handoff_result_snippets(item: Any) -> List[str]:

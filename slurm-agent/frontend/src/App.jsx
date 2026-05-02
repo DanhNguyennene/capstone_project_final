@@ -4,7 +4,7 @@ import Messages from './Messages'
 import InputBar from './InputBar'
 import TodoList from './components/TodoList'
 import EvalPage from './EvalPage'
-import { checkHealth } from './api'
+import { checkHealth, getEvalRuntimeConfig } from './api'
 import {
   URL_KEY,
   MCP_URL_KEY,
@@ -55,7 +55,7 @@ export default function App() {
     if (stored && OLLAMA_MODEL_OPTIONS.includes(stored)) return stored
     const legacy = localStorage.getItem(JUDGE_MODEL_KEY)
     if (legacy && OLLAMA_MODEL_OPTIONS.includes(legacy)) return legacy
-    return 'gpt-oss:20b'
+    return 'qwen3.5:9b'
   })
   const [openaiJudgeModel, setOpenaiJudgeModel] = useState(() => {
     const stored = localStorage.getItem(OPENAI_JUDGE_MODEL_KEY)
@@ -122,11 +122,41 @@ export default function App() {
 
   // Ping agent on URL change
   useEffect(() => {
+    let cancelled = false
     localStorage.setItem(URL_KEY, agentUrl)
     localStorage.setItem(MCP_URL_KEY, mcpUrl)
     checkHealth(agentUrl)
-      .then(ok => setStatus(ok ? { state: 'online', text: 'Ready' } : { state: 'offline', text: 'Unreachable' }))
+      .then(async ok => {
+        if (cancelled) return
+        if (!ok) {
+          setStatus({ state: 'offline', text: 'Unreachable' })
+          return
+        }
+        setStatus({ state: 'online', text: 'Ready' })
+        try {
+          const config = await getEvalRuntimeConfig()
+          if (cancelled || !config?.llm_provider) return
+          const provider = config.llm_provider === 'openai' ? 'openai' : 'ollama'
+          setLlmProvider(provider)
+          if (provider === 'openai') {
+            if (config.main_model) setOpenaiMainModel(config.main_model)
+            if (config.specialist_model) setOpenaiSpecialistModel(config.specialist_model)
+            if (config.judge_model && OPENAI_MODEL_OPTIONS.includes(config.judge_model)) {
+              setOpenaiJudgeModel(config.judge_model)
+            }
+          } else {
+            if (config.main_model) setOllamaMainModel(config.main_model)
+            if (config.specialist_model) setOllamaSpecialistModel(config.specialist_model)
+            if (config.judge_model && OLLAMA_MODEL_OPTIONS.includes(config.judge_model)) {
+              setOllamaJudgeModel(config.judge_model)
+            }
+          }
+        } catch {
+          // Older eval servers do not expose runtime config; keep local selections.
+        }
+      })
       .catch(() => setStatus({ state: 'offline', text: 'Disconnected' }))
+    return () => { cancelled = true }
   }, [agentUrl, mcpUrl])
 
   useEffect(() => {

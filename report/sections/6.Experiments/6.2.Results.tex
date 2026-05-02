@@ -1,7 +1,7 @@
 \section{Experimental Results}
 \label{sec:results}
 
-This section reports the latest scenario-grid benchmark for the Slurm Agent. Results are taken from the current snapshot artifact (\texttt{eval\_latest\_snapshot.json}, timestamp \texttt{20260417\_211210}) and reflect the present implementation baseline described in Chapter~5.
+This section reports the latest curated scenario-grid benchmark for the Slurm Agent. Results are taken from \texttt{evaluation/results/eval\_all\_20260430\_212014.json}. The result should be interpreted as performance on the curated 455-case benchmark, not as evidence that the agent is robust to arbitrary Slurm requests.
 
 \subsection{Benchmark Configuration Snapshot}
 
@@ -14,11 +14,13 @@ This section reports the latest scenario-grid benchmark for the Slurm Agent. Res
         \textbf{Field} & \textbf{Value} \\
         \hline
         Scenario scope & all \\
-        Dataset size & 367 test cases \\
-        Dataset ID & \texttt{41b3c240188c} \\
+        Dataset size & 455 curated test cases \\
+        Dataset ID & \texttt{b2d24cde01d0} \\
+        Main agent model & \texttt{qwen3.5:9b} \\
+        Specialist model & \texttt{qwen2.5:7b} \\
         Pass threshold & $\geq 0.80$ (with keyword gate) \\
-        Judge mode & enabled (qwen3.5:9b) \\
-        Output artifacts & JSON + TeX snapshot in \texttt{evaluation/results/} \\
+        Judge mode & enabled (\texttt{gpt-oss:20b}) \\
+        Output artifact & \texttt{eval\_all\_20260430\_212014.json} \\
         \hline
     \end{tabular}
 \end{table}
@@ -27,24 +29,24 @@ This section reports the latest scenario-grid benchmark for the Slurm Agent. Res
 
 \begin{table}[H]
     \centering
-    \caption{Overall Metrics (367-Case Snapshot)}
+    \caption{Overall Metrics (455-Case Curated Benchmark)}
     \label{tab:overall-results}
     \begin{tabular}{|l|c|}
         \hline
         \textbf{Metric} & \textbf{Value} \\
         \hline
-        Total Test Cases & 367 \\
-        Passed & 237 \\
-        Failed & 130 \\
-        Pass Rate & 64.6\% \\
+        Total Test Cases & 455 \\
+        Passed & 426 \\
+        Failed & 29 \\
+        Pass Rate & 93.6\% \\
         \hline
-        BAR (Behavioral Agreement Rate) & 68.4\% \\
-        SVR (Safety Violation Rate) & 35.9\% \\
-        CSR (Cross-Scenario Robustness) & 82.5\% \\
+        BAR (Behavioral Agreement Rate) & 90.8\% \\
+        SVR (Safety Violation Rate) & 16.1\% \\
+        CSR (Cross-Scenario Robustness) & 93.4\% \\
         \hline
-        Average Overall Score & 0.775 \\
-        Average Judge Score & 0.507 \\
-        Average Latency & 12.92s \\
+        Average Overall Score & 0.936 \\
+        Average Judge Score & 0.748 \\
+        Average Latency & 22.59s \\
         \hline
     \end{tabular}
 \end{table}
@@ -59,47 +61,47 @@ This section reports the latest scenario-grid benchmark for the Slurm Agent. Res
         \hline
         \textbf{Component} & \textbf{Average} \\
         \hline
-        Tool Recall & 0.764 \\
-        Routing Match & 0.831 \\
-        HITL Match & 0.826 \\
-        Keyword Score & 0.955 \\
-        State Match & 0.807 \\
-        Judge Score & 0.507 \\
+        Tool Recall & 0.918 \\
+        Routing Match & 0.987 \\
+        HITL Match & 0.949 \\
+        Keyword Score & 0.922 \\
+        State Match & 0.956 \\
+        Judge Score & 0.748 \\
         \hline
     \end{tabular}
 \end{table}
 
-The high keyword score (0.955) indicates that responses usually contain expected terms, while structural dimensions (tool/routing/HITL/state) remain the dominant constraints on pass/fail outcomes.
+The current snapshot shows strong structural alignment on the curated benchmark. However, the score should be interpreted together with the held-out paraphrase split described below, because the curated benchmark contains prompt families used during development.
 
 \subsection{Results by Category}
 
 \begin{table}[H]
     \centering
-    \caption{Category-Level Results (Latest Snapshot)}
+    \caption{Category-Level Results (455-Case Curated Benchmark)}
     \label{tab:category-results}
     \small
     \begin{tabular}{|l|c|c|c|c|c|c|c|}
         \hline
         \textbf{Category} & \textbf{N} & \textbf{Pass\%} & \textbf{Tool} & \textbf{Route} & \textbf{HITL} & \textbf{State} & \textbf{Overall} \\
         \hline
-        read & 106 & 79\% & 87\% & 96\% & 100\% & 100\% & 91\% \\
-        diagnose & 39 & 51\% & 82\% & 95\% & 100\% & 100\% & 83\% \\
-        action & 31 & 71\% & 84\% & 97\% & 87\% & 84\% & 82\% \\
-        bulk & 24 & 71\% & 85\% & 75\% & 75\% & 71\% & 74\% \\
-        safety & 45 & 53\% & 71\% & 58\% & 58\% & 53\% & 61\% \\
-        submission & 35 & 51\% & 51\% & 71\% & 63\% & 51\% & 60\% \\
-        multi\_step & 17 & 0\% & 38\% & 24\% & 12\% & 0\% & 28\% \\
-        account & 25 & 84\% & 84\% & 92\% & 88\% & 100\% & 83\% \\
-        edge & 45 & 69\% & 71\% & 89\% & 91\% & 91\% & 83\% \\
+        read & 156 & 99\% & 100\% & 100\% & 100\% & 100\% & 98\% \\
+        diagnose & 39 & 92\% & 94\% & 100\% & 100\% & 100\% & 92\% \\
+        action & 60 & 83\% & 63\% & 100\% & 77\% & 78\% & 85\% \\
+        bulk & 23 & 100\% & 100\% & 100\% & 100\% & 100\% & 98\% \\
+        safety & 45 & 100\% & 100\% & 100\% & 100\% & 100\% & 97\% \\
+        submission & 35 & 77\% & 89\% & 89\% & 89\% & 89\% & 85\% \\
+        multi\_step & 22 & 100\% & 77\% & 95\% & 77\% & 86\% & 88\% \\
+        account & 25 & 92\% & 100\% & 100\% & 100\% & 100\% & 92\% \\
+        edge & 50 & 92\% & 92\% & 98\% & 100\% & 100\% & 96\% \\
         \hline
-        \textbf{Total} & 367 & 65\% & 76\% & 83\% & 83\% & 81\% & 78\% \\
+        \textbf{Total} & 455 & 94\% & 92\% & 99\% & 95\% & 96\% & 94\% \\
         \hline
     \end{tabular}
 \end{table}
 
-\textbf{Strongest categories:} \texttt{read} and \texttt{account} show the highest pass rates and stable structural behavior.
+\textbf{Strongest categories:} \texttt{read}, \texttt{bulk}, \texttt{safety}, and \texttt{multi\_step} show high pass rates in the curated snapshot.
 
-\textbf{Primary weak categories:} \texttt{multi\_step}, \texttt{safety}, and \texttt{submission}. In particular, \texttt{multi\_step} fails to satisfy state-transition expectations consistently in this snapshot.
+\textbf{Primary remaining weak categories:} \texttt{submission} and \texttt{action}. The main residual errors involve tool selection, mutation semantics, and response/scorer alignment rather than raw routing failure.
 
 \subsection{Results by Scenario}
 
@@ -111,45 +113,65 @@ The high keyword score (0.955) indicates that responses usually contain expected
         \hline
         \textbf{Scenario} & \textbf{N} & \textbf{Passed} & \textbf{Pass\%} & \textbf{Avg Overall} \\
         \hline
-        healthy & 72 & 48 & 66.7\% & 0.780 \\
-        failed & 68 & 41 & 60.3\% & 0.758 \\
-        pending & 71 & 49 & 69.0\% & 0.795 \\
-        mixed & 79 & 47 & 59.5\% & 0.743 \\
-        debug\_needed & 77 & 52 & 67.5\% & 0.797 \\
+        healthy & 87 & 82 & 94.3\% & 0.943 \\
+        failed & 87 & 84 & 96.6\% & 0.940 \\
+        pending & 87 & 79 & 90.8\% & 0.928 \\
+        mixed & 97 & 91 & 93.8\% & 0.936 \\
+        debug\_needed & 97 & 90 & 92.8\% & 0.936 \\
         \hline
-        \textbf{Total} & 367 & 237 & 64.6\% & 0.775 \\
+        \textbf{Total} & 455 & 426 & 93.6\% & 0.936 \\
         \hline
     \end{tabular}
 \end{table}
 
-Cross-scenario behavior remains relatively stable (CSR = 82.5\%), with the \texttt{mixed} scenario being the hardest condition in this run.
+Cross-scenario behavior is stable on the curated benchmark (CSR = 93.4\%). The \texttt{pending} scenario is the hardest condition in this run.
 
 \subsection{Failure Pattern Analysis}
 
-There were no runtime execution errors in this benchmark (0/367 tests with \texttt{error} field set). Most failures are therefore behavioral mismatches rather than infrastructure failures.
+There were no runtime execution errors in this benchmark (0/455 tests with \texttt{error} field set). Most remaining failures are therefore behavioral mismatches rather than infrastructure failures. Because a single failed test can contain multiple mismatch types, the counts below are non-exclusive.
 
 \begin{table}[H]
     \centering
-    \caption{Mismatch Counts Across 367 Cases}
+    \caption{Error Analysis Across Failed Curated-Benchmark Cases}
     \label{tab:mismatch-counts}
-    \begin{tabular}{|l|c|}
+    \begin{tabular}{|p{4cm}|c|p{7cm}|}
         \hline
-        \textbf{Mismatch Type} & \textbf{Count} \\
+        \textbf{Error Type} & \textbf{Failed Cases} & \textbf{Interpretation} \\
         \hline
-        Tool recall $< 1.0$ & 109 \\
-        Routing mismatch & 62 \\
-        HITL mismatch & 64 \\
-        State mismatch & 71 \\
-        Keyword score $< 0.6$ & 20 \\
+        Wrong tool selection & 19 & The agent selected or exposed a tool inconsistent with ground truth, especially in release/update/submission cases. \\
+        Wrong handoff/routing & 4 & The Observer/Operator boundary was not followed as expected. \\
+        Unsafe action blocked or HITL mismatch & 14 & The behavior either blocked/refused an action unexpectedly or failed to match the expected confirmation pattern. \\
+        Clarification needed & 12 & The interaction required a clearer target or wording than the benchmark expected. \\
+        Keyword/scorer issue & 17 & The executed behavior and response evidence were not aligned with strict keyword/scoring expectations. \\
         \hline
     \end{tabular}
 \end{table}
 
-Among 130 failed tests, structural mismatches dominate: tool selection/coverage (109), state mismatch (71), and routing/HITL mismatches (62/64). This indicates that architecture-level reliability, not surface-level wording, is the key improvement target.
+Across all 455 cases, structural mismatch counts were: tool recall $<1.0$ in 41 cases, routing mismatch in 6 cases, HITL mismatch in 23 cases, state mismatch in 20 cases, and keyword score $<0.6$ in 38 cases. The failed-case table highlights where these mismatches affected pass/fail outcomes.
+
+\subsection{Held-Out Paraphrase Generalization Results}
+
+The curated benchmark result above is reported separately from the held-out paraphrase/generalization split. The generalization split is stored in \texttt{evaluation/generalization\_dataset.json} and contains 40 cases with unseen prompt wording. Its score must be interpreted as a robustness probe, not as part of the headline curated benchmark.
+
+\begin{table}[H]
+    \centering
+    \caption{Separate Generalization Split Reporting}
+    \label{tab:generalization-results}
+    \begin{tabular}{|l|c|c|c|p{4.5cm}|}
+        \hline
+        \textbf{Split} & \textbf{N} & \textbf{Passed} & \textbf{Pass Rate} & \textbf{Status} \\
+        \hline
+        Curated benchmark & 455 & 426 & 93.6\% & Frozen snapshot \texttt{eval\_all\_20260430\_212014.json} \\
+        Held-out paraphrase & 40 & -- & -- & Run separately under the same pinned model stack; do not merge into curated score. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+This separation prevents the claim ``93.6\% pass rate'' from being overstated as general robustness. The accurate interpretation is: the agent passes 93.6\% on the curated benchmark; robustness to unseen paraphrases remains partially evaluated until the generalization split is run and reported.
 
 \subsection{Latency Characteristics}
 
-Average end-to-end latency is 12.92 seconds. Category-level averages indicate higher latency in \texttt{submission}, \texttt{safety}, and \texttt{multi\_step} workflows (roughly 16--17 seconds), consistent with additional reasoning and safety checks.
+Average end-to-end latency is 22.59 seconds. This reflects full agent-tool execution with judge-enabled evaluation and is more representative of architecture-level evaluation cost than of direct CLI latency.
 
 \subsection{Manual Scenario Validation Summary}
 
@@ -186,12 +208,13 @@ The agent offers the largest benefit in multi-source interpretation tasks, while
 
 \subsection{Result Interpretation}
 
-The current system is strong in read-oriented and account-oriented assistance, and demonstrates good cross-scenario stability. However, the benchmark also shows clear reliability gaps in complex multi-step and safety-sensitive flows. These findings directly inform the limitation and future-work priorities in Chapter~7.
+The current system performs strongly on the curated benchmark and demonstrates improved cross-scenario stability. However, the result should not be presented as proof of unrestricted real-world robustness. The next reliability question is whether the same behavior holds on the held-out paraphrase split and later on live-cluster prompts written by users outside the dataset design process.
 
 \subsection{TODO for Final Thesis Freeze}
 
 \begin{itemize}
-    \item Re-run one final benchmark under pinned model/provider settings and freeze a single authoritative snapshot ID.
+    \item Re-run one final 455-case curated benchmark under the pinned local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-oss:20b judge) and freeze a single authoritative snapshot ID.
+    \item Run \texttt{generalization\_dataset.json} and fill Table~\ref{tab:generalization-results} with separate pass/fail metrics.
     \item Regenerate figure set (distribution/category/latency plots) strictly from the frozen snapshot.
     \item Export pass\textasciicircum{}k results (for $k\in\{1,3,5\}$) and add repeatability analysis table.
     \item Add a short ablation comparing judge-enabled vs judge-disabled weighting on the same dataset.

@@ -1,5 +1,8 @@
 // Async generator: yields OpenAI delta objects from SSE stream
 // Pass an AbortSignal to cancel mid-stream
+const evalHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+const EVAL_URL = `http://${evalHost}:8080`
+
 export async function* streamChat(
   agentUrl,
   sessionId,
@@ -67,6 +70,14 @@ export async function checkHealth(agentUrl) {
     signal: AbortSignal.timeout(3000),
   })
   return r.ok
+}
+
+export async function getEvalRuntimeConfig() {
+  const r = await fetch(`${EVAL_URL}/api/runtime-config`, {
+    signal: AbortSignal.timeout(3000),
+  })
+  if (!r.ok) return null
+  return r.json()
 }
 
 export async function clearSessionOnServer(agentUrl, sessionId) {

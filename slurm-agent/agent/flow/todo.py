@@ -46,7 +46,7 @@ Examples:
 User: "check cluster health"
 ["Check partition and node states","Review job queue","Check scheduler metrics","Summarize cluster health"]
 
-User: "cancel jobs 1001 1002 1003"
+User: "cancel jobs 12345 12346 12347"
 ["Verify jobs exist","Hand off to Operator to cancel all 3 jobs","Report results"]
 
 User: "submit these scripts: sleep.sh, gpu_test.sh"
