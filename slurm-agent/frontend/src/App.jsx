@@ -55,7 +55,7 @@ export default function App() {
     if (stored && OLLAMA_MODEL_OPTIONS.includes(stored)) return stored
     const legacy = localStorage.getItem(JUDGE_MODEL_KEY)
     if (legacy && OLLAMA_MODEL_OPTIONS.includes(legacy)) return legacy
-    return 'qwen3.5:9b'
+    return 'gpt-oss:20b'
   })
   const [openaiJudgeModel, setOpenaiJudgeModel] = useState(() => {
     const stored = localStorage.getItem(OPENAI_JUDGE_MODEL_KEY)
@@ -180,6 +180,9 @@ export default function App() {
         <EvalPage
           agentUrl={agentUrl}
           mcpUrl={mcpUrl}
+          llmProvider={llmProvider}
+          mainModel={mainModel}
+          specialistModel={specialistModel}
           judgeModel={judgeModel}
           sidebarOpen={sidebarOpen}
           onToggleGlobalSidebar={() => setSidebarOpen(o => !o)}

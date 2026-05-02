@@ -36,7 +36,7 @@ from scenario_eval import (
     compute_metrics, compute_pass_k, save_results,
     AgentTrace, TestResult,
     AGENT_URL, JUDGE_MODEL, PASS_THRESHOLD, WEIGHTS, WEIGHTS_WITH_JUDGE,
-    DATASET_PATH, RESULTS_DIR,
+    DATASET_PATH, RESULTS_DIR, CHAT_LLM_PROVIDER, MAIN_MODEL, SPECIALIST_MODEL,
     _judge_uses_openai,
 )
 
@@ -52,6 +52,9 @@ class EvalState:
     total: int = 0
     metrics: dict = {}
     agent_url: str = AGENT_URL
+    llm_provider: str = CHAT_LLM_PROVIDER
+    main_model: str = MAIN_MODEL
+    specialist_model: str = SPECIALIST_MODEL
     use_judge: bool = False
     judge_model: str = JUDGE_MODEL
     auto_approve: bool = True
@@ -740,6 +743,9 @@ async def _run_eval_background(
     agent_url: str,
     mcp_url: str,
     auto_approve: bool,
+    llm_provider: str,
+    main_model: str,
+    specialist_model: str,
     use_judge: bool,
     run_id: str,
     scenario_label: str,
@@ -822,6 +828,9 @@ async def _run_eval_background(
                     try:
                         trace = await run_agent(
                             test["input"], session_id, agent_url, auto_approve,
+                            llm_provider=llm_provider,
+                            main_model=main_model,
+                            specialist_model=specialist_model,
                         )
                     except Exception as e:
                         run_error = str(e)
@@ -921,7 +930,17 @@ async def _run_eval_background(
 
         # Save to disk (timestamped copy + rolling snapshot)
         if scoped_results:
-            save_results(scoped_results, metrics, scenario_label)
+            save_results(
+                scoped_results,
+                metrics,
+                scenario_label,
+                model_config={
+                    "llm_provider": llm_provider,
+                    "main_model": main_model,
+                    "specialist_model": specialist_model,
+                    "judge_model": state.judge_model if use_judge else "",
+                },
+            )
         _persist_state()
         state.progress = len(scope_ds)
 
@@ -1062,6 +1081,12 @@ def _persist_state() -> None:
             "metrics": state.metrics,
             "pass_k": {},
             "weights": WEIGHTS,
+            "model_config": {
+                "llm_provider": state.llm_provider,
+                "main_model": state.main_model,
+                "specialist_model": state.specialist_model,
+                "judge_model": state.judge_model if state.use_judge else "",
+            },
             "results": list(state.results.values()),
             "terminal_histories": state.terminal_histories,
             "terminal_snapshots": state.terminal_snapshots,
@@ -1417,6 +1442,9 @@ async def run_eval(
     no_variants: bool = False,
     agent_url: str = AGENT_URL,
     mcp_url: str = "",
+    llm_provider: str = CHAT_LLM_PROVIDER,
+    main_model: str = MAIN_MODEL,
+    specialist_model: str = SPECIALIST_MODEL,
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = JUDGE_MODEL,
@@ -1451,6 +1479,9 @@ async def run_eval(
         return JSONResponse({"error": "no dataset loaded"}, 400)
 
     state.agent_url = agent_url
+    state.llm_provider = (llm_provider or CHAT_LLM_PROVIDER).strip().lower() or CHAT_LLM_PROVIDER
+    state.main_model = (main_model or MAIN_MODEL).strip() or MAIN_MODEL
+    state.specialist_model = (specialist_model or SPECIALIST_MODEL).strip() or SPECIALIST_MODEL
     if mcp_url:
         state.mcp_url = mcp_url
     state.use_judge = use_judge
@@ -1504,6 +1535,9 @@ async def run_eval(
             agent_url=agent_url,
             mcp_url=state.mcp_url,
             auto_approve=auto_approve,
+            llm_provider=state.llm_provider,
+            main_model=state.main_model,
+            specialist_model=state.specialist_model,
             use_judge=use_judge,
             run_id=run_id,
             scenario_label=scenario_label,
@@ -1544,6 +1578,9 @@ async def run_single(
     test_id: str,
     agent_url: str = AGENT_URL,
     mcp_url: str = "",
+    llm_provider: str = CHAT_LLM_PROVIDER,
+    main_model: str = MAIN_MODEL,
+    specialist_model: str = SPECIALIST_MODEL,
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = "",
@@ -1555,6 +1592,9 @@ async def run_single(
 
     if mcp_url:
         state.mcp_url = mcp_url
+    state.llm_provider = (llm_provider or CHAT_LLM_PROVIDER).strip().lower() or CHAT_LLM_PROVIDER
+    state.main_model = (main_model or MAIN_MODEL).strip() or MAIN_MODEL
+    state.specialist_model = (specialist_model or SPECIALIST_MODEL).strip() or SPECIALIST_MODEL
     if judge_model:
         state.judge_model = _normalize_judge_model(judge_model)
     else:
@@ -1565,7 +1605,12 @@ async def run_single(
 
     session_id = f"eval_{test_id}_{int(time.time())}"
     try:
-        trace = await run_agent(test["input"], session_id, agent_url, auto_approve)
+        trace = await run_agent(
+            test["input"], session_id, agent_url, auto_approve,
+            llm_provider=state.llm_provider,
+            main_model=state.main_model,
+            specialist_model=state.specialist_model,
+        )
     except Exception as e:
         trace = AgentTrace([], False, False, "", 0.0, str(e))
     result = await score_test(

@@ -14,7 +14,7 @@ function isPlaceholderJudgeReason(reason) {
   return squashed.length < 10
 }
 
-export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = true, onToggleGlobalSidebar = null }) {
+export default function EvalPage({ agentUrl, mcpUrl, llmProvider, mainModel, specialistModel, judgeModel, sidebarOpen = true, onToggleGlobalSidebar = null }) {
   const [dataset, setDataset]     = useState([])
   const [results, setResults]     = useState({})
   const [metrics, setMetrics]     = useState(null)
@@ -322,6 +322,9 @@ export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = t
     const p = new URLSearchParams({
       agent_url: agentUrl,
       mcp_url: mcpUrl,
+      llm_provider: llmProvider,
+      main_model: mainModel,
+      specialist_model: specialistModel,
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
@@ -354,6 +357,9 @@ export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = t
     const p = new URLSearchParams({
       agent_url: agentUrl,
       mcp_url: mcpUrl,
+      llm_provider: llmProvider,
+      main_model: mainModel,
+      specialist_model: specialistModel,
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
@@ -436,6 +442,9 @@ export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = t
           const p = new URLSearchParams({
             agent_url: agentUrl,
             mcp_url: mcpUrl,
+            llm_provider: llmProvider,
+            main_model: mainModel,
+            specialist_model: specialistModel,
             auto_approve: opts.approve,
             use_judge: opts.judge,
             judge_model: judgeModel,
@@ -449,7 +458,7 @@ export default function EvalPage({ agentUrl, mcpUrl, judgeModel, sidebarOpen = t
         }
       } catch {}
     })()
-  }, [agentUrl, mcpUrl, judgeModel, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream, refreshTerminalHistory])
+  }, [agentUrl, mcpUrl, llmProvider, mainModel, specialistModel, judgeModel, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream, refreshTerminalHistory])
 
   // ── Keyboard nav ─────────────────────────────────────────────
 

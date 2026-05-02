@@ -3,7 +3,8 @@
 **When to use:** You are asked to drain a node (take it offline), bring a node back online (undrain/resume), set a node DOWN, or reboot a node for maintenance.
 
 ## Available Tools
-- `scontrol_update(entity="node", id=<node>, params=<spec>)` — update node state/properties
+- `scontrol_node(node=<node>, state=<state>, reason=<reason>)` — set administrative node state
+- `scontrol_node_weight(node=<node>, weight=<number>)` — update scheduling weight
 - `scontrol_show(entity="node", id=<node>)` — verify node state before/after
 
 ## Key State Transitions
@@ -19,35 +20,35 @@
 
 ### Drain a single node
 ```
-scontrol_update(entity="node", id="<nodename>", params="State=DRAIN Reason='maintenance scheduled'")
+scontrol_node(node="<nodename>", state="DRAIN", reason="maintenance scheduled")
 ```
 
 ### Drain multiple nodes (range expression)
 ```
-scontrol_update(entity="node", id="node[01-04]", params="State=DRAIN Reason='hw fault'")
+scontrol_node(node="node[01-04]", state="DRAIN", reason="hw fault")
 ```
 
 ### Resume (undrain) a node
 ```
-scontrol_update(entity="node", id="<nodename>", params="State=RESUME")
+scontrol_node(node="<nodename>", state="RESUME")
 ```
 
 ### Mark node DOWN immediately
 ```
-scontrol_update(entity="node", id="<nodename>", params="State=DOWN Reason='network failure'")
+scontrol_node(node="<nodename>", state="DOWN", reason="network failure")
 ```
 
 ### Update node weight (affects scheduling preference)
 ```
-scontrol_update(entity="node", id="<nodename>", params="Weight=<number>")
+scontrol_node_weight(node="<nodename>", weight=<number>)
 ```
 Lower weight = preferred for allocation.
 
 ### Reboot a node when it becomes idle
 ```
-scontrol_update(entity="node", id="<nodename>", params="State=DRAIN Reason='reboot pending'")
+scontrol_node(node="<nodename>", state="DRAIN", reason="reboot pending")
 ```
-Then after drain completes, reboot via OS and resume: `State=RESUME`.
+Then after drain completes, reboot via OS and resume with `state="RESUME"`.
 
 ## Verification
 ```

@@ -1239,6 +1239,10 @@ def _infer_required_tool_from_action(text: str) -> str:
     lowered = (text or "").lower()
     if _extract_script_paths_from_text(text) and re.search(r"\b(?:submit|run|launch|sbatch)\b", lowered):
         return "sbatch"
+    if re.search(r"\b(?:drain|undrain|resume|down|offline|online|idle)\b", lowered) and re.search(
+        r"\b(?:nodes?|gpu-node-\d+|cpu-node-\d+)\b", lowered
+    ):
+        return "scontrol_node"
     if re.search(r"\b(?:cancel|kill|stop|terminate|delete)\b", lowered):
         return "scancel"
     if re.search(r"\brelease\b", lowered):

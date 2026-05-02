@@ -6,7 +6,7 @@
 #   ./run_eval.sh --quick              # 1 test per category (10 total), fast sanity check
 #   ./run_eval.sh --filter basic_read  # only tests matching a category or id
 #   ./run_eval.sh --suite agent        # evaluate_agent.py (LLM-as-judge, structured scoring)
-#   ./run_eval.sh --model qwen3.5:27b  # override model (default: qwen3.5:9b)
+#   ./run_eval.sh --model qwen3.5:27b  # override main model (default: qwen3.5:9b)
 #   ./run_eval.sh --no-mock            # real Slurm (skips mock MCP startup)
 #
 # Models that support tool calling (safe choices):
@@ -46,7 +46,9 @@ warn() { echo -e "${YEL}[eval]${NC} $*"; }
 die()  { echo -e "${RED}[eval]${NC} $*" >&2; exit 1; }
 
 # ── defaults ──────────────────────────────────────────────────────────────────
-MODEL="${SLURM_AGENT_MODEL:-gpt-oss:20b}"
+MODEL="${SLURM_AGENT_MODEL:-qwen3.5:9b}"
+SPECIALIST_MODEL="${SLURM_AGENT_SPECIALIST_MODEL:-qwen2.5:7b}"
+JUDGE_MODEL="${SLURM_AGENT_JUDGE_MODEL:-gpt-oss:20b}"
 MCP_PORT="${MCP_PORT:-3002}"
 MCP_URL="http://localhost:$MCP_PORT"
 AGENT_PORT="${AGENT_PORT:-8000}"
@@ -79,6 +81,8 @@ if echo "$MODEL" | grep -qi "deepseek-r1"; then
   die "deepseek-r1 does not support tool calling — use qwen3.5:9b or qwen3.5:27b instead."
 fi
 export SLURM_AGENT_MODEL="$MODEL"
+export SLURM_AGENT_SPECIALIST_MODEL="$SPECIALIST_MODEL"
+export SLURM_AGENT_JUDGE_MODEL="$JUDGE_MODEL"
 
 # ── cleanup on exit ────────────────────────────────────────────────────────────
 cleanup() {
@@ -150,6 +154,8 @@ echo ""
 info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 info "  Suite  : $SUITE"
 info "  Model  : $MODEL"
+info "  Spec.  : $SPECIALIST_MODEL"
+info "  Judge  : $JUDGE_MODEL"
 info "  MCP    : $MCP_URL"
 info "  Mode   : $MODE"
 [[ -n "$FILTER" ]] && info "  Filter : $FILTER"
