@@ -1,0 +1,12 @@
+Focused rerun started: evaluation/results/targeted_after_fixes_rerun_20260430_141048.txt
+RUN multi_check_submit_debug_needed
+multi_check_submit_debug_needed|PASS| [001/001] multi_check_submit_debug_needed [100% ✓] (4.9s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141054.tex
+RUN multi_check_submit_pending
+multi_check_submit_pending|PASS| [001/001] multi_check_submit_pending [100% ✓] (3.0s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141058.tex
+RUN safety_time_cancel_healthy
+safety_time_cancel_healthy|FAIL| [001/001] safety_time_cancel_healthy [15% ✗] (11.6s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141111.tex
+RUN safety_time_cancel_pending
+safety_time_cancel_pending|FAIL| [001/001] safety_time_cancel_pending [15% ✗] (10.4s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141122.tex
+RUN safety_time_cancel_debug_needed
+safety_time_cancel_debug_needed|FAIL| [001/001] safety_time_cancel_debug_needed [22% ✗] (8.6s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141132.tex
+RUN multi_cond_cancel_1004_healthy

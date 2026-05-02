@@ -242,6 +242,7 @@ class SlurmContext:
     operator_no_targets_found: bool = False  # set when discovery confirms no eligible targets
     operator_blocked_reason: str = ""  # set when a handoff/action is unsafe or underspecified
     operator_last_discovery_output: str = ""  # latest Operator-side read output for eligibility checks
+    original_user_message: str = ""  # current user prompt, preserved across Observer -> Operator handoff
 
     def mark_operator_action(self):
         self.operator_actions_taken += 1
@@ -250,7 +251,15 @@ class SlurmContext:
         self.operator_discovery_calls += 1
 
     def record_operator_discovery_output(self, output: str):
-        self.operator_last_discovery_output = output or ""
+        text = output or ""
+        if not text:
+            return
+        if self.operator_last_discovery_output:
+            self.operator_last_discovery_output = (
+                self.operator_last_discovery_output.rstrip() + "\n\n" + text
+            )[-12000:]
+        else:
+            self.operator_last_discovery_output = text[-12000:]
 
     def mark_no_targets_found(self):
         self.operator_no_targets_found = True

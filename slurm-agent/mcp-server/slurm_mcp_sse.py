@@ -803,10 +803,11 @@ def sacct(
     """Query historical job accounting records for completed/failed/cancelled/timed-out jobs.
     Filter: user, state="FAILED|COMPLETED|CANCELLED|TIMEOUT", starttime="now-7days" or "2024-01-01".
     Returns pipe-delimited table with ExitCode, elapsed time, resources."""
+    normalized_state = re.sub(r"\s*[|,]\s*", ",", str(state or "").strip())
     if REAL_MODE:
         cmd = ["sacct", f"--format={format}", "--parsable2", "--noheader"]
         if user: cmd += ["--user", user]
-        if state: cmd += ["--state", state]
+        if normalized_state: cmd += ["--state", normalized_state]
         if starttime: cmd += ["--starttime", starttime]
         if endtime: cmd += ["--endtime", endtime]
         raw = _run_cmd(cmd)
@@ -825,8 +826,10 @@ def sacct(
 
     if user:
         history = [j for j in history if j.get("user", "").lower() == user.lower()]
-    if state:
-        history = [j for j in history if j.get("state", "").upper() == state.upper()]
+    if normalized_state:
+        wanted_states = {s.strip().upper() for s in normalized_state.split(",") if s.strip()}
+        if wanted_states != {"ALL"}:
+            history = [j for j in history if j.get("state", "").upper() in wanted_states]
 
     if not history:
         return "No accounting records found for given filters."
@@ -1237,7 +1240,21 @@ def sacctmgr_list(entity: str = "user", params: str = "") -> str:
         cmd += ["--parsable2"]
         return _run_cmd(cmd)
     if entity.lower() == "user":
-        return "alice  1000  general  normal\nbob    1001  general  normal\ncharlie 1002 general normal"
+        return (
+            "User      UID   DefaultAccount  Account   Partition  QOS     MaxCPUs\n"
+            "alice     1000  general         general   cpu        normal  64\n"
+            "bob       1001  general         general   cpu        normal  64\n"
+            "charlie   1002  general         general   gpu        normal  32\n"
+            "dave      1003  research        research  gpu        high    32"
+        )
+    if entity.lower() in {"account", "association", "assoc"}:
+        return (
+            "Account   User      Partition  QOS     MaxCPUs\n"
+            "general   alice     cpu        normal  64\n"
+            "general   bob       cpu        normal  64\n"
+            "general   charlie   gpu        normal  32\n"
+            "research  dave      gpu        high    32"
+        )
     if entity.lower() == "qos":
         return "normal  priority=0  MaxJobs=50  MaxWall=7-00:00:00\nhigh    priority=10  MaxJobs=5   MaxWall=1-00:00:00"
     return f"sacctmgr show {entity}: (mock result)"

@@ -103,6 +103,13 @@ def _requires_submission_time_evidence(text: str) -> bool:
     return "submitted" in lowered and any(token in lowered for token in ("before", "after", "older than", "newer than"))
 
 
+def _requires_gpu_availability_evidence(text: str) -> bool:
+    lowered = f" {(text or '').lower()} "
+    if "gpu" not in lowered or not re.search(r"\b(?:submit|run|sbatch)\b", lowered):
+        return False
+    return any(token in lowered for token in (" if ", " available", " availability", " free"))
+
+
 def _has_submission_time_evidence(text: str) -> bool:
     """Return True only when discovery output contains a real submit/eligible timestamp."""
     haystack = text or ""
@@ -127,7 +134,19 @@ def _has_submission_time_evidence(text: str) -> bool:
 
 def _action_requires_precondition_evidence(text: str) -> bool:
     """Return True when a destructive action is conditional on state/time evidence."""
-    return _runtime_threshold_hours(text) is not None or _requires_submission_time_evidence(text)
+    return (
+        _runtime_threshold_hours(text) is not None
+        or _requires_submission_time_evidence(text)
+        or _requires_gpu_availability_evidence(text)
+    )
+
+
+def _full_action_request(ctx_obj: Any) -> str:
+    action = str(getattr(ctx_obj, "operator_action_request", "") or "").strip()
+    original = str(getattr(ctx_obj, "original_user_message", "") or "").strip()
+    if original and original.lower() not in action.lower():
+        return f"{action}\nOriginal user query: {original}" if action else original
+    return action
 
 
 def _parse_runtime_seconds(value: str) -> int | None:
@@ -200,6 +219,69 @@ def _extract_squeue_rows(squeue_output: str) -> list[dict[str, str]]:
     return rows
 
 
+def _extract_submit_timestamp(row: dict[str, str]) -> str:
+    for key, value in row.items():
+        normalized = key.upper().replace(" ", "_")
+        if normalized in {"SUBMIT_TIME", "SUBMITTIME", "ELIGIBLE_TIME", "ELIGIBLETIME"}:
+            text = str(value or "").strip()
+            if text:
+                return text
+    return ""
+
+
+def _submission_hour(timestamp: str) -> int | None:
+    match = re.search(r"T(\d{1,2}):", timestamp or "") or re.search(r"\s(\d{1,2}):", timestamp or "")
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
+def _row_matches_submission_time_condition(action_request: str, row: dict[str, str]) -> bool:
+    if not _requires_submission_time_evidence(action_request):
+        return True
+    timestamp = _extract_submit_timestamp(row)
+    if not timestamp:
+        return False
+    lowered = (action_request or "").lower()
+    hour = _submission_hour(timestamp)
+    if "before this morning" in lowered:
+        return hour is None or hour < 12
+    if "after this morning" in lowered:
+        return hour is None or hour >= 12
+    date_match = re.search(r"\b(before|after)\s+(\d{4}-\d{2}-\d{2}(?:t\d{2}:\d{2}:\d{2})?)", lowered)
+    if date_match:
+        op, boundary = date_match.groups()
+        comparable = timestamp.lower()
+        return comparable < boundary if op == "before" else comparable > boundary
+    return True
+
+
+def _has_idle_gpu_node_evidence(text: str) -> bool:
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+        if not line or set(line) <= {"-"}:
+            continue
+        summary = re.match(r"^gpu\s+\S+\s+\S+\s+(\d+)/(\d+)/(\d+)\b", line, flags=re.IGNORECASE)
+        if summary:
+            try:
+                if int(summary.group(2)) > 0:
+                    return True
+            except ValueError:
+                pass
+        parts = line.split()
+        if len(parts) < 5 or parts[0].upper() in {"NODENAME", "PARTITION"}:
+            continue
+        node, state = parts[0].lower(), parts[1].lower()
+        partition = parts[4].lower() if len(parts) > 4 else ""
+        gres = " ".join(parts[5:]).lower() if len(parts) > 5 else ""
+        if "idle" in state and ("gpu" in node or "gpu" in partition or "gpu" in gres):
+            return True
+    return False
+
+
 def _filter_rows_for_action(action_request: str, rows: list[dict[str, str]]) -> list[dict[str, str]]:
     lowered = (action_request or "").lower()
     result: list[dict[str, str]] = []
@@ -211,6 +293,12 @@ def _filter_rows_for_action(action_request: str, rows: list[dict[str, str]]) -> 
         user = row.get("USER", "").lower()
         partition = row.get("PARTITION", "").lower()
         runtime = _parse_runtime_seconds(row.get("TIME", ""))
+
+        mentions_terminal_state = any(
+            word in lowered for word in ("failed", "completed", "cancelled", "timeout", "terminal", "history")
+        )
+        if not mentions_terminal_state and state not in {"RUNNING", "PENDING"}:
+            continue
 
         if "pending" in lowered and state != "PENDING":
             continue
@@ -229,6 +317,8 @@ def _filter_rows_for_action(action_request: str, rows: list[dict[str, str]]) -> 
                 continue
         if threshold_s is not None and (runtime is None or runtime <= threshold_s):
             continue
+        if not _row_matches_submission_time_condition(action_request, row):
+            continue
         result.append(row)
     return result
 
@@ -238,8 +328,17 @@ def _should_expand_broad_job_scope(action_request: str) -> bool:
     markers = (
         " all ", " every ", " each ", " active ", " running ", " pending ",
         " gpu ", " cpu ", " partition ", " submitted ", " before ", " after ",
+        " everything ", " entire queue", " whole queue", " all jobs",
     )
     return any(marker in padded for marker in markers)
+
+
+def _eligible_job_ids_for_action(action_request: str, discovery_output: str) -> list[str]:
+    rows = _extract_squeue_rows(discovery_output)
+    if not rows:
+        return []
+    ids = [row["JOBID"] for row in _filter_rows_for_action(action_request, rows) if row.get("JOBID")]
+    return list(dict.fromkeys(ids))
 
 
 def _expand_broad_job_args(tool_name: str, args: dict[str, Any], action_request: str, discovery_output: str) -> dict[str, Any]:
@@ -256,12 +355,7 @@ def _expand_broad_job_args(tool_name: str, args: dict[str, Any], action_request:
     ids = [row["JOBID"] for row in selected if row.get("JOBID")]
     if not ids:
         return args
-    current = [p.strip() for p in str(args.get("job_id", "")).split(",") if p.strip()]
-    merged = []
-    for job_id in current + ids:
-        if job_id and job_id not in merged:
-            merged.append(job_id)
-    return {**args, "job_id": ",".join(merged)}
+    return {**args, "job_id": ",".join(dict.fromkeys(ids))}
 
 
 def _block_operator_action(ctx_obj: Any, reason: str) -> str:
@@ -315,9 +409,14 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                 if blocked_reason:
                     return _block_operator_action(ctx_obj, blocked_reason)
 
-                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                action_request = _full_action_request(ctx_obj)
                 discovery_output = str(getattr(ctx_obj, "operator_last_discovery_output", "") or "")
                 args = _expand_broad_job_args(captured_name, args, action_request, discovery_output)
+
+                if captured_name == "sbatch" and not str(args.get("script", "") or "").strip():
+                    scripts = _extract_script_paths(action_request)
+                    if len(scripts) == 1:
+                        args["script"] = scripts[0]
 
                 # Early validation: reject missing required args with actionable message
                 missing = [k for k in required_args if not args.get(k)]
@@ -342,6 +441,11 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                     )
 
                 if captured_name == "sbatch":
+                    if _requires_gpu_availability_evidence(action_request) and not _has_idle_gpu_node_evidence(discovery_output):
+                        return _block_operator_action(
+                            ctx_obj,
+                            "GPU availability condition was not proven by discovery results; refusing submission.",
+                        )
                     scripts = _extract_script_paths(action_request)
                     provided_script = str(args.get("script", "") or "").strip()
                     if len(scripts) > 1:
@@ -378,6 +482,17 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                             ctx_obj,
                             "Submission-time condition was not proven by discovery results; refusing destructive action.",
                         )
+                    rows = _extract_squeue_rows(discovery_output)
+                    if rows:
+                        eligible_ids = {
+                            row.get("JOBID", "") for row in _filter_rows_for_action(action_request, rows)
+                        }
+                        target_ids = {p.strip() for p in str(args.get("job_id", "")).split(",") if p.strip()}
+                        if target_ids and not target_ids <= eligible_ids:
+                            return _block_operator_action(
+                                ctx_obj,
+                                "Submission-time condition was not proven for every requested job ID.",
+                            )
 
                 threshold_h = _runtime_threshold_hours(action_request)
                 if captured_name == "scancel" and threshold_h is not None:
@@ -416,6 +531,43 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                 if bool(getattr(ctx_obj, "operator_blocked_reason", "") or ""):
                     return False
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
+                action_request = _full_action_request(ctx_obj)
+                discovery_output = str(getattr(ctx_obj, "operator_last_discovery_output", "") or "")
+                if required and captured_name.lower() == required and _action_requires_precondition_evidence(action_request):
+                    if not discovery_output:
+                        return False
+                    if captured_name == "sbatch" and _requires_gpu_availability_evidence(action_request):
+                        if not _has_idle_gpu_node_evidence(discovery_output):
+                            if hasattr(ctx_obj, "mark_operator_blocked"):
+                                ctx_obj.mark_operator_blocked(
+                                    "No idle GPU node was found; conditional submission is not eligible."
+                                )
+                            return False
+                    if captured_name == "scancel" and _runtime_threshold_hours(action_request) is not None:
+                        target_ids = list(getattr(ctx_obj, "operator_targets", []) or [])
+                        runtimes = _extract_job_runtimes(discovery_output)
+                        threshold_s = float(_runtime_threshold_hours(action_request) or 0) * 3600
+                        if target_ids and not all(runtimes.get(jid, -1) > threshold_s for jid in target_ids):
+                            if hasattr(ctx_obj, "mark_operator_blocked"):
+                                ctx_obj.mark_operator_blocked(
+                                    "No requested job was proven to be over the runtime threshold."
+                                )
+                            return False
+                        rows = _extract_squeue_rows(discovery_output)
+                        if not target_ids and rows and not _filter_rows_for_action(action_request, rows):
+                            if hasattr(ctx_obj, "mark_operator_blocked"):
+                                ctx_obj.mark_operator_blocked(
+                                    "No jobs were proven to be over the runtime threshold."
+                                )
+                            return False
+                    if captured_name == "scancel" and _requires_submission_time_evidence(action_request):
+                        rows = _extract_squeue_rows(discovery_output)
+                        if rows and not _filter_rows_for_action(action_request, rows):
+                            if hasattr(ctx_obj, "mark_operator_blocked"):
+                                ctx_obj.mark_operator_blocked(
+                                    "No active jobs matched the submission-time condition."
+                                )
+                            return False
                 if not required:
                     return True
                 return captured_name.lower() == required
@@ -477,7 +629,7 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
                 targets = list(getattr(ctx_obj, "operator_targets", []) or [])
                 discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
-                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                action_request = _full_action_request(ctx_obj)
                 needs_evidence = _action_requires_precondition_evidence(action_request)
 
                 if required and targets and not needs_evidence:
@@ -501,6 +653,14 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                         ctx_obj.mark_operator_discovery()
                     if ctx_obj is not None and hasattr(ctx_obj, "record_operator_discovery_output"):
                         ctx_obj.record_operator_discovery_output(text)
+                    if required in {"scancel", "scontrol_hold", "scontrol_release", "scontrol_requeue"}:
+                        eligible_ids = _eligible_job_ids_for_action(action_request, text)
+                        if eligible_ids:
+                            text = (
+                                text.rstrip()
+                                + "\nEligible target job IDs for requested action: "
+                                + ",".join(eligible_ids)
+                            )
                     lowered = text.lower()
                     if "no jobs found" in lowered or "no matching jobs" in lowered:
                         if ctx_obj is not None and hasattr(ctx_obj, "mark_no_targets_found"):
@@ -520,7 +680,7 @@ def make_operator_read_tools(mcp_url: str, read_tools: List[DiscoveredTool]) -> 
                     return False
                 required = str(getattr(ctx_obj, "operator_required_tool", "") or "").strip().lower()
                 targets = list(getattr(ctx_obj, "operator_targets", []) or [])
-                action_request = str(getattr(ctx_obj, "operator_action_request", "") or "")
+                action_request = _full_action_request(ctx_obj)
                 if required and targets and not _action_requires_precondition_evidence(action_request):
                     return False
                 discovery_calls = int(getattr(ctx_obj, "operator_discovery_calls", 0) or 0)
