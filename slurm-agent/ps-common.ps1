@@ -135,6 +135,40 @@ function Invoke-Checked {
     }
 }
 
+function Invoke-NativeCapture {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string] $FilePath,
+        [string[]] $Arguments = @(),
+        [string] $WorkingDirectory = $PWD.Path
+    )
+
+    Push-Location $WorkingDirectory
+    $previousErrorActionPreference = $ErrorActionPreference
+    $nativePreference = Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue
+    if ($nativePreference) {
+        $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+        $PSNativeCommandUseErrorActionPreference = $false
+    }
+
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $FilePath @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        return [pscustomobject]@{
+            ExitCode = $exitCode
+            Output = ($output | Out-String).Trim()
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        if ($nativePreference) {
+            $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+        }
+        Pop-Location
+    }
+}
+
 function Get-PidRecords {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string] $PidFile)

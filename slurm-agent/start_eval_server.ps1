@@ -38,17 +38,32 @@ if ($Detached -and (@(Get-LivePidRecords -PidFile $PidFile)).Count -gt 0) {
 }
 
 $PythonExe = Resolve-Executable -Name $Python
-$dependencyCheck = & $PythonExe -c "import fastapi, uvicorn" 2>&1
-if ($LASTEXITCODE -ne 0) {
-        $detail = ($dependencyCheck | Out-String).Trim()
+$dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import fastapi, uvicorn") -WorkingDirectory $Root
+if ($dependencyCheck.ExitCode -ne 0) {
+    Write-Warn "Eval server Python dependencies are missing; installing now."
+    $installResult = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-m", "pip", "install", "fastapi", "uvicorn") -WorkingDirectory $Root
+    if ($installResult.ExitCode -ne 0) {
+        $detail = $installResult.Output
         throw @"
 Missing Python dependencies for the eval server.
-Install them with:
+Automatic install failed. Run this manually:
     $PythonExe -m pip install fastapi uvicorn
 
 Original error:
 $detail
 "@
+    }
+
+    $dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import fastapi, uvicorn") -WorkingDirectory $Root
+    if ($dependencyCheck.ExitCode -ne 0) {
+        throw @"
+Eval server dependency install completed, but imports still fail.
+Original error:
+$($dependencyCheck.Output)
+"@
+    }
+
+    Write-Ok "Eval server Python dependencies installed."
 }
 
 $record = Start-ManagedProcess `

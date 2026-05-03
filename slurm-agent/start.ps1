@@ -125,24 +125,41 @@ $requirementsCandidates = @(
     (Join-Path $Root "agent/requirements.txt")
 )
 $requirementsPath = $requirementsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-$directPackageInstall = "fastapi==0.116.1 uvicorn==0.35.0 pydantic==2.11.7 python-dotenv==1.1.1 python-multipart openai openai-agents websockets==14.1 aiohttp==3.12.14 matplotlib"
-$dependencyCheck = & $PythonExe -c "import agents, fastapi, uvicorn, httpx" 2>&1
-if ($LASTEXITCODE -ne 0) {
-        $detail = ($dependencyCheck | Out-String).Trim()
-        $installCommand = if ($requirementsPath) {
-            "$PythonExe -m pip install -r `"$requirementsPath`""
-        }
-        else {
-            "$PythonExe -m pip install $directPackageInstall"
-        }
+$directPackageInstall = @("fastapi==0.116.1", "uvicorn==0.35.0", "pydantic==2.11.7", "python-dotenv==1.1.1", "python-multipart", "openai", "openai-agents", "websockets==14.1", "aiohttp==3.12.14", "matplotlib")
+$dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx") -WorkingDirectory $Root
+if ($dependencyCheck.ExitCode -ne 0) {
+    Write-Warn "Python dependencies are missing; installing now."
+    if ($requirementsPath) {
+        $installArgs = @("-m", "pip", "install", "-r", $requirementsPath)
+    }
+    else {
+        $installArgs = @("-m", "pip", "install") + $directPackageInstall
+    }
+
+    $installResult = Invoke-NativeCapture -FilePath $PythonExe -Arguments $installArgs -WorkingDirectory $Root
+    if ($installResult.ExitCode -ne 0) {
+        $detail = $installResult.Output
+        $installCommand = "$PythonExe $($installArgs -join ' ')"
         throw @"
 Missing Python dependencies for the agent API.
-Install them with:
+Automatic install failed. Run this manually:
     $installCommand
 
 Original error:
 $detail
 "@
+    }
+
+    $dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx") -WorkingDirectory $Root
+    if ($dependencyCheck.ExitCode -ne 0) {
+        throw @"
+Python dependency install completed, but imports still fail.
+Original error:
+$($dependencyCheck.Output)
+"@
+    }
+
+    Write-Ok "Python dependencies installed."
 }
 
 $records = @()
