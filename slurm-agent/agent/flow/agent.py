@@ -50,6 +50,7 @@ from .model import (
 from .skills import (
     load_observer_skills,
 )
+from .slurm_guard import SlurmGuard, normalize_target_scope, looks_like_job_id
 from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
@@ -77,7 +78,8 @@ class _OperatorHandoffPayload:
     """Structured payload Observer must pass when handing off to Operator."""
     action_request: str
     required_tool: str
-    targets: List[str] = field(default_factory=list)
+    targets: Any = field(default_factory=list)
+    target_scope: str = "explicit"
 
 
 def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -> MCPServerSse:
@@ -201,6 +203,7 @@ class SlurmAgentSystem:
 
         # 5. Guarded dangerous FunctionTools (HITL: needs_approval=True)
         dangerous_fns = make_guarded_dangerous_tools(self.mcp_url, self._catalog.dangerous)
+        slurm_guard = SlurmGuard(self._catalog.dangerous)
         operator_read_defs = [
             t for t in (self._catalog.analysis + self._catalog.safe)
             if t.name in _OPERATOR_READ_TOOLS
@@ -223,11 +226,10 @@ class SlurmAgentSystem:
             required_fields = set(schema.get("required", []) or [])
             properties = set((schema.get("properties", {}) or {}).keys())
             if "job_id" in required_fields or "job_id" in properties:
-                return [t for t in targets if _looks_like_job_id(t)]
+                return [t for t in targets if looks_like_job_id(t)]
             return targets
 
-        def _resolve_required_action_tool(raw_name: str, action_request: str = "") -> str:
-            _ = action_request
+        def _resolve_required_action_tool(raw_name: str) -> str:
             required_tool = _normalize_tool_name(raw_name)
             if not required_tool:
                 return ""
@@ -239,20 +241,19 @@ class SlurmAgentSystem:
             )
             return ""
 
-        def _handoff_block_reason(action_request: str, required_tool: str, targets: List[str]) -> str:
-            text = (action_request or "").strip()
-            if not text:
-                return "No action request was provided to Operator."
-            if not required_tool:
-                return "No valid dangerous action tool was resolved for this handoff."
-
-            tool_def = self._catalog.by_name(required_tool) if self._catalog else None
-            schema = getattr(tool_def, "schema", {}) or {}
-            properties = set((schema.get("properties", {}) or {}).keys())
-            requires_job_id = "job_id" in set(schema.get("required", []) or []) or "job_id" in properties
-            if requires_job_id and not targets:
-                return "The action target is missing or is not a concrete Slurm job ID."
-            return ""
+        def _handoff_block_reason(
+            action_request: str,
+            required_tool: str,
+            targets: List[str],
+            target_scope: str,
+        ) -> str:
+            decision = slurm_guard.admit_handoff(
+                action_request=action_request,
+                required_tool=required_tool,
+                targets=targets,
+                target_scope=target_scope,
+            )
+            return "" if decision.allowed else decision.reason
 
         # 6. Build agents with bidirectional handoffs
         #    Keep Observer tool surface focused on operational tools.
@@ -292,10 +293,10 @@ class SlurmAgentSystem:
             if ctx_obj is None:
                 return
             payload_action = str(getattr(payload, "action_request", "") or "").strip()
-            original = str(getattr(ctx_obj, "original_user_message", "") or "").strip()
-            action_request = _combine_action_with_original(payload_action, original)
-            required_tool = _resolve_required_action_tool(getattr(payload, "required_tool", ""), action_request)
+            action_request = payload_action
+            required_tool = _resolve_required_action_tool(getattr(payload, "required_tool", ""))
             targets = _normalize_handoff_targets(required_tool, getattr(payload, "targets", []))
+            target_scope = normalize_target_scope(getattr(payload, "target_scope", ""), targets=targets)
             if hasattr(ctx_obj, "reset_operator_handoff_state"):
                 ctx_obj.reset_operator_handoff_state()
             if hasattr(ctx_obj, "operator_action_request"):
@@ -304,10 +305,13 @@ class SlurmAgentSystem:
                 ctx_obj.operator_required_tool = required_tool
             if hasattr(ctx_obj, "operator_targets"):
                 ctx_obj.operator_targets = targets
+            if hasattr(ctx_obj, "operator_target_scope"):
+                ctx_obj.operator_target_scope = target_scope
             block_reason = _handoff_block_reason(
                 action_request,
                 required_tool,
                 targets,
+                target_scope,
             )
             if block_reason and hasattr(ctx_obj, "mark_operator_blocked"):
                 ctx_obj.mark_operator_blocked(block_reason)
@@ -329,19 +333,18 @@ class SlurmAgentSystem:
                     payload = {}
                 action_request = str(payload.get("action_request", "")).strip()
                 targets = payload.get("targets", [])
-                original_user_text = _last_user_text_from_handoff_data(handoff_data)
-                combined_action = _combine_action_with_original(action_request, original_user_text)
-                required_tool = _resolve_required_action_tool(str(payload.get("required_tool", "")).strip(), combined_action)
+                target_scope = normalize_target_scope(payload.get("target_scope", ""), targets=targets)
+                required_tool = _resolve_required_action_tool(str(payload.get("required_tool", "")).strip())
                 targets = _normalize_handoff_targets(required_tool, targets)
+                target_scope = normalize_target_scope(target_scope, targets=targets)
                 if action_request:
-                    block_reason = _handoff_block_reason(combined_action, required_tool, targets)
+                    block_reason = _handoff_block_reason(action_request, required_tool, targets, target_scope)
                     lines = [
                         "Execute this exact cluster-state action now.",
                         "Do not substitute a different action type.",
                         f"Action request: {action_request}",
+                        f"Target scope: {target_scope}",
                     ]
-                    if original_user_text and original_user_text.strip().lower() != action_request.strip().lower():
-                        lines.append(f"Original user query: {original_user_text.strip()}")
                     if block_reason:
                         lines = [
                             "This handoff is blocked by safety policy.",
@@ -355,6 +358,8 @@ class SlurmAgentSystem:
                         lines.append(f"Required tool: {required_tool}")
                     if targets:
                         lines.append(f"Targets: {', '.join(targets)}")
+                    if target_scope == "discovery":
+                        lines.append("Resolve concrete targets with one read tool before calling the action tool.")
                     if required_tool:
                         lines.append(f"First action tool call MUST use {required_tool}.")
                     canonical_text = "\n".join(lines)
@@ -421,9 +426,11 @@ class SlurmAgentSystem:
                 tool_description_override=(
                     "Hand off to the Operator to EXECUTE actions that modify the cluster. "
                     "Call with structured args: action_request (required imperative action) "
-                    "required_tool (exact action tool name), and targets (optional list of job IDs / node names / user/account). "
-                    "For job actions, provide concrete numeric job IDs in targets; resolve broad scopes before handoff. "
-                    "Example: action_request='Cancel jobs 12345,12346', required_tool='scancel', targets=['12345','12346']. "
+                    "required_tool (exact action tool name), targets (optional list of concrete IDs/names), "
+                    "and target_scope ('explicit', 'discovery', or 'none'). "
+                    "For job actions with concrete IDs, use target_scope='explicit' and targets=['12345','12346']. "
+                    "For broad job actions that need Operator resolution, use target_scope='discovery' and empty targets. "
+                    "For cluster-control actions with no target, use target_scope='none'. "
                     "The Operator will call the tools and report results."
                 ),
                 on_handoff=_capture_operator_handoff,
@@ -1181,60 +1188,10 @@ class SlurmAgentSystem:
 
 def _normalize_tool_name(name: str) -> str:
     norm = re.sub(r"[^a-z0-9_]+", "_", (name or "").strip().lower()).strip("_")
-    aliases = {
-        "submit": "sbatch",
-        "run": "sbatch",
-        "cancel": "scancel",
-        "delete": "scancel",
-        "kill": "scancel",
-        "stop": "scancel",
-        "hold": "scontrol_hold",
-        "release": "scontrol_release",
-        "update": "scontrol_update",
-        "modify": "scontrol_update",
-        "requeue": "scontrol_requeue",
-        "resume": "scontrol_resume_job",
-        "suspend": "scontrol_suspend",
-    }
-    if norm in aliases:
-        return aliases[norm]
     norm = norm.replace("scontrol_hold_job", "scontrol_hold")
     norm = norm.replace("scontrol_release_job", "scontrol_release")
     norm = norm.replace("scontrol_requeue_job", "scontrol_requeue")
     return norm
-
-
-def _looks_like_job_id(value: str) -> bool:
-    """Return True for scalar Slurm job IDs and common array ID forms."""
-    text = (value or "").strip()
-    return bool(re.fullmatch(r"\d+(?:_\d+|_\[\d+(?:-\d+)?\])?", text))
-
-
-def _combine_action_with_original(action_request: str, original_user_message: str) -> str:
-    action = (action_request or "").strip()
-    original = (original_user_message or "").strip()
-    if not original or original.lower() == action.lower():
-        return action
-    if original.lower() in action.lower():
-        return action
-    return f"{action}\nOriginal user query: {original}" if action else original
-
-
-def _last_user_text_from_handoff_data(handoff_data: HandoffInputData) -> str:
-    found = ""
-    for bucket_name in ("input_history", "input_items", "pre_handoff_items", "new_items"):
-        for item in getattr(handoff_data, bucket_name, ()) or ():
-            if isinstance(item, dict):
-                if item.get("role", "") == "user":
-                    parts = _extract_text_parts(item.get("content"))
-                    if parts:
-                        found = " ".join(parts).strip()
-                continue
-            if getattr(item, "role", "") == "user":
-                parts = _extract_text_parts(getattr(item, "content", ""))
-                if parts:
-                    found = " ".join(parts).strip()
-    return found
 
 
 def _extract_handoff_result_snippets(item: Any) -> List[str]:

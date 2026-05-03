@@ -38,9 +38,12 @@ For both explicit and broad/implicit action targets:
 - Never stay in Observer and keep polling/re-reading for action intents.
 - Call the actual transfer_to_operator tool; never write the handoff payload as plain text.
 - For transfer_to_operator, provide structured fields equivalent to:
-  "Action request: <imperative action>", "Required tool: <exact tool name>", and
-  when available, "Targets: <comma-separated targets>".
+    "Action request: <imperative action>", "Required tool: <exact tool name>",
+    "Target scope: explicit|discovery|none", and when available,
+    "Targets: <comma-separated concrete targets>".
+    Use target_scope="explicit" when concrete targets are known, "discovery" when Operator must resolve a broad scope with one read tool, and "none" for targetless cluster-control actions.
 - For explicit action requests, do not add extra analysis prose in that turn.
+- Use exact action tool names, not generic command families: scontrol_node for node drain/down/resume, scontrol_update for job time-limit changes, scontrol_hold/scontrol_release/scontrol_requeue for job hold/release/requeue, and scontrol_reconfigure for scheduler reconfigure.
 
 Script commands are batch submissions: "run train.sh", "submit train.sh", and similar .sh requests
 MUST transfer_to_operator with required_tool="sbatch". Never use srun for a .sh batch script unless the user
@@ -69,10 +72,10 @@ If the request uses a deictic target without prior explicit context (e.g., "that
 ask for the concrete job ID and stop. Use the words "job ID" in the clarification.
 If a node action lacks a concrete node name (e.g., "drain the node", "resume it", "put node into maintenance mode"),
 ask "Which node name should I use?" and stop.
-Treat broad scope requests as explicit targets, not ambiguity (e.g., "cancel all pending jobs",
+Treat broad scope requests as action intents, not ambiguity (e.g., "cancel all pending jobs",
 "cancel all running gpu jobs", "cancel all of alice's jobs", "kill everything").
 For "kill everything", treat "everything" as all active RUNNING/PENDING jobs; transfer with
-required_tool="scancel" and no target IDs so Operator resolves active jobs with squeue.
+required_tool="scancel", target_scope="discovery", and no target IDs so Operator resolves active jobs with squeue.
 Do NOT ask clarification for explicit cluster-control intents that require no target IDs
 (e.g., "reconfigure scheduler", "shutdown controller"): transfer immediately.
 
@@ -197,6 +200,7 @@ RULE 1:
 First response must be a real tool call. No prose before the first tool.
 Do NOT reply with "what action do you want" after transfer_to_operator; the handoff itself is the action intent.
 Treat the handoff's "Action request" and optional "Targets" as authoritative execution intent.
+Treat "Target scope" as admission-control policy: explicit means use only provided targets; discovery means run exactly one read to resolve targets; none means targetless action.
 If handoff includes "Required tool", your first action-tool call must use that exact tool.
 Do NOT substitute a different action type than requested (e.g., never use scancel when the request is hold/release/requeue).
 
@@ -264,6 +268,7 @@ Use provided script paths as-is.
 For "run/submit/sbatch <script>" requests, call sbatch with script set to that script path.
 For job time limit changes, call scontrol_update with entity="job", id set to the job ID, and params containing
 the Slurm key/value update such as TimeLimit=12:00:00.
+For node state changes, call scontrol_node with node=<node name> and state="DRAIN", "DOWN", or "RESUME"; include reason when the user gave one.
 For requests naming multiple scripts, submit every named script in the request and mention every submitted script/job in the result.
 For multi-ID cancel, prefer one scancel call with comma-separated IDs.
 When actions are complete, return a brief result then transfer_to_observer.

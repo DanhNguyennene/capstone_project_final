@@ -23,6 +23,7 @@ from .guardrails import (
     TOOL_INPUT_GUARDRAILS,
     guard_redact_secrets,
 )
+from .slurm_guard import SlurmGuard
 from .tool_discovery import DiscoveredTool
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,7 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
     """
     base = mcp_url.rstrip("/")
     result = []
+    slurm_guard = SlurmGuard(dangerous_tools)
 
     # Safety policy: dangerous actions always require HITL approval before execution.
     # We do not bypass approval for malformed arguments.
@@ -156,6 +158,15 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                         ctx_obj,
                         "Job actions require concrete Slurm numeric job IDs; unresolved labels or invalid IDs are not executable.",
                     )
+
+                admission = await slurm_guard.admit_dangerous_call(
+                    tool_name=captured_name,
+                    args=args,
+                    context=ctx_obj,
+                    live_mcp_call=lambda tool, tool_args: _mcp_call(base, tool, tool_args),
+                )
+                if not admission.allowed:
+                    return _block_operator_action(ctx_obj, admission.reason)
 
                 args_str    = ", ".join(f"{k}={v}" for k, v in args.items()) if args else ""
                 description = f"{captured_name}({args_str})"

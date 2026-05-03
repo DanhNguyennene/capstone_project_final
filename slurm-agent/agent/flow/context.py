@@ -236,8 +236,9 @@ class SlurmContext:
     chart_artifacts: List[str] = field(default_factory=list)
     operator_actions_taken: int = 0  # count of dangerous tools executed this run
     operator_required_tool: str = ""  # optional per-handoff required action tool
-    operator_action_request: str = ""  # latest natural-language action request from Observer handoff
+    operator_action_request: str = ""  # latest structured action request from Observer handoff
     operator_targets: List[str] = field(default_factory=list)  # targets captured at latest handoff
+    operator_target_scope: str = "none"  # explicit | discovery | none, supplied by structured handoff
     operator_discovery_calls: int = 0  # bounded pre-action discovery reads per handoff
     operator_no_targets_found: bool = False  # set when discovery confirms no eligible targets
     operator_blocked_reason: str = ""  # set when a handoff/action is unsafe or underspecified
@@ -271,6 +272,7 @@ class SlurmContext:
     def reset_operator_handoff_state(self):
         self.operator_actions_taken = 0
         self.operator_action_request = ""
+        self.operator_target_scope = "none"
         self.operator_discovery_calls = 0
         self.operator_no_targets_found = False
         self.operator_blocked_reason = ""
