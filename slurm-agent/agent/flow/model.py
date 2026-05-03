@@ -19,7 +19,7 @@ import ssl
 from agents.model_settings import ModelSettings
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 import httpx
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 try:
     from openai import AsyncAzureOpenAI
 except ImportError:  # Older openai packages may not expose Azure helpers.
@@ -89,8 +89,8 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 
 # ── Model factories ───────────────────────────────────────────────────────────
 
-def _cloud_http_client() -> httpx.AsyncClient | None:
-    """Return an HTTP client using system certs and explicit proxy mounts when needed."""
+def _cloud_http_client() -> DefaultAsyncHttpxClient | None:
+    """Return an OpenAI SDK HTTP client with system certs and explicit proxy mounts."""
     mode = os.environ.get("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
     http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
     https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
@@ -115,13 +115,13 @@ def _cloud_http_client() -> httpx.AsyncClient | None:
 
     if mounts:
         logger.info("[model] Using explicit proxy mounts for cloud LLM HTTP client")
-        return httpx.AsyncClient(mounts=mounts, trust_env=False)
+        return DefaultAsyncHttpxClient(mounts=mounts, verify=verify, trust_env=False)
     if verify is not True:
-        return httpx.AsyncClient(verify=verify)
+        return DefaultAsyncHttpxClient(verify=verify, trust_env=False)
     return None
 
 
-def cloud_client_kwargs() -> dict[str, httpx.AsyncClient]:
+def cloud_client_kwargs() -> dict[str, DefaultAsyncHttpxClient]:
     http_client = _cloud_http_client()
     return {"http_client": http_client} if http_client is not None else {}
 

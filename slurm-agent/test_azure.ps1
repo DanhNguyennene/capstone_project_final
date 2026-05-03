@@ -136,15 +136,24 @@ try:
     import truststore
 
     ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    with httpx.Client(verify=ssl_context, timeout=20, trust_env=True) as client:
+    mounts = {}
+    if http_proxy:
+        mounts["http://"] = httpx.HTTPTransport(proxy=http_proxy, verify=ssl_context)
+    if https_proxy or http_proxy:
+        mounts["https://"] = httpx.HTTPTransport(proxy=https_proxy or http_proxy, verify=ssl_context)
+    client_kwargs = {"verify": ssl_context, "timeout": 20}
+    if mounts:
+        client_kwargs = {"mounts": mounts, "timeout": 20, "trust_env": False}
+    with httpx.Client(**client_kwargs) as client:
         response = client.get(url, headers={"api-key": api_key})
-    print(f"HTTPX system cert test: reached endpoint, HTTP {response.status_code}")
+    label = "explicit proxy" if mounts else "system cert"
+    print(f"HTTPX {label} test: reached endpoint, HTTP {response.status_code}")
     if response.status_code in (502, 503, 504):
-        print("HTTPX system cert test: proxy/upstream gateway timeout; retry or check corporate proxy/VPN route.")
+        print("HTTPX test: proxy/upstream gateway timeout; retry or check corporate proxy/VPN route.")
 except ImportError as exc:
-    print(f"HTTPX system cert test: skipped, missing package: {exc.name}")
+    print(f"HTTPX explicit proxy test: skipped, missing package: {exc.name}")
 except Exception as exc:
-    print(f"HTTPX system cert test: failed: {type(exc).__name__}: {exc}")
+    print(f"HTTPX explicit proxy test: failed: {type(exc).__name__}: {exc}")
 
 request = urllib.request.Request(url, headers={"api-key": api_key})
 try:

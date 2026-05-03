@@ -67,9 +67,10 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from openai import AsyncOpenAI
+    from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 except ImportError:
     AsyncOpenAI = None
+    DefaultAsyncHttpxClient = None
 try:
     from openai import AsyncAzureOpenAI
 except ImportError:
@@ -119,7 +120,7 @@ PASS_THRESHOLD = 0.80
 
 
 def _cloud_client_kwargs() -> dict:
-    if httpx is None:
+    if httpx is None or DefaultAsyncHttpxClient is None:
         return {}
 
     mode = os.getenv("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
@@ -140,9 +141,9 @@ def _cloud_client_kwargs() -> dict:
         mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy or http_proxy, verify=verify)
 
     if mounts:
-        return {"http_client": httpx.AsyncClient(mounts=mounts, trust_env=False)}
+        return {"http_client": DefaultAsyncHttpxClient(mounts=mounts, verify=verify, trust_env=False)}
     if verify is not True:
-        return {"http_client": httpx.AsyncClient(verify=verify)}
+        return {"http_client": DefaultAsyncHttpxClient(verify=verify, trust_env=False)}
     return {}
 
 # Weights when --judge is OFF (default)
