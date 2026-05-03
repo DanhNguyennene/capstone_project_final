@@ -117,6 +117,12 @@ function Invoke-Native {
     )
 
     Push-Location $WorkingDirectory
+    $nativePreference = Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue
+    if ($nativePreference) {
+        $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+        $PSNativeCommandUseErrorActionPreference = $false
+    }
+
     try {
         & $FilePath @Arguments
         if ($LASTEXITCODE -ne 0) {
@@ -124,7 +130,30 @@ function Invoke-Native {
         }
     }
     finally {
+        if ($nativePreference) {
+            $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+        }
         Pop-Location
+    }
+}
+
+function Test-PythonDependencies {
+    param([Parameter(Mandatory = $true)][string] $FilePath)
+
+    $nativePreference = Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue
+    if ($nativePreference) {
+        $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+        $PSNativeCommandUseErrorActionPreference = $false
+    }
+
+    try {
+        & $FilePath -c "import agents, fastapi, uvicorn, httpx" *> $null
+        return ($LASTEXITCODE -eq 0)
+    }
+    finally {
+        if ($nativePreference) {
+            $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+        }
     }
 }
 
@@ -155,11 +184,16 @@ function Stop-PortOwner {
 }
 
 function Stop-Stack {
-    param([int[]] $Ports)
+    param(
+        [int[]] $Ports,
+        [switch] $KillPorts
+    )
 
     $state = Get-StackState
+    $hadRecordedProcesses = $false
     if ($state -and ($state.PSObject.Properties.Name -contains "processes")) {
         $records = @($state.processes)
+        $hadRecordedProcesses = ($records.Count -gt 0)
         [array]::Reverse($records)
         foreach ($record in $records) {
             $process = Get-Process -Id ([int] $record.Id) -ErrorAction SilentlyContinue
@@ -170,8 +204,10 @@ function Stop-Stack {
         }
     }
 
-    foreach ($port in $Ports) {
-        Stop-PortOwner -Port $port
+    if ($KillPorts -or $hadRecordedProcesses) {
+        foreach ($port in $Ports) {
+            Stop-PortOwner -Port $port
+        }
     }
 
     Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
@@ -272,14 +308,20 @@ function Start-ServiceWindow {
         [Parameter(Mandatory = $true)][string] $Title,
         [Parameter(Mandatory = $true)][string] $WorkingDirectory,
         [Parameter(Mandatory = $true)][string] $FilePath,
-        [string[]] $Arguments = @()
+        [string[]] $Arguments = @(),
+        [string[]] $PythonPath = @()
     )
 
     $argumentText = ($Arguments | ForEach-Object { Quote-PS $_ }) -join " "
+    $pythonPathText = ($PythonPath | Where-Object { $_ } | ForEach-Object { $_.TrimEnd("\") }) -join ";"
     $script = @"
 `$ErrorActionPreference = 'Stop'
 `$Host.UI.RawUI.WindowTitle = $(Quote-PS $Title)
 Set-Location -LiteralPath $(Quote-PS $WorkingDirectory)
+if ($(Quote-PS $pythonPathText)) {
+    if (`$env:PYTHONPATH) { `$env:PYTHONPATH = $(Quote-PS $pythonPathText) + ';' + `$env:PYTHONPATH }
+    else { `$env:PYTHONPATH = $(Quote-PS $pythonPathText) }
+}
 Write-Host $(Quote-PS "Starting $Name") -ForegroundColor Green
 Write-Host $(Quote-PS "$FilePath $($Arguments -join ' ')") -ForegroundColor DarkGray
 & $(Quote-PS $FilePath) $argumentText
@@ -317,7 +359,7 @@ if (-not $Scenario) { $Scenario = if ($env:MCP_SCENARIO) { $env:MCP_SCENARIO } e
 $ports = @($McpPort, $AgentPort, $FrontendPort, $EvalPort)
 
 if ($Stop) {
-    Stop-Stack -Ports $ports
+    Stop-Stack -Ports $ports -KillPorts
     return
 }
 
@@ -342,8 +384,7 @@ Write-Step "Using Python: $PythonExe"
 Write-Step "Using npm: $NpmExe"
 
 if (-not $SkipInstall) {
-    & $PythonExe -c "import agents, fastapi, uvicorn, httpx" *> $null
-    if ($LASTEXITCODE -ne 0) {
+    if (-not (Test-PythonDependencies -FilePath $PythonExe)) {
         if (-not (Test-Path -LiteralPath $Requirements)) {
             throw "Missing requirements file: $Requirements"
         }
@@ -382,10 +423,10 @@ else {
 }
 
 $records = @()
-$records += Start-ServiceWindow -Name "MCP server" -Title "Slurm MCP server" -WorkingDirectory (Join-Path $Root "mcp-server") -FilePath $PythonExe -Arguments $mcpArgs
-$records += Start-ServiceWindow -Name "Agent API" -Title "Slurm Agent API" -WorkingDirectory (Join-Path $Root "agent") -FilePath $PythonExe -Arguments @("-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", [string] $AgentPort)
+$records += Start-ServiceWindow -Name "MCP server" -Title "Slurm MCP server" -WorkingDirectory (Join-Path $Root "mcp-server") -FilePath $PythonExe -Arguments $mcpArgs -PythonPath @((Join-Path $Root "mcp-server"), $Root)
+$records += Start-ServiceWindow -Name "Agent API" -Title "Slurm Agent API" -WorkingDirectory (Join-Path $Root "agent") -FilePath $PythonExe -Arguments @("-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", [string] $AgentPort) -PythonPath @((Join-Path $Root "agent"), $Root)
 $records += Start-ServiceWindow -Name "Frontend" -Title "Slurm Frontend" -WorkingDirectory $FrontendDir -FilePath $NpmExe -Arguments @("run", "dev", "--", "--host", "0.0.0.0", "--port", [string] $FrontendPort)
-$records += Start-ServiceWindow -Name "Eval server" -Title "Slurm Eval server" -WorkingDirectory (Join-Path $Root "evaluation") -FilePath $PythonExe -Arguments @("eval_server.py", "--host", "0.0.0.0", "--port", [string] $EvalPort)
+$records += Start-ServiceWindow -Name "Eval server" -Title "Slurm Eval server" -WorkingDirectory (Join-Path $Root "evaluation") -FilePath $PythonExe -Arguments @("eval_server.py", "--host", "0.0.0.0", "--port", [string] $EvalPort) -PythonPath @((Join-Path $Root "evaluation"), (Join-Path $Root "agent"), $Root)
 
 [pscustomobject]@{
     started = (Get-Date).ToString("o")
