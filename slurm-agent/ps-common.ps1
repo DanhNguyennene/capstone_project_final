@@ -169,6 +169,33 @@ function Invoke-NativeCapture {
     }
 }
 
+function Convert-ToStartProcessCommand {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string] $FilePath,
+        [string[]] $Arguments = @()
+    )
+
+    $extension = [System.IO.Path]::GetExtension($FilePath).ToLowerInvariant()
+    if ($extension -eq ".ps1") {
+        return [pscustomobject]@{
+            FilePath = (Resolve-Executable -Name "powershell")
+            Arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $FilePath) + $Arguments
+        }
+    }
+    if ($extension -eq ".cmd" -or $extension -eq ".bat") {
+        return [pscustomobject]@{
+            FilePath = (Resolve-Executable -Name "cmd")
+            Arguments = @("/c", $FilePath) + $Arguments
+        }
+    }
+
+    return [pscustomobject]@{
+        FilePath = $FilePath
+        Arguments = $Arguments
+    }
+}
+
 function Get-PidRecords {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string] $PidFile)
@@ -271,11 +298,12 @@ function Start-ManagedProcess {
     )
 
     Initialize-Directory -Path $LogDir
-    Write-Info "Starting ${Name}: $FilePath $($Arguments -join ' ')"
+    $command = Convert-ToStartProcessCommand -FilePath $FilePath -Arguments $Arguments
+    Write-Info "Starting ${Name}: $($command.FilePath) $($command.Arguments -join ' ')"
 
     $startParams = @{
-        FilePath = $FilePath
-        ArgumentList = $Arguments
+        FilePath = $command.FilePath
+        ArgumentList = $command.Arguments
         WorkingDirectory = $WorkingDirectory
         PassThru = $true
     }
@@ -294,7 +322,7 @@ function Start-ManagedProcess {
     return [pscustomobject]@{
         Name = $Name
         Id = $process.Id
-        Command = "$FilePath $($Arguments -join ' ')"
+        Command = "$($command.FilePath) $($command.Arguments -join ' ')"
         WorkingDirectory = $WorkingDirectory
         Stdout = $stdout
         Stderr = $stderr
