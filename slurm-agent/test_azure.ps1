@@ -129,6 +129,21 @@ if proxy:
         print(f"Proxy DNS: failed: {exc}")
 
 url = f"{endpoint}/openai/deployments?api-version={urllib.parse.quote(api_version)}"
+
+try:
+    import ssl
+    import httpx
+    import truststore
+
+    ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    with httpx.Client(verify=ssl_context, timeout=20, trust_env=True) as client:
+        response = client.get(url, headers={"api-key": api_key})
+    print(f"HTTPX system cert test: reached endpoint, HTTP {response.status_code}")
+except ImportError as exc:
+    print(f"HTTPX system cert test: skipped, missing package: {exc.name}")
+except Exception as exc:
+    print(f"HTTPX system cert test: failed: {type(exc).__name__}: {exc}")
+
 request = urllib.request.Request(url, headers={"api-key": api_key})
 try:
     with urllib.request.urlopen(request, timeout=20) as response:
