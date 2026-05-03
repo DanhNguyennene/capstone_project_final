@@ -12775,3 +12775,8 @@ INFO:     Started server process [748275]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 83 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     5.61.209.107:4902 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found

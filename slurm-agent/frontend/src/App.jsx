@@ -38,9 +38,16 @@ const OLLAMA_MODEL_OPTIONS = [
 const OPENAI_MODEL_OPTIONS = [
   'gpt-4o',
   'gpt-4o-mini',
-  'gpt-4.1-mini',
+  'gpt-4.5-preview',
   'gpt-4.1',
+  'gpt-4.1-mini',
+  'gpt-4.1-nano',
+  'o3',
+  'o3-mini',
+  'o3-pro',
   'o4-mini',
+  'o1',
+  'o1-mini',
 ]
 
 const AZURE_OPENAI_MODEL_OPTIONS = [
