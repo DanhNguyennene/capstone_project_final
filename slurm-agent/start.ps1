@@ -120,9 +120,18 @@ if (-not $NoRebuild) {
     }
 }
 
-& $PythonExe -c "import agents, fastapi, uvicorn, httpx" *> $null
+$requirementsPath = Join-Path $Root "agent/requirements.txt"
+$dependencyCheck = & $PythonExe -c "import agents, fastapi, uvicorn, httpx" 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Missing Python dependencies. Run: pip install -r agent/requirements.txt"
+        $detail = ($dependencyCheck | Out-String).Trim()
+        throw @"
+Missing Python dependencies for the agent API.
+Install them with:
+    $PythonExe -m pip install -r "$requirementsPath"
+
+Original error:
+$detail
+"@
 }
 
 $records = @()

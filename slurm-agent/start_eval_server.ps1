@@ -38,9 +38,17 @@ if ($Detached -and (@(Get-LivePidRecords -PidFile $PidFile)).Count -gt 0) {
 }
 
 $PythonExe = Resolve-Executable -Name $Python
-& $PythonExe -c "import fastapi, uvicorn" *> $null
+$dependencyCheck = & $PythonExe -c "import fastapi, uvicorn" 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Missing deps. Install: pip install fastapi uvicorn"
+        $detail = ($dependencyCheck | Out-String).Trim()
+        throw @"
+Missing Python dependencies for the eval server.
+Install them with:
+    $PythonExe -m pip install fastapi uvicorn
+
+Original error:
+$detail
+"@
 }
 
 $record = Start-ManagedProcess `
