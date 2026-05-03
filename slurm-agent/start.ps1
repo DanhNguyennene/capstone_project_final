@@ -46,6 +46,17 @@ if ($Detached -and (@(Get-LivePidRecords -PidFile $PidFile)).Count -gt 0) {
 
 $FrontendDir = Join-Path $Root "frontend"
 $DistDir = Join-Path $FrontendDir "dist"
+$PackageJson = Join-Path $FrontendDir "package.json"
+
+if (-not (Test-Path -LiteralPath $PackageJson)) {
+        throw @"
+Frontend package manifest not found: $PackageJson
+This checkout is missing tracked frontend files. From the repository root, run:
+    git restore --source=origin/main -- slurm-agent/frontend
+Then retry from slurm-agent:
+    .\start.ps1
+"@
+}
 
 function Test-FrontendNeedsBuild {
     if (-not (Test-Path -LiteralPath $DistDir)) { return $true }
@@ -80,13 +91,12 @@ $NpmExe = Resolve-Executable -Name "npm"
 Push-Location $FrontendDir
 try {
     $viteBin = Get-ViteBinPath
-    $packageJson = Join-Path $FrontendDir "package.json"
     if (-not $viteBin) {
         Write-Info "node_modules not found; running npm install"
         Invoke-Checked -FilePath $NpmExe -Arguments @("install") -WorkingDirectory $FrontendDir
         Write-Ok "npm install complete"
     }
-    elseif ((Get-Item -LiteralPath $packageJson).LastWriteTimeUtc -gt (Get-Item -LiteralPath $viteBin).LastWriteTimeUtc) {
+    elseif ((Get-Item -LiteralPath $PackageJson).LastWriteTimeUtc -gt (Get-Item -LiteralPath $viteBin).LastWriteTimeUtc) {
         Write-Info "package.json changed; running npm install"
         Invoke-Checked -FilePath $NpmExe -Arguments @("install") -WorkingDirectory $FrontendDir
         Write-Ok "npm install complete"
