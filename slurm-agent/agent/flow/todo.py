@@ -27,7 +27,6 @@ from .model import (
     OPENAI_BASE_URL,
     OPENAI_API_KEY,
     OPENAI_MODEL,
-    cloud_client_kwargs,
     normalize_provider,
 )
 
@@ -146,19 +145,19 @@ class TodoTracker:
             if provider == "copilot":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
-                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
                 _model = self.specialist_model or COPILOT_MODEL
                 _create_kwargs: dict = {}
             elif provider == "github-models":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
-                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
                 _model = self.specialist_model or GITHUB_MODELS_MODEL
                 _create_kwargs = {}
             elif provider == "openai":
                 if not self.openai_api_key:
                     raise RuntimeError("OPENAI_API_KEY missing for openai provider")
-                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=self.openai_api_key, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=self.openai_api_key)
                 _model = self.specialist_model or OPENAI_MODEL
                 _create_kwargs = {}
             elif provider == "azure-openai":
@@ -172,7 +171,6 @@ class TodoTracker:
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
-                    **cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
                 )
                 _model = self.specialist_model or AZURE_OPENAI_MODEL
                 _create_kwargs = {}

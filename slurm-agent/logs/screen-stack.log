@@ -81827,3 +81827,55 @@ ERROR:openai.agents:[non-fatal] Tracing: max retries reached, giving up on this 
 
 [1;33m[start][0m Shutting down…
 [0;32m[start][0m All services stopped.
+[0;32m[start][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;32m[start][0m node_modules up-to-date
+[0;32m[start][0m Frontend up-to-date, skipping build  (use --rebuild to force)
+[0;34m[start][0m Starting MCP server on port 3002 (scenario=healthy)…
+[0;34m[start][0m Starting Agent API on port 8000…
+[0;34m[start][0m Serving frontend on port 4173…
+
+> slurm-agent-ui@0.1.0 preview
+> vite preview --host 0.0.0.0 --port 4173
+
+INFO:     Will watch for changes in these directories: ['/mnt/e/workspace/uni/capstone_project/slurm-agent/agent']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [748337] using WatchFiles
+  ➜  Local:   http://localhost:4173/
+  ➜  Network: http://192.168.1.16:4173/
+  ➜  Network: http://100.64.0.1:4173/
+  ➜  Network: http://172.19.0.1:4173/
+2026-05-03 16:25:57,597 INFO Starting Slurm MCP SSE server — mock (scenario=healthy), 0.0.0.0:3002
+INFO:     Started server process [748336]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+INFO:     Started server process [748360]
+INFO:     Waiting for application startup.
+INFO:main:Starting Slurm Agent API
+INFO:     Application startup complete.
+
+[0;32m[start][0m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;32m[start][0m   MCP server  → http://localhost:3002
+[0;32m[start][0m   Agent API   → http://localhost:8000
+[0;32m[start][0m   Frontend    → http://localhost:4173
+[0;32m[start][0m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WARNING:  WatchFiles detected changes in 'flow/todo.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [748360]
+WARNING:  WatchFiles detected changes in 'flow/model.py', 'flow/agent.py', 'flow/todo.py', 'main.py'. Reloading...
+INFO:     Started server process [748790]
+INFO:     Waiting for application startup.
+INFO:main:Starting Slurm Agent API
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'flow/model.py'. Reloading...
+INFO:     Started server process [748797]
+INFO:     Waiting for application startup.
+INFO:main:Starting Slurm Agent API
+INFO:     Application startup complete.
+INFO:     Started server process [748799]
+INFO:     Waiting for application startup.
+INFO:main:Starting Slurm Agent API
+INFO:     Application startup complete.

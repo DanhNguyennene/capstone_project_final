@@ -38,7 +38,6 @@ from flow.model import (
     GITHUB_MODELS_BASE_URL,
     GITHUB_MODELS_MODEL,
     GITHUB_TOKEN,
-    cloud_client_kwargs,
     normalize_provider,
 )
 from flow.skills import load_observer_skills
@@ -584,7 +583,7 @@ def _build_chat_client(
         token = (openai_api_key or OPENAI_API_KEY).strip()
         if not token:
             raise RuntimeError("OPENAI_API_KEY missing for OpenAI provider")
-        return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token, **cloud_client_kwargs()), target_model, {}
+        return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token), target_model, {}
 
     if active_provider == "azure-openai":
         if AsyncAzureOpenAI is None:
@@ -597,19 +596,18 @@ def _build_chat_client(
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
             api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
-            **cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
         )
         return client, target_model, {}
 
     if active_provider == "copilot":
         if not GITHUB_TOKEN:
             raise RuntimeError("GITHUB_TOKEN missing for Copilot provider")
-        return AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs()), target_model, {}
+        return AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN), target_model, {}
 
     if active_provider == "github-models":
         if not GITHUB_TOKEN:
             raise RuntimeError("GITHUB_TOKEN missing for GitHub Models provider")
-        return AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs()), target_model, {}
+        return AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN), target_model, {}
 
     return (
         AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama"),

@@ -13,28 +13,17 @@ Model configuration for the Slurm agent.
 - CLOUD_MODEL_SETTINGS      — cloud provider settings (no Ollama-specific extras)
 """
 import logging
-import ipaddress
 import os
-import ssl
-import urllib.parse
 
 from agents.model_settings import ModelSettings
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
-import httpx
-from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+from openai import AsyncOpenAI
 try:
     from openai import AsyncAzureOpenAI
 except ImportError:  # Older openai packages may not expose Azure helpers.
     AsyncAzureOpenAI = None
-try:
-    import truststore
-except ImportError:
-    truststore = None
 
 logger = logging.getLogger(__name__)
-
-os.environ['NO_PROXY'] = '.cognitiveservices.azure.com,.openai.azure.com,10.0.0.0/8'
-os.environ['no_proxy'] = os.environ['NO_PROXY']
 
 # ── Provider selection ────────────────────────────────────────────────────────
 # Supported providers: ollama (default), openai, azure-openai, copilot, github-models.
@@ -55,8 +44,7 @@ AZURE_OPENAI_API_KEY: str = (
     or os.environ.get("AZURE_OPENAI_KEY", "")
 )
 AZURE_OPENAI_API_VERSION: str = os.environ.get(
-    "AZURE_OPENAI_API_VERSION",
-    os.environ.get("API_VERSION", "2024-02-15-preview"),
+    "AZURE_OPENAI_API_VERSION", "2024-02-15-preview"
 )
 AZURE_OPENAI_MODEL: str = (
     os.environ.get("AZURE_OPENAI_MODEL", "")
@@ -94,77 +82,6 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 
 # ── Model factories ───────────────────────────────────────────────────────────
 
-def _host_matches_no_proxy(hostname: str, no_proxy: str) -> bool:
-    host = hostname.strip().strip("[]").lower()
-    if not host:
-        return False
-    for raw_token in no_proxy.split(","):
-        token = raw_token.strip().lower()
-        if not token:
-            continue
-        if token == "*":
-            return True
-        if "/" in token:
-            try:
-                if ipaddress.ip_address(host) in ipaddress.ip_network(token, strict=False):
-                    return True
-            except ValueError:
-                pass
-        token_host = token[1:] if token.startswith(".") else token
-        if host == token_host or host.endswith(f".{token_host}"):
-            return True
-    return False
-
-
-def _url_matches_no_proxy(url: str | None) -> bool:
-    if not url:
-        return False
-    parsed = urllib.parse.urlparse(url)
-    host = parsed.hostname or url
-    return _host_matches_no_proxy(host, os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or "")
-
-
-def _cloud_http_client(target_url: str | None = None) -> DefaultAsyncHttpxClient | None:
-    """Return an OpenAI SDK HTTP client with system certs and explicit proxy mounts."""
-    mode = os.environ.get("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
-    http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
-    https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-
-    use_system_certs = mode in {"1", "true", "yes", "on"} or (
-        mode == "auto" and os.name == "nt"
-    )
-    verify: ssl.SSLContext | bool = True
-    if use_system_certs and truststore is not None:
-        verify = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        logger.info("[model] Using system certificate store for cloud LLM HTTP client")
-    elif use_system_certs:
-        logger.warning(
-            "[model] truststore is not installed; cloud LLM calls will use Python's default certs."
-        )
-
-    if _url_matches_no_proxy(target_url):
-        logger.info("[model] Bypassing proxy for cloud LLM URL matched by NO_PROXY")
-        return DefaultAsyncHttpxClient(verify=verify, trust_env=False)
-
-    mounts: dict[str, httpx.AsyncHTTPTransport] = {}
-    if http_proxy:
-        mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy, verify=verify)
-    if https_proxy or http_proxy:
-        mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy or http_proxy, verify=verify)
-
-    if mounts:
-        logger.info("[model] Using explicit proxy mounts for cloud LLM HTTP client")
-        return DefaultAsyncHttpxClient(mounts=mounts, verify=verify, trust_env=False)
-    if verify is not True:
-        return DefaultAsyncHttpxClient(verify=verify, trust_env=False)
-    return None
-
-
-def cloud_client_kwargs(target_url: str | None = None) -> dict[str, DefaultAsyncHttpxClient]:
-    http_client = _cloud_http_client(target_url=target_url)
-    return {"http_client": http_client} if http_client is not None else {}
-
-
 def create_ollama_model(
     model_name: str,
     base_url: str = "http://localhost:11434/v1",
@@ -190,7 +107,7 @@ def create_openai_model(
         )
     _model = model_name or OPENAI_MODEL
     _base = base_url or OPENAI_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token, **cloud_client_kwargs())
+    client = AsyncOpenAI(base_url=_base, api_key=_token)
     logger.info(f"[model] OpenAI backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -223,7 +140,6 @@ def create_azure_openai_model(
         azure_endpoint=_endpoint,
         api_key=_token,
         api_version=_api_version,
-        **cloud_client_kwargs(target_url=_endpoint),
     )
     logger.info(f"[model] Azure OpenAI backend: {_endpoint} deployment={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
@@ -247,7 +163,7 @@ def create_copilot_model(
         )
     _model = model_name or COPILOT_MODEL
     _base = base_url or COPILOT_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token, **cloud_client_kwargs())
+    client = AsyncOpenAI(base_url=_base, api_key=_token)
     logger.info(f"[model] Copilot backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -268,11 +184,7 @@ def create_github_models_model(
             "Create a GitHub PAT with 'models: read' scope."
         )
     _model = model_name or GITHUB_MODELS_MODEL
-    client = AsyncOpenAI(
-        base_url=GITHUB_MODELS_BASE_URL,
-        api_key=_token,
-        **cloud_client_kwargs(),
-    )
+    client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=_token)
     logger.info(f"[model] GitHub Models backend: {GITHUB_MODELS_BASE_URL} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 

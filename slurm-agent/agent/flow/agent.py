@@ -12,12 +12,11 @@ automatically — no manual routing code required.
 """
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from agents import Agent, Runner, RunState, SQLiteSession, ItemHelpers, handoff, SessionSettings, set_tracing_disabled
+from agents import Agent, Runner, RunState, SQLiteSession, ItemHelpers, handoff, SessionSettings
 from agents.extensions.handoff_filters import remove_all_tools
 from agents.handoffs import HandoffInputData
 from agents.mcp import MCPServerSse, ToolFilterContext
@@ -48,7 +47,6 @@ from .model import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
     LLM_PROVIDER,
-    cloud_client_kwargs,
     normalize_provider,
     model_settings_for_provider,
     resolve_model,
@@ -66,8 +64,6 @@ from .tools import (
 )
 
 logger = logging.getLogger(__name__)
-
-set_tracing_disabled(disabled=True)
 
 
 # ── Mutable state container for stream event processing ──────────────────────
@@ -111,45 +107,6 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 # ── Tool names given to the Operator for pre-action verification ──────────────
 _OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo"}
 _OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
-
-
-def _friendly_stream_error(exc: Exception, provider: str) -> str:
-    """Turn low-level model transport errors into user-actionable messages."""
-    msg = str(exc) or exc.__class__.__name__
-    if "Invalid JSON" in msg:
-        return "Technical issue with the response. Please rephrase."
-
-    parts = []
-    current: BaseException | None = exc
-    while current is not None:
-        parts.append(str(current))
-        parts.append(current.__class__.__name__)
-        current = current.__cause__ or current.__context__
-    details = " ".join(parts).lower()
-
-    if provider == "azure-openai":
-        if (
-            "name or service not known" in details
-            or "could not resolve" in details
-            or "temporary failure in name resolution" in details
-        ):
-            proxy_set = bool(os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"))
-            if proxy_set:
-                return (
-                    "Azure OpenAI connection error: DNS lookup failed for the Azure endpoint or proxy. "
-                    "Check AZURE_OPENAI_ENDPOINT and make sure the configured HTTPS proxy host resolves from this machine."
-                )
-            return (
-                "Azure OpenAI connection error: DNS lookup failed for the Azure endpoint. "
-                "Set HTTP_PROXY/HTTPS_PROXY for this network or check AZURE_OPENAI_ENDPOINT."
-            )
-        if "connection error" in details or "connecterror" in details:
-            return (
-                "Azure OpenAI connection error: unable to reach the Azure endpoint. "
-                "Check the proxy/network settings and AZURE_OPENAI_ENDPOINT."
-            )
-
-    return msg
 
 
 
@@ -198,8 +155,6 @@ class SlurmAgentSystem:
         self.openai_parallel = bool(openai_parallel and self.llm_provider == "openai")
         if self.specialist_provider == "openai":
             default_specialist = OPENAI_MODEL
-        elif self.specialist_provider == "azure-openai":
-            default_specialist = AZURE_OPENAI_MODEL
         elif self.specialist_provider == "copilot":
             default_specialist = COPILOT_MODEL
         elif self.specialist_provider == "github-models":
@@ -634,20 +589,20 @@ class SlurmAgentSystem:
             if provider == "copilot":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
-                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
                 _model = self.llm_model or COPILOT_MODEL
                 _extra: dict = {}
             elif provider == "github-models":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
-                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
                 _model = self.llm_model or GITHUB_MODELS_MODEL
                 _extra = {}
             elif provider == "openai":
                 token = self.openai_api_key or OPENAI_API_KEY
                 if not token:
                     raise RuntimeError("OPENAI_API_KEY missing for openai provider")
-                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token, **cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token)
                 _model = self.llm_model or OPENAI_MODEL
                 _extra = {}
             elif provider == "azure-openai":
@@ -661,7 +616,6 @@ class SlurmAgentSystem:
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
-                    **cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
                 )
                 _model = self.llm_model or AZURE_OPENAI_MODEL
                 _extra = {}
@@ -1194,7 +1148,10 @@ class SlurmAgentSystem:
 
         except Exception as exc:
             logger.error(f"Streaming error: {exc}", exc_info=True)
-            yield {"type": "error", "message": _friendly_stream_error(exc, self.llm_provider)}
+            msg = str(exc)
+            if "Invalid JSON" in msg:
+                msg = "Technical issue with the response. Please rephrase."
+            yield {"type": "error", "message": msg}
 
     # ── Non-streaming run ─────────────────────────────────────────────────────
 

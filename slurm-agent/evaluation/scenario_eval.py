@@ -49,19 +49,13 @@ import sys
 import time
 import argparse
 import datetime
-import ipaddress
 import os
-import ssl
-import urllib.parse
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
-
-os.environ['NO_PROXY'] = '.cognitiveservices.azure.com,.openai.azure.com,10.0.0.0/8'
-os.environ['no_proxy'] = os.environ['NO_PROXY']
 
 import re
 
@@ -72,22 +66,13 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+    from openai import AsyncOpenAI
 except ImportError:
     AsyncOpenAI = None
-    DefaultAsyncHttpxClient = None
 try:
     from openai import AsyncAzureOpenAI
 except ImportError:
     AsyncAzureOpenAI = None
-try:
-    import httpx
-except ImportError:
-    httpx = None
-try:
-    import truststore
-except ImportError:
-    truststore = None
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -99,7 +84,7 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 OPENAI_API_KEY  = (os.getenv("OPENAI_API_KEY") or os.getenv("OPEN_AI_KEY") or "").strip()
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
 AZURE_OPENAI_API_KEY = (os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY") or "").strip()
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", os.getenv("API_VERSION", "2024-02-15-preview"))
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
 CHAT_LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").strip().lower() or "ollama"
 AZURE_OPENAI_MODEL = (
     os.getenv("AZURE_OPENAI_MODEL")
@@ -122,67 +107,6 @@ ROUTING_TOOLS  = {
     "check_pending_actions",                        # internal state check
 }
 PASS_THRESHOLD = 0.80
-
-
-def _host_matches_no_proxy(hostname: str, no_proxy: str) -> bool:
-    host = hostname.strip().strip("[]").lower()
-    if not host:
-        return False
-    for raw_token in no_proxy.split(","):
-        token = raw_token.strip().lower()
-        if not token:
-            continue
-        if token == "*":
-            return True
-        if "/" in token:
-            try:
-                if ipaddress.ip_address(host) in ipaddress.ip_network(token, strict=False):
-                    return True
-            except ValueError:
-                pass
-        token_host = token[1:] if token.startswith(".") else token
-        if host == token_host or host.endswith(f".{token_host}"):
-            return True
-    return False
-
-
-def _url_matches_no_proxy(url: str | None) -> bool:
-    if not url:
-        return False
-    parsed = urllib.parse.urlparse(url)
-    host = parsed.hostname or url
-    return _host_matches_no_proxy(host, os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or "")
-
-
-def _cloud_client_kwargs(target_url: str | None = None) -> dict:
-    if httpx is None or DefaultAsyncHttpxClient is None:
-        return {}
-
-    mode = os.getenv("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
-    http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
-    https_proxy = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
-
-    use_system_certs = mode in {"1", "true", "yes", "on"} or (
-        mode == "auto" and os.name == "nt"
-    )
-    verify: ssl.SSLContext | bool = True
-    if use_system_certs and truststore is not None:
-        verify = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-    if _url_matches_no_proxy(target_url):
-        return {"http_client": DefaultAsyncHttpxClient(verify=verify, trust_env=False)}
-
-    mounts = {}
-    if http_proxy:
-        mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy, verify=verify)
-    if https_proxy or http_proxy:
-        mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy or http_proxy, verify=verify)
-
-    if mounts:
-        return {"http_client": DefaultAsyncHttpxClient(mounts=mounts, verify=verify, trust_env=False)}
-    if verify is not True:
-        return {"http_client": DefaultAsyncHttpxClient(verify=verify, trust_env=False)}
-    return {}
 
 # Weights when --judge is OFF (default)
 WEIGHTS = {
@@ -961,7 +885,6 @@ async def judge_flow(
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=azure_api_key,
                     api_version=AZURE_OPENAI_API_VERSION,
-                    **_cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
                 )
             else:
                 openai_api_key = _get_openai_api_key()
@@ -975,7 +898,7 @@ async def judge_flow(
                         )
                         return await judge_flow(test, trace, model=fallback_model, judge_provider="ollama", _attempt=_attempt)
                     return 0.0, "judge error: OPENAI_API_KEY missing for OpenAI judge model", False, ""
-                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=openai_api_key, **_cloud_client_kwargs())
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=openai_api_key)
 
             comp = await client.chat.completions.create(
                 model=model_name,
