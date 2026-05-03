@@ -105,6 +105,8 @@ print(f"AZURE_OPENAI_MODEL: {model or 'missing'}")
 print(f"HTTPS_PROXY: {mask(https_proxy)}")
 print(f"HTTP_PROXY: {mask(http_proxy)}")
 print(f"NO_PROXY: {no_proxy or 'missing'}")
+if ",," in no_proxy:
+    print("NO_PROXY warning: duplicate commas found; clean this env value to avoid inconsistent proxy bypass parsing.")
 
 if not endpoint or not api_key or not model:
     print("RESULT: missing Azure config. Set endpoint, key, and model/deployment.")
@@ -147,9 +149,12 @@ try:
     with httpx.Client(**client_kwargs) as client:
         response = client.get(url, headers={"api-key": api_key})
     label = "explicit proxy" if mounts else "system cert"
-    print(f"HTTPX {label} test: reached endpoint, HTTP {response.status_code}")
+    print(f"HTTPX {label} test: network path returned HTTP {response.status_code}")
     if response.status_code in (502, 503, 504):
-        print("HTTPX test: proxy/upstream gateway timeout; retry or check corporate proxy/VPN route.")
+        body = response.text[:4096]
+        if "DNS look up failed" in body or "DNS lookup failed" in body:
+            print("HTTPX test: corporate proxy reported DNS lookup failure for the Azure host.")
+        print("HTTPX test: proxy/upstream gateway timeout; check corporate proxy/VPN/Azure private DNS route.")
 except ImportError as exc:
     print(f"HTTPX explicit proxy test: skipped, missing package: {exc.name}")
 except Exception as exc:
@@ -161,9 +166,12 @@ try:
         print(f"Azure API: ok, HTTP {response.status}")
         sys.exit(0)
 except urllib.error.HTTPError as exc:
-    print(f"Azure API: reached endpoint, HTTP {exc.code}")
+    print(f"Azure API: network path returned HTTP {exc.code}")
     if exc.code in (502, 503, 504):
-        print("RESULT: proxy/upstream gateway timeout. TLS works, but the proxy/Azure route did not return a usable response.")
+        body = exc.read(4096).decode("utf-8", errors="ignore")
+        if "DNS look up failed" in body or "DNS lookup failed" in body:
+            print("RESULT: corporate proxy reported DNS lookup failure for the Azure host.")
+        print("RESULT: proxy/upstream gateway timeout. Python, TLS, and proxy mounting work; the proxy/Azure route is blocked or misconfigured.")
         sys.exit(3)
     print("RESULT: network path works; check key/API version/deployment if chat still fails.")
     sys.exit(0 if exc.code in (200, 401, 403, 404) else 3)
