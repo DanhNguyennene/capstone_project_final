@@ -137,9 +137,11 @@ if not endpoint or not api_key or not model:
 
 endpoint_host, endpoint_port = host_port(endpoint, 443)
 print(f"Endpoint host: {endpoint_host}")
+endpoint_dns_ok = False
 try:
     endpoint_ips = socket.getaddrinfo(endpoint_host, endpoint_port, type=socket.SOCK_STREAM)
     print("Endpoint DNS: ok")
+    endpoint_dns_ok = True
 except OSError as exc:
     print(f"Endpoint DNS: failed: {exc}")
 
@@ -147,6 +149,8 @@ proxy = https_proxy or http_proxy
 proxy_bypassed = no_proxy_matches(endpoint_host, no_proxy)
 if proxy_bypassed:
     print("Proxy bypass: endpoint matches NO_PROXY; Azure test will use direct network path.")
+    if not endpoint_dns_ok:
+        print("Proxy bypass warning: direct Azure route cannot work until this host resolves on your machine.")
 if proxy:
     proxy_host, proxy_port = host_port(proxy, 8080)
     print(f"Proxy host: {proxy_host}:{proxy_port}")
@@ -172,9 +176,9 @@ try:
     client_kwargs = {"verify": ssl_context, "timeout": 20}
     if mounts:
         client_kwargs = {"mounts": mounts, "timeout": 20, "trust_env": False}
+    label = "direct/system cert" if proxy_bypassed else ("explicit proxy" if mounts else "system cert")
     with httpx.Client(**client_kwargs) as client:
         response = client.get(url, headers={"api-key": api_key})
-    label = "explicit proxy" if mounts else "system cert"
     print(f"HTTPX {label} test: network path returned HTTP {response.status_code}")
     if response.status_code in (502, 503, 504):
         body = response.text[:4096]
@@ -182,9 +186,10 @@ try:
             print("HTTPX test: corporate proxy reported DNS lookup failure for the Azure host.")
         print("HTTPX test: proxy/upstream gateway timeout; check corporate proxy/VPN/Azure private DNS route.")
 except ImportError as exc:
-    print(f"HTTPX explicit proxy test: skipped, missing package: {exc.name}")
+    print(f"HTTPX test: skipped, missing package: {exc.name}")
 except Exception as exc:
-    print(f"HTTPX explicit proxy test: failed: {type(exc).__name__}: {exc}")
+    label = "direct/system cert" if proxy_bypassed else "explicit proxy"
+    print(f"HTTPX {label} test: failed: {type(exc).__name__}: {exc}")
 
 request = urllib.request.Request(url, headers={"api-key": api_key})
 try:
@@ -203,6 +208,9 @@ except urllib.error.HTTPError as exc:
     sys.exit(0 if exc.code in (200, 401, 403, 404) else 3)
 except Exception as exc:
     print(f"Azure API: connection failed: {type(exc).__name__}: {exc}")
+    if proxy_bypassed and not endpoint_dns_ok:
+        print("RESULT: NO_PROXY is active, but direct DNS failed. Connect to the private DNS/VPN route or remove Azure from NO_PROXY to use the proxy path.")
+        sys.exit(1)
     print("RESULT: network/proxy/DNS is blocking the Azure call from Python.")
     sys.exit(1)
 '@
