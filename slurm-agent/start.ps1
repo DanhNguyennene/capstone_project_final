@@ -120,14 +120,25 @@ if (-not $NoRebuild) {
     }
 }
 
-$requirementsPath = Join-Path $Root "agent/requirements.txt"
+$requirementsCandidates = @(
+    (Join-Path $Root "requirements.txt"),
+    (Join-Path $Root "agent/requirements.txt")
+)
+$requirementsPath = $requirementsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+$directPackageInstall = "fastapi==0.116.1 uvicorn==0.35.0 pydantic==2.11.7 python-dotenv==1.1.1 python-multipart openai openai-agents websockets==14.1 aiohttp==3.12.14 matplotlib"
 $dependencyCheck = & $PythonExe -c "import agents, fastapi, uvicorn, httpx" 2>&1
 if ($LASTEXITCODE -ne 0) {
         $detail = ($dependencyCheck | Out-String).Trim()
+        $installCommand = if ($requirementsPath) {
+            "$PythonExe -m pip install -r `"$requirementsPath`""
+        }
+        else {
+            "$PythonExe -m pip install $directPackageInstall"
+        }
         throw @"
 Missing Python dependencies for the agent API.
 Install them with:
-    $PythonExe -m pip install -r "$requirementsPath"
+    $installCommand
 
 Original error:
 $detail
