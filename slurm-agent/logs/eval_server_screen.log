@@ -12745,3 +12745,27 @@ INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
 
 [startup] Restored 83 results, 0 terminal entries from eval_latest_snapshot.json
 INFO:     127.0.0.1:50688 - "GET /api/runtime-config HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [708640]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 83 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:47432 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47436 - "GET /api/terminal/history?test_id=acct_list_healthy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47436 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47432 - "GET /api/terminal/history HTTP/1.1" 200 OK

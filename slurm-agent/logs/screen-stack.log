@@ -81605,3 +81605,225 @@ WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or se
 WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or service not known
 WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or service not known
 ERROR:openai.agents:[non-fatal] Tracing: max retries reached, giving up on this batch.
+
+[1;33m[start][0m Shutting down…
+[0;32m[start][0m All services stopped.
+[0;32m[start][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;32m[start][0m node_modules up-to-date
+[0;32m[start][0m Frontend up-to-date, skipping build  (use --rebuild to force)
+[0;34m[start][0m Starting MCP server on port 3002 (scenario=healthy)…
+[0;34m[start][0m Starting Agent API on port 8000…
+[0;34m[start][0m Serving frontend on port 4173…
+
+> slurm-agent-ui@0.1.0 preview
+> vite preview --host 0.0.0.0 --port 4173
+
+INFO:     Will watch for changes in these directories: ['/mnt/e/workspace/uni/capstone_project/slurm-agent/agent']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [708693] using WatchFiles
+  ➜  Local:   http://localhost:4173/
+  ➜  Network: http://192.168.1.16:4173/
+  ➜  Network: http://100.64.0.1:4173/
+  ➜  Network: http://172.19.0.1:4173/
+2026-05-03 14:15:05,726 INFO Starting Slurm MCP SSE server — mock (scenario=healthy), 0.0.0.0:3002
+INFO:     Started server process [708692]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+INFO:     Started server process [708721]
+INFO:     Waiting for application startup.
+INFO:main:Starting Slurm Agent API
+INFO:     Application startup complete.
+
+[0;32m[start][0m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;32m[start][0m   MCP server  → http://localhost:3002
+[0;32m[start][0m   Agent API   → http://localhost:8000
+[0;32m[start][0m   Frontend    → http://localhost:4173
+[0;32m[start][0m ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INFO:     127.0.0.1:45746 - "GET /health HTTP/1.1" 200 OK
+INFO:main:Chat request - session_id: sess_1777367374906_us8v, mcp_url: http://localhost:3002, main-provider: azure-openai, main-model: gpt-4o, specialist-provider: azure-openai, specialist-model: gpt-4o, openai-parallel: False
+INFO:main:Creating agent for session: sess_1777367374906_us8v (mcp=http://localhost:3002, main-provider=azure-openai, main-model=gpt-4o, specialist-provider=azure-openai, specialist-model=gpt-4o, openai-parallel=False)
+INFO:flow.model:[model] Azure OpenAI backend: https://openai-xfnwdjnudejn2.openai.azure.com deployment=gpt-4o
+INFO:main:Preprocessed message (2 chars): hi
+INFO:     127.0.0.1:45746 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+INFO:flow.agent:[SlurmAgentSystem] Initialising (session=sess_1777367374906_us8v)
+INFO:flow.tool_discovery:Discovering tools from http://localhost:3002/sse
+INFO:     127.0.0.1:39730 - "GET /sse HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:3002/sse "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39740 - "POST /messages/?session_id=59a5b05463d84535b8d4bb3d0814979c HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=59a5b05463d84535b8d4bb3d0814979c "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39740 - "POST /messages/?session_id=59a5b05463d84535b8d4bb3d0814979c HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=59a5b05463d84535b8d4bb3d0814979c "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39740 - "POST /messages/?session_id=59a5b05463d84535b8d4bb3d0814979c HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=59a5b05463d84535b8d4bb3d0814979c "HTTP/1.1 202 Accepted"
+2026-05-03 14:15:11,635 INFO Processing request of type ListToolsRequest
+INFO:flow.tool_discovery:MCP returned 67 tools
+WARNING:flow.tool_discovery:Auto-classified 'cluster_history' as dangerous via description heuristic
+INFO:flow.tool_discovery:Catalog — analysis:30 safe:1 dangerous:36 other:0
+INFO:flow.skills:Loaded 26 skills from ['/mnt/e/workspace/uni/capstone_project/slurm-agent/agent/skills', '/mnt/e/workspace/uni/capstone_project/slurm-agent/agent/skills/observer', '/mnt/e/workspace/uni/capstone_project/slurm-agent/agent/skills/arhive']
+INFO:flow.tools:Created HITL-guarded FunctionTool for sbatch
+INFO:flow.tools:Created HITL-guarded FunctionTool for scancel
+INFO:flow.tools:Created HITL-guarded FunctionTool for srun
+INFO:flow.tools:Created HITL-guarded FunctionTool for salloc
+INFO:flow.tools:Created HITL-guarded FunctionTool for sattach
+INFO:flow.tools:Created HITL-guarded FunctionTool for sbcast
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_hold
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_release
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_update
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_reconfigure
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_requeue
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_suspend
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_resume_job
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_add
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_modify
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_delete
+INFO:flow.tools:Created HITL-guarded FunctionTool for cluster_history
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_create_reservation
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_delete_reservation
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node_power_down
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node_power_up
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node_features
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node_gres
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_node_weight
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_update_reservation
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_write_config
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_setdebug
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_token
+INFO:flow.tools:Created HITL-guarded FunctionTool for scontrol_shutdown
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_recalc
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_archive
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_load
+INFO:flow.tools:Created HITL-guarded FunctionTool for sacctmgr_dump
+INFO:flow.tools:Created HITL-guarded FunctionTool for strigger_set
+INFO:flow.tools:Created HITL-guarded FunctionTool for strigger_clear
+INFO:flow.tools:Created Operator read FunctionTool for squeue
+INFO:flow.tools:Created Operator read FunctionTool for sinfo
+INFO:flow.tools:Created Operator read FunctionTool for scontrol_show
+INFO:flow.agent:[SlurmAgentSystem] Ready — Observer tools≈31 Operator tools≈39 observer_skills=26
+INFO:     127.0.0.1:39742 - "GET /sse HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:3002/sse "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39756 - "POST /messages/?session_id=89031db129474ed7a0a6558cd067c27d HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=89031db129474ed7a0a6558cd067c27d "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39756 - "POST /messages/?session_id=89031db129474ed7a0a6558cd067c27d HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=89031db129474ed7a0a6558cd067c27d "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39760 - "GET /sse HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:3002/sse "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39768 - "POST /messages/?session_id=2d7c33fdf62c47ec84b2d8b6efff62fc HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=2d7c33fdf62c47ec84b2d8b6efff62fc "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39768 - "POST /messages/?session_id=2d7c33fdf62c47ec84b2d8b6efff62fc HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=2d7c33fdf62c47ec84b2d8b6efff62fc "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:39756 - "POST /messages/?session_id=89031db129474ed7a0a6558cd067c27d HTTP/1.1" 202 Accepted
+INFO:httpx:HTTP Request: POST http://localhost:3002/messages/?session_id=89031db129474ed7a0a6558cd067c27d "HTTP/1.1 202 Accepted"
+2026-05-03 14:15:11,753 INFO Processing request of type ListToolsRequest
+INFO:openai._base_client:Retrying request to /chat/completions in 0.396063 seconds
+INFO:openai._base_client:Retrying request to /chat/completions in 0.784869 seconds
+ERROR:flow.agent:Streaming error: Connection error.
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/http_proxy.py", line 288, in handle_async_request
+    connect_response = await self._connection.handle_async_request(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/opt/miniconda3/envs/main/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_base_client.py", line 1630, in request
+    response = await self._send_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_client.py", line 829, in _send_request
+    return await self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_client.py", line 807, in _send_with_auth_retry
+    response = await super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_base_client.py", line 1553, in _send_request
+    return await self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/opt/miniconda3/envs/main/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/mnt/e/workspace/uni/capstone_project/slurm-agent/agent/flow/agent.py", line 970, in run_streaming
+    async for ev in self._emit_stream_events(
+  File "/mnt/e/workspace/uni/capstone_project/slurm-agent/agent/flow/agent.py", line 766, in _emit_stream_events
+    async for event in result.stream_events():
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/result.py", line 645, in stream_events
+    raise self._stored_exception
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/run_internal/run_loop.py", line 900, in start_streaming
+    turn_result = await run_single_turn_streamed(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/run_internal/run_loop.py", line 1303, in run_single_turn_streamed
+    async for event in retry_stream:
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/run_internal/model_retry.py", line 652, in stream_response_with_retry
+    event = await stream.__anext__()
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 237, in stream_response
+    response, stream = await self._fetch_response(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 391, in _fetch_response
+    ret = await self._get_client().chat.completions.create(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2714, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_base_client.py", line 1913, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/main/lib/python3.11/site-packages/openai/_base_client.py", line 1665, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or service not known
+WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or service not known
+WARNING:openai.agents:[non-fatal] Tracing: request failed: [Errno -2] Name or service not known
+ERROR:openai.agents:[non-fatal] Tracing: max retries reached, giving up on this batch.
+
+[1;33m[start][0m Shutting down…
+[0;32m[start][0m All services stopped.
