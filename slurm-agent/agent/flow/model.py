@@ -13,8 +13,10 @@ Model configuration for the Slurm agent.
 - CLOUD_MODEL_SETTINGS      — cloud provider settings (no Ollama-specific extras)
 """
 import logging
+import ipaddress
 import os
 import ssl
+import urllib.parse
 
 from agents.model_settings import ModelSettings
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
@@ -30,6 +32,9 @@ except ImportError:
     truststore = None
 
 logger = logging.getLogger(__name__)
+
+os.environ['NO_PROXY'] = '.cognitiveservices.azure.com,.openai.azure.com,10.0.0.0/8'
+os.environ['no_proxy'] = os.environ['NO_PROXY']
 
 # ── Provider selection ────────────────────────────────────────────────────────
 # Supported providers: ollama (default), openai, azure-openai, copilot, github-models.
@@ -89,7 +94,37 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 
 # ── Model factories ───────────────────────────────────────────────────────────
 
-def _cloud_http_client() -> DefaultAsyncHttpxClient | None:
+def _host_matches_no_proxy(hostname: str, no_proxy: str) -> bool:
+    host = hostname.strip().strip("[]").lower()
+    if not host:
+        return False
+    for raw_token in no_proxy.split(","):
+        token = raw_token.strip().lower()
+        if not token:
+            continue
+        if token == "*":
+            return True
+        if "/" in token:
+            try:
+                if ipaddress.ip_address(host) in ipaddress.ip_network(token, strict=False):
+                    return True
+            except ValueError:
+                pass
+        token_host = token[1:] if token.startswith(".") else token
+        if host == token_host or host.endswith(f".{token_host}"):
+            return True
+    return False
+
+
+def _url_matches_no_proxy(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urllib.parse.urlparse(url)
+    host = parsed.hostname or url
+    return _host_matches_no_proxy(host, os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or "")
+
+
+def _cloud_http_client(target_url: str | None = None) -> DefaultAsyncHttpxClient | None:
     """Return an OpenAI SDK HTTP client with system certs and explicit proxy mounts."""
     mode = os.environ.get("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
     http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
@@ -107,6 +142,10 @@ def _cloud_http_client() -> DefaultAsyncHttpxClient | None:
             "[model] truststore is not installed; cloud LLM calls will use Python's default certs."
         )
 
+    if _url_matches_no_proxy(target_url):
+        logger.info("[model] Bypassing proxy for cloud LLM URL matched by NO_PROXY")
+        return DefaultAsyncHttpxClient(verify=verify, trust_env=False)
+
     mounts: dict[str, httpx.AsyncHTTPTransport] = {}
     if http_proxy:
         mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy, verify=verify)
@@ -121,8 +160,8 @@ def _cloud_http_client() -> DefaultAsyncHttpxClient | None:
     return None
 
 
-def cloud_client_kwargs() -> dict[str, DefaultAsyncHttpxClient]:
-    http_client = _cloud_http_client()
+def cloud_client_kwargs(target_url: str | None = None) -> dict[str, DefaultAsyncHttpxClient]:
+    http_client = _cloud_http_client(target_url=target_url)
     return {"http_client": http_client} if http_client is not None else {}
 
 
@@ -184,7 +223,7 @@ def create_azure_openai_model(
         azure_endpoint=_endpoint,
         api_key=_token,
         api_version=_api_version,
-        **cloud_client_kwargs(),
+        **cloud_client_kwargs(target_url=_endpoint),
     )
     logger.info(f"[model] Azure OpenAI backend: {_endpoint} deployment={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)

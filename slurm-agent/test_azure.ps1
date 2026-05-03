@@ -77,11 +77,15 @@ Write-Step "Using Python: $PythonExe"
 
 $script = @'
 import os
+import ipaddress
 import socket
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+
+os.environ['NO_PROXY'] = '.cognitiveservices.azure.com,.openai.azure.com,10.0.0.0/8'
+os.environ['no_proxy'] = os.environ['NO_PROXY']
 
 endpoint = (os.getenv("AZURE_OPENAI_ENDPOINT") or "").rstrip("/")
 api_key = os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY") or ""
@@ -97,6 +101,25 @@ def mask(value):
 def host_port(url, default_port):
     parsed = urllib.parse.urlparse(url)
     return parsed.hostname, parsed.port or default_port
+
+def no_proxy_matches(hostname, no_proxy_value):
+    host = (hostname or "").strip().strip("[]").lower()
+    for raw_token in no_proxy_value.split(","):
+        token = raw_token.strip().lower()
+        if not token:
+            continue
+        if token == "*":
+            return True
+        if "/" in token:
+            try:
+                if ipaddress.ip_address(host) in ipaddress.ip_network(token, strict=False):
+                    return True
+            except ValueError:
+                pass
+        token_host = token[1:] if token.startswith(".") else token
+        if host == token_host or host.endswith(f".{token_host}"):
+            return True
+    return False
 
 print(f"AZURE_OPENAI_ENDPOINT: {mask(endpoint)}")
 print(f"AZURE_OPENAI_API_KEY: {mask(api_key)}")
@@ -121,6 +144,9 @@ except OSError as exc:
     print(f"Endpoint DNS: failed: {exc}")
 
 proxy = https_proxy or http_proxy
+proxy_bypassed = no_proxy_matches(endpoint_host, no_proxy)
+if proxy_bypassed:
+    print("Proxy bypass: endpoint matches NO_PROXY; Azure test will use direct network path.")
 if proxy:
     proxy_host, proxy_port = host_port(proxy, 8080)
     print(f"Proxy host: {proxy_host}:{proxy_port}")
@@ -139,9 +165,9 @@ try:
 
     ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     mounts = {}
-    if http_proxy:
+    if http_proxy and not proxy_bypassed:
         mounts["http://"] = httpx.HTTPTransport(proxy=http_proxy, verify=ssl_context)
-    if https_proxy or http_proxy:
+    if (https_proxy or http_proxy) and not proxy_bypassed:
         mounts["https://"] = httpx.HTTPTransport(proxy=https_proxy or http_proxy, verify=ssl_context)
     client_kwargs = {"verify": ssl_context, "timeout": 20}
     if mounts:

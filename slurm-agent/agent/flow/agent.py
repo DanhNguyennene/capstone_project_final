@@ -661,7 +661,7 @@ class SlurmAgentSystem:
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
-                    **cloud_client_kwargs(),
+                    **cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
                 )
                 _model = self.llm_model or AZURE_OPENAI_MODEL
                 _extra = {}

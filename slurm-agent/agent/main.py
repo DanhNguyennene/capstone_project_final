@@ -597,7 +597,7 @@ def _build_chat_client(
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
             api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
-            **cloud_client_kwargs(),
+            **cloud_client_kwargs(target_url=AZURE_OPENAI_ENDPOINT),
         )
         return client, target_model, {}
 
