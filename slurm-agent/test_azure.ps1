@@ -139,6 +139,8 @@ try:
     with httpx.Client(verify=ssl_context, timeout=20, trust_env=True) as client:
         response = client.get(url, headers={"api-key": api_key})
     print(f"HTTPX system cert test: reached endpoint, HTTP {response.status_code}")
+    if response.status_code in (502, 503, 504):
+        print("HTTPX system cert test: proxy/upstream gateway timeout; retry or check corporate proxy/VPN route.")
 except ImportError as exc:
     print(f"HTTPX system cert test: skipped, missing package: {exc.name}")
 except Exception as exc:
@@ -151,6 +153,9 @@ try:
         sys.exit(0)
 except urllib.error.HTTPError as exc:
     print(f"Azure API: reached endpoint, HTTP {exc.code}")
+    if exc.code in (502, 503, 504):
+        print("RESULT: proxy/upstream gateway timeout. TLS works, but the proxy/Azure route did not return a usable response.")
+        sys.exit(3)
     print("RESULT: network path works; check key/API version/deployment if chat still fails.")
     sys.exit(0 if exc.code in (200, 401, 403, 404) else 3)
 except Exception as exc:

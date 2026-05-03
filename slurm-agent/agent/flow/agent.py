@@ -48,6 +48,7 @@ from .model import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
     LLM_PROVIDER,
+    cloud_client_kwargs,
     normalize_provider,
     model_settings_for_provider,
     resolve_model,
@@ -631,20 +632,20 @@ class SlurmAgentSystem:
             if provider == "copilot":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
-                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
+                client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
                 _model = self.llm_model or COPILOT_MODEL
                 _extra: dict = {}
             elif provider == "github-models":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
-                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
+                client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN, **cloud_client_kwargs())
                 _model = self.llm_model or GITHUB_MODELS_MODEL
                 _extra = {}
             elif provider == "openai":
                 token = self.openai_api_key or OPENAI_API_KEY
                 if not token:
                     raise RuntimeError("OPENAI_API_KEY missing for openai provider")
-                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token)
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token, **cloud_client_kwargs())
                 _model = self.llm_model or OPENAI_MODEL
                 _extra = {}
             elif provider == "azure-openai":
@@ -658,6 +659,7 @@ class SlurmAgentSystem:
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=AZURE_OPENAI_API_KEY,
                     api_version=AZURE_OPENAI_API_VERSION,
+                    **cloud_client_kwargs(),
                 )
                 _model = self.llm_model or AZURE_OPENAI_MODEL
                 _extra = {}

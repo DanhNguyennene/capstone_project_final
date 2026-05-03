@@ -90,29 +90,38 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 # ── Model factories ───────────────────────────────────────────────────────────
 
 def _cloud_http_client() -> httpx.AsyncClient | None:
-    """Return an HTTP client using system certs when corporate TLS interception needs it."""
+    """Return an HTTP client using system certs and explicit proxy mounts when needed."""
     mode = os.environ.get("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
-    if mode in {"0", "false", "no", "off"}:
-        return None
+    http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+    https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
 
     use_system_certs = mode in {"1", "true", "yes", "on"} or (
         mode == "auto" and os.name == "nt"
     )
-    if not use_system_certs:
-        return None
-
-    if truststore is None:
+    verify: ssl.SSLContext | bool = True
+    if use_system_certs and truststore is not None:
+        verify = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        logger.info("[model] Using system certificate store for cloud LLM HTTP client")
+    elif use_system_certs:
         logger.warning(
             "[model] truststore is not installed; cloud LLM calls will use Python's default certs."
         )
-        return None
 
-    ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    logger.info("[model] Using system certificate store for cloud LLM HTTP client")
-    return httpx.AsyncClient(verify=ssl_context)
+    mounts: dict[str, httpx.AsyncHTTPTransport] = {}
+    if http_proxy:
+        mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy, verify=verify)
+    if https_proxy or http_proxy:
+        mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy or http_proxy, verify=verify)
+
+    if mounts:
+        logger.info("[model] Using explicit proxy mounts for cloud LLM HTTP client")
+        return httpx.AsyncClient(mounts=mounts, trust_env=False)
+    if verify is not True:
+        return httpx.AsyncClient(verify=verify)
+    return None
 
 
-def _cloud_client_kwargs() -> dict[str, httpx.AsyncClient]:
+def cloud_client_kwargs() -> dict[str, httpx.AsyncClient]:
     http_client = _cloud_http_client()
     return {"http_client": http_client} if http_client is not None else {}
 
@@ -142,7 +151,7 @@ def create_openai_model(
         )
     _model = model_name or OPENAI_MODEL
     _base = base_url or OPENAI_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token, **_cloud_client_kwargs())
+    client = AsyncOpenAI(base_url=_base, api_key=_token, **cloud_client_kwargs())
     logger.info(f"[model] OpenAI backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -175,7 +184,7 @@ def create_azure_openai_model(
         azure_endpoint=_endpoint,
         api_key=_token,
         api_version=_api_version,
-        **_cloud_client_kwargs(),
+        **cloud_client_kwargs(),
     )
     logger.info(f"[model] Azure OpenAI backend: {_endpoint} deployment={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
@@ -199,7 +208,7 @@ def create_copilot_model(
         )
     _model = model_name or COPILOT_MODEL
     _base = base_url or COPILOT_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token, **_cloud_client_kwargs())
+    client = AsyncOpenAI(base_url=_base, api_key=_token, **cloud_client_kwargs())
     logger.info(f"[model] Copilot backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -223,7 +232,7 @@ def create_github_models_model(
     client = AsyncOpenAI(
         base_url=GITHUB_MODELS_BASE_URL,
         api_key=_token,
-        **_cloud_client_kwargs(),
+        **cloud_client_kwargs(),
     )
     logger.info(f"[model] GitHub Models backend: {GITHUB_MODELS_BASE_URL} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)

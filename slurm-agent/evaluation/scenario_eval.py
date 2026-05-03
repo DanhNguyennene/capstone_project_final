@@ -50,6 +50,7 @@ import time
 import argparse
 import datetime
 import os
+import ssl
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
@@ -73,6 +74,14 @@ try:
     from openai import AsyncAzureOpenAI
 except ImportError:
     AsyncAzureOpenAI = None
+try:
+    import httpx
+except ImportError:
+    httpx = None
+try:
+    import truststore
+except ImportError:
+    truststore = None
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -84,7 +93,7 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 OPENAI_API_KEY  = (os.getenv("OPENAI_API_KEY") or os.getenv("OPEN_AI_KEY") or "").strip()
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
 AZURE_OPENAI_API_KEY = (os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY") or "").strip()
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", os.getenv("API_VERSION", "2024-02-15-preview"))
 CHAT_LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").strip().lower() or "ollama"
 AZURE_OPENAI_MODEL = (
     os.getenv("AZURE_OPENAI_MODEL")
