@@ -125,8 +125,8 @@ $requirementsCandidates = @(
     (Join-Path $Root "agent/requirements.txt")
 )
 $requirementsPath = $requirementsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-$directPackageInstall = @("fastapi==0.116.1", "uvicorn==0.35.0", "pydantic>=2.12.2,<3", "python-dotenv==1.1.1", "python-multipart", "openai", "openai-agents", "websockets==14.1", "aiohttp==3.12.14", "matplotlib")
-$dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx") -WorkingDirectory $Root
+$directPackageInstall = @("fastapi==0.116.1", "uvicorn==0.35.0", "pydantic>=2.12.2,<3", "python-dotenv==1.1.1", "python-multipart", "openai", "openai-agents", "truststore", "websockets==14.1", "aiohttp==3.12.14", "matplotlib")
+$dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx, truststore") -WorkingDirectory $Root
 if ($dependencyCheck.ExitCode -ne 0) {
     Write-Warn "Python dependencies are missing; installing now."
     if ($requirementsPath) {
@@ -150,7 +150,7 @@ $detail
 "@
     }
 
-    $dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx") -WorkingDirectory $Root
+    $dependencyCheck = Invoke-NativeCapture -FilePath $PythonExe -Arguments @("-c", "import agents, fastapi, uvicorn, httpx, truststore") -WorkingDirectory $Root
     if ($dependencyCheck.ExitCode -ne 0) {
         throw @"
 Python dependency install completed, but imports still fail.

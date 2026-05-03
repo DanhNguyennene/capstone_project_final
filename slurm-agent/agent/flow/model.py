@@ -14,14 +14,20 @@ Model configuration for the Slurm agent.
 """
 import logging
 import os
+import ssl
 
 from agents.model_settings import ModelSettings
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+import httpx
 from openai import AsyncOpenAI
 try:
     from openai import AsyncAzureOpenAI
 except ImportError:  # Older openai packages may not expose Azure helpers.
     AsyncAzureOpenAI = None
+try:
+    import truststore
+except ImportError:
+    truststore = None
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +50,8 @@ AZURE_OPENAI_API_KEY: str = (
     or os.environ.get("AZURE_OPENAI_KEY", "")
 )
 AZURE_OPENAI_API_VERSION: str = os.environ.get(
-    "AZURE_OPENAI_API_VERSION", "2024-02-15-preview"
+    "AZURE_OPENAI_API_VERSION",
+    os.environ.get("API_VERSION", "2024-02-15-preview"),
 )
 AZURE_OPENAI_MODEL: str = (
     os.environ.get("AZURE_OPENAI_MODEL", "")
@@ -82,6 +89,34 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 
 # ── Model factories ───────────────────────────────────────────────────────────
 
+def _cloud_http_client() -> httpx.AsyncClient | None:
+    """Return an HTTP client using system certs when corporate TLS interception needs it."""
+    mode = os.environ.get("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
+    if mode in {"0", "false", "no", "off"}:
+        return None
+
+    use_system_certs = mode in {"1", "true", "yes", "on"} or (
+        mode == "auto" and os.name == "nt"
+    )
+    if not use_system_certs:
+        return None
+
+    if truststore is None:
+        logger.warning(
+            "[model] truststore is not installed; cloud LLM calls will use Python's default certs."
+        )
+        return None
+
+    ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    logger.info("[model] Using system certificate store for cloud LLM HTTP client")
+    return httpx.AsyncClient(verify=ssl_context)
+
+
+def _cloud_client_kwargs() -> dict[str, httpx.AsyncClient]:
+    http_client = _cloud_http_client()
+    return {"http_client": http_client} if http_client is not None else {}
+
+
 def create_ollama_model(
     model_name: str,
     base_url: str = "http://localhost:11434/v1",
@@ -107,7 +142,7 @@ def create_openai_model(
         )
     _model = model_name or OPENAI_MODEL
     _base = base_url or OPENAI_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token)
+    client = AsyncOpenAI(base_url=_base, api_key=_token, **_cloud_client_kwargs())
     logger.info(f"[model] OpenAI backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -140,6 +175,7 @@ def create_azure_openai_model(
         azure_endpoint=_endpoint,
         api_key=_token,
         api_version=_api_version,
+        **_cloud_client_kwargs(),
     )
     logger.info(f"[model] Azure OpenAI backend: {_endpoint} deployment={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
@@ -163,7 +199,7 @@ def create_copilot_model(
         )
     _model = model_name or COPILOT_MODEL
     _base = base_url or COPILOT_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token)
+    client = AsyncOpenAI(base_url=_base, api_key=_token, **_cloud_client_kwargs())
     logger.info(f"[model] Copilot backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
@@ -184,7 +220,11 @@ def create_github_models_model(
             "Create a GitHub PAT with 'models: read' scope."
         )
     _model = model_name or GITHUB_MODELS_MODEL
-    client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=_token)
+    client = AsyncOpenAI(
+        base_url=GITHUB_MODELS_BASE_URL,
+        api_key=_token,
+        **_cloud_client_kwargs(),
+    )
     logger.info(f"[model] GitHub Models backend: {GITHUB_MODELS_BASE_URL} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 

@@ -85,7 +85,7 @@ import urllib.request
 
 endpoint = (os.getenv("AZURE_OPENAI_ENDPOINT") or "").rstrip("/")
 api_key = os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY") or ""
-api_version = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-02-15-preview"
+api_version = os.getenv("AZURE_OPENAI_API_VERSION") or os.getenv("API_VERSION") or "2024-02-15-preview"
 model = os.getenv("AZURE_OPENAI_MODEL") or os.getenv("AZURE_OPENAI_DEPLOYMENT") or ""
 https_proxy = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy") or ""
 http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy") or ""

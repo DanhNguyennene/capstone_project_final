@@ -147,7 +147,7 @@ function Test-PythonDependencies {
     }
 
     try {
-        & $FilePath -c "import agents, fastapi, uvicorn, httpx" *> $null
+        & $FilePath -c "import agents, fastapi, uvicorn, httpx, truststore" *> $null
         return ($LASTEXITCODE -eq 0)
     }
     finally {
