@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from agents import Agent, Runner, RunState, SQLiteSession, ItemHelpers, handoff, SessionSettings
+from agents import Agent, Runner, RunState, SQLiteSession, ItemHelpers, handoff, SessionSettings, set_tracing_disabled
 from agents.extensions.handoff_filters import remove_all_tools
 from agents.handoffs import HandoffInputData
 from agents.mcp import MCPServerSse, ToolFilterContext
@@ -66,6 +66,8 @@ from .tools import (
 )
 
 logger = logging.getLogger(__name__)
+
+set_tracing_disabled(disabled=True)
 
 
 # ── Mutable state container for stream event processing ──────────────────────
