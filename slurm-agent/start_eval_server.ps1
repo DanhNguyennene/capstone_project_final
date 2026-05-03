@@ -31,7 +31,7 @@ if ($Stop) {
 Load-LocalEnv -Root $Root
 
 if ($Port -le 0) { $Port = 8080 }
-if (-not $Python) { $Python = if ($env:PYTHON) { $env:PYTHON } else { "python3" } }
+if (-not $Python) { $Python = if ($env:PYTHON) { $env:PYTHON } else { "python" } }
 
 if ($Detached -and (@(Get-LivePidRecords -PidFile $PidFile)).Count -gt 0) {
     throw "PowerShell eval server is already running. Use ./start_eval_server.ps1 -Status or ./start_eval_server.ps1 -Stop."
