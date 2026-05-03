@@ -237,7 +237,7 @@ function Start-ManagedProcess {
     )
 
     Initialize-Directory -Path $LogDir
-    Write-Info "Starting $Name: $FilePath $($Arguments -join ' ')"
+    Write-Info "Starting ${Name}: $FilePath $($Arguments -join ' ')"
 
     $startParams = @{
         FilePath = $FilePath
