@@ -117,6 +117,34 @@ ROUTING_TOOLS  = {
 }
 PASS_THRESHOLD = 0.80
 
+
+def _cloud_client_kwargs() -> dict:
+    if httpx is None:
+        return {}
+
+    mode = os.getenv("SLURM_AGENT_USE_SYSTEM_CERTS", "auto").strip().lower()
+    http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+    https_proxy = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
+
+    use_system_certs = mode in {"1", "true", "yes", "on"} or (
+        mode == "auto" and os.name == "nt"
+    )
+    verify: ssl.SSLContext | bool = True
+    if use_system_certs and truststore is not None:
+        verify = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+    mounts = {}
+    if http_proxy:
+        mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy, verify=verify)
+    if https_proxy or http_proxy:
+        mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy or http_proxy, verify=verify)
+
+    if mounts:
+        return {"http_client": httpx.AsyncClient(mounts=mounts, trust_env=False)}
+    if verify is not True:
+        return {"http_client": httpx.AsyncClient(verify=verify)}
+    return {}
+
 # Weights when --judge is OFF (default)
 WEIGHTS = {
     "tool_recall":   0.30,
@@ -894,6 +922,7 @@ async def judge_flow(
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     api_key=azure_api_key,
                     api_version=AZURE_OPENAI_API_VERSION,
+                    **_cloud_client_kwargs(),
                 )
             else:
                 openai_api_key = _get_openai_api_key()
@@ -907,7 +936,7 @@ async def judge_flow(
                         )
                         return await judge_flow(test, trace, model=fallback_model, judge_provider="ollama", _attempt=_attempt)
                     return 0.0, "judge error: OPENAI_API_KEY missing for OpenAI judge model", False, ""
-                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=openai_api_key)
+                client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=openai_api_key, **_cloud_client_kwargs())
 
             comp = await client.chat.completions.create(
                 model=model_name,
