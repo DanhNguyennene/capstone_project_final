@@ -74,7 +74,12 @@ $record = Start-ManagedProcess `
     -LogDir $LogDir `
     -Detached:$Detached
 
-Start-Sleep -Seconds 1
+Write-Info "Waiting for eval server to accept connections"
+if (-not (Wait-HttpUrl -Url "http://127.0.0.1:$Port/api/status" -TimeoutSeconds 45)) {
+    Stop-ProcessRecords -Records @($record)
+    throw "Eval server startup failed on port $Port (logs: $(Join-Path $LogDir 'eval-server.err.log'))"
+}
+
 Write-Ok "Eval server -> http://localhost:$Port"
 
 if ($Detached) {
@@ -90,5 +95,5 @@ try {
     Wait-RecordedProcesses -Records @($record)
 }
 finally {
-    Stop-Process -Id ([int] $record.Id) -Force -ErrorAction SilentlyContinue
+    Stop-ProcessRecords -Records @($record)
 }

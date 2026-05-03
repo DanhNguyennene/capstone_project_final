@@ -329,6 +329,85 @@ function Start-ManagedProcess {
     }
 }
 
+function Test-TcpPort {
+    [CmdletBinding()]
+    param(
+        [string] $HostName = "127.0.0.1",
+        [Parameter(Mandatory = $true)][int] $Port,
+        [int] $TimeoutMs = 500
+    )
+
+    $client = [System.Net.Sockets.TcpClient]::new()
+    try {
+        $async = $client.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne($TimeoutMs)) { return $false }
+        $client.EndConnect($async)
+        return $true
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+function Wait-TcpPort {
+    [CmdletBinding()]
+    param(
+        [string] $HostName = "127.0.0.1",
+        [Parameter(Mandatory = $true)][int] $Port,
+        [int] $TimeoutSeconds = 30
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-TcpPort -HostName $HostName -Port $Port) { return $true }
+        Start-Sleep -Milliseconds 500
+    }
+    return $false
+}
+
+function Test-HttpUrl {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string] $Url,
+        [int] $TimeoutSeconds = 2
+    )
+
+    try {
+        $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+        return ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Wait-HttpUrl {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string] $Url,
+        [int] $TimeoutSeconds = 30
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-HttpUrl -Url $Url) { return $true }
+        Start-Sleep -Milliseconds 500
+    }
+    return $false
+}
+
+function Stop-ProcessRecords {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][object[]] $Records)
+
+    foreach ($record in $Records) {
+        Stop-Process -Id ([int] $record.Id) -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Wait-RecordedProcesses {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][object[]] $Records)

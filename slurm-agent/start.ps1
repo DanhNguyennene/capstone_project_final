@@ -200,7 +200,23 @@ try {
             -Detached:$Detached
     }
 
-    Start-Sleep -Seconds 1
+    Write-Info "Waiting for services to accept connections"
+    $failedServices = @()
+    if (-not (Wait-TcpPort -Port $McpPort -TimeoutSeconds 30)) {
+        $failedServices += "MCP server on port $McpPort (logs: $(Join-Path $LogDir 'mcp-server.err.log'))"
+    }
+    if (-not (Wait-HttpUrl -Url "http://127.0.0.1:$AgentPort/health" -TimeoutSeconds 45)) {
+        $failedServices += "Agent API on port $AgentPort (logs: $(Join-Path $LogDir 'agent-api.err.log'))"
+    }
+    if ((Test-Path -LiteralPath $DistDir) -and -not (Wait-HttpUrl -Url "http://127.0.0.1:$FrontendPort/" -TimeoutSeconds 45)) {
+        $failedServices += "Frontend on port $FrontendPort (logs: $(Join-Path $LogDir 'frontend.err.log'))"
+    }
+
+    if ($failedServices.Count -gt 0) {
+        Stop-ProcessRecords -Records $records
+        throw "Service startup failed: $($failedServices -join '; ')"
+    }
+
     Write-Host ""
     Write-Ok "Main stack ready"
     Write-Ok "  MCP server -> http://localhost:$McpPort"
@@ -221,9 +237,7 @@ try {
         Wait-RecordedProcesses -Records $records
     }
     finally {
-        foreach ($record in $records) {
-            Stop-Process -Id ([int] $record.Id) -Force -ErrorAction SilentlyContinue
-        }
+        Stop-ProcessRecords -Records $records
     }
 }
 finally {
