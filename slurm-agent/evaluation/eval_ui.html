@@ -29,6 +29,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monos
 /* Controls */
 .controls { padding: 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .controls .row { display: flex; gap: 6px; align-items: center; }
+.controls .model-row { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 6px; align-items: center; }
+.controls .model-row span { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
 .controls select, .controls input[type=text] {
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
   padding: 4px 8px; border-radius: 4px; font-size: 12px; flex: 1; }
@@ -154,10 +156,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monos
       <div class="row">
         <input type="text" id="agent-url" value="http://localhost:8000" placeholder="Agent URL">
       </div>
+      <div class="model-row">
+        <span>Main</span>
+        <select id="main-provider" onchange="syncModelSelects()"><option value="ollama">Ollama</option><option value="openai">OpenAI</option><option value="azure-openai">Azure OpenAI</option></select>
+        <select id="main-model"></select>
+      </div>
+      <div class="model-row">
+        <span>Specialist</span>
+        <select id="specialist-provider" onchange="syncModelSelects()"><option value="ollama">Ollama</option><option value="openai">OpenAI</option><option value="azure-openai">Azure OpenAI</option></select>
+        <select id="specialist-model"></select>
+      </div>
+      <div class="model-row">
+        <span>Judge</span>
+        <select id="judge-provider" onchange="syncModelSelects()"><option value="ollama">Ollama</option><option value="openai">OpenAI</option><option value="azure-openai">Azure OpenAI</option></select>
+        <select id="judge-model"></select>
+      </div>
       <div class="row">
         <label><input type="checkbox" id="chk-approve" checked> Auto-approve</label>
         <label><input type="checkbox" id="chk-judge"> LLM Judge</label>
         <label><input type="checkbox" id="chk-no-variants"> No variants</label>
+        <label><input type="checkbox" id="chk-openai-parallel"> OpenAI read parallel</label>
+        <label>Eval workers <input type="number" id="parallel-workers" min="1" max="8" value="1" style="width:56px"></label>
       </div>
       <div class="row">
         <button class="btn green" id="btn-run" onclick="runAll()" disabled>▶ Run All</button>
@@ -188,6 +207,83 @@ let results = {};
 let activeTestId = null;
 let activeFilter = {scenario: '', category: '', status: ''};
 let eventSource = null;
+
+const OLLAMA_MODELS = ['qwen3.5:9b', 'qwen2.5:7b', 'qwen3.5:27b', 'gpt-oss:20b'];
+const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1', 'o4-mini'];
+const AZURE_OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1'];
+
+function providerModels(provider) {
+  if (provider === 'openai') return OPENAI_MODELS;
+  if (provider === 'azure-openai') return AZURE_OPENAI_MODELS;
+  return OLLAMA_MODELS;
+}
+function normProvider(provider) {
+  const normalized = String(provider || '').trim().toLowerCase();
+  if (normalized === 'openai') return 'openai';
+  if (normalized === 'azure' || normalized === 'azure_openai' || normalized === 'azure-openai') return 'azure-openai';
+  return 'ollama';
+}
+
+function fillModelSelect(id, provider, selected) {
+  const el = document.getElementById(id);
+  const models = providerModels(provider);
+  const current = selected || el.value;
+  const value = selected ? selected : (models.includes(current) ? current : models[0]);
+  const options = models.includes(value) ? models : [value, ...models];
+  el.innerHTML = options.map(model => `<option value="${model}">${model}</option>`).join('');
+  el.value = value;
+}
+
+function syncModelSelects() {
+  const mainProvider = normProvider(document.getElementById('main-provider').value);
+  const specialistProvider = normProvider(document.getElementById('specialist-provider').value);
+  const judgeProvider = normProvider(document.getElementById('judge-provider').value);
+  fillModelSelect('main-model', mainProvider);
+  fillModelSelect('specialist-model', specialistProvider);
+  fillModelSelect('judge-model', judgeProvider);
+  const parallel = document.getElementById('chk-openai-parallel');
+  parallel.disabled = mainProvider !== 'openai';
+  if (parallel.disabled) parallel.checked = false;
+}
+
+function applyRuntimeConfig(config) {
+  if (!config) return;
+  const mainProvider = normProvider(config.main_provider || config.llm_provider);
+  const specialistProvider = normProvider(config.specialist_provider || mainProvider);
+  const judgeProvider = normProvider(config.judge_provider || mainProvider);
+  document.getElementById('main-provider').value = mainProvider;
+  document.getElementById('specialist-provider').value = specialistProvider;
+  document.getElementById('judge-provider').value = judgeProvider;
+  fillModelSelect('main-model', mainProvider, config.main_model);
+  fillModelSelect('specialist-model', specialistProvider, config.specialist_model);
+  fillModelSelect('judge-model', judgeProvider, config.judge_model);
+  document.getElementById('chk-openai-parallel').checked = Boolean(config.openai_parallel && mainProvider === 'openai');
+  document.getElementById('parallel-workers').value = Math.max(1, Math.min(8, Number(config.parallel_workers || 1)));
+  syncModelSelects();
+}
+
+function addModelConfigParams(params) {
+  const mainProvider = normProvider(document.getElementById('main-provider').value);
+  const specialistProvider = normProvider(document.getElementById('specialist-provider').value);
+  const judgeProvider = normProvider(document.getElementById('judge-provider').value);
+  params.set('llm_provider', mainProvider);
+  params.set('main_provider', mainProvider);
+  params.set('specialist_provider', specialistProvider);
+  params.set('judge_provider', judgeProvider);
+  params.set('main_model', document.getElementById('main-model').value);
+  params.set('specialist_model', document.getElementById('specialist-model').value);
+  params.set('judge_model', document.getElementById('judge-model').value);
+  params.set('openai_parallel', String(document.getElementById('chk-openai-parallel').checked && mainProvider === 'openai'));
+  params.set('parallel_workers', String(Math.max(1, Math.min(8, Number(document.getElementById('parallel-workers').value || 1)))));
+}
+
+async function syncRuntimeConfig() {
+  syncModelSelects();
+  try {
+    const r = await fetch(`${API}/api/runtime-config`);
+    applyRuntimeConfig(await r.json());
+  } catch {}
+}
 
 // ── API calls ──────────────────────────────────────────────────────────────
 
@@ -235,6 +331,7 @@ async function runSingle(testId) {
   const approve = document.getElementById('chk-approve').checked;
   const judge = document.getElementById('chk-judge').checked;
   const params = new URLSearchParams({agent_url: agentUrl, auto_approve: approve, use_judge: judge});
+  addModelConfigParams(params);
   const r = await fetch(`${API}/api/run-single/${testId}?${params}`, {method:'POST'});
   const d = await r.json();
   results[testId] = d.result;
@@ -254,6 +351,7 @@ function runAll() {
     agent_url: agentUrl, auto_approve: approve,
     use_judge: judge, no_variants: noVariants, resume: 'true',
   });
+  addModelConfigParams(params);
   if (activeFilter.scenario) params.set('scenario', activeFilter.scenario);
   if (activeFilter.category) params.set('category', activeFilter.category);
 
@@ -308,6 +406,7 @@ function runAll() {
     agent_url: agentUrl, auto_approve: approve,
     use_judge: judge, no_variants: noVariants, resume: 'true',
   });
+  addModelConfigParams(params);
   if (activeFilter.scenario) params.set('scenario', activeFilter.scenario);
   if (activeFilter.category) params.set('category', activeFilter.category);
 
@@ -348,6 +447,7 @@ function runAll() {
 
 function onSSE(evt, data) {
   if (evt === 'start') {
+    applyRuntimeConfig(data.model_config);
     const total = Number(data.total || dataset.length || 1);
     const done = Number(data.already_done || 0);
     const pct = ((done / total) * 100).toFixed(0);
@@ -405,6 +505,55 @@ function isPlaceholderJudgeReason(text) {
   return squashed.length < 10;
 }
 function chk(v) { return v >= 1.0 ? '✓' : '✗'; }
+
+const TOOL_ALIASES = {
+  sacctmgr_list: 'sacctmgr_show',
+  sacctmgr: 'sacctmgr_show',
+  scontrol: 'scontrol_show',
+};
+const TOOL_EQUIVALENTS = {
+  sacctmgr_show: ['sacctmgr_show', 'sacctmgr_list'],
+  sacctmgr_list: ['sacctmgr_show', 'sacctmgr_list'],
+};
+
+function uniq(values) {
+  return [...new Set((values || []).filter(Boolean))];
+}
+
+function normalizeToolName(tool) {
+  return TOOL_ALIASES[tool] || tool;
+}
+
+function equivalentToolNames(tool, aliasMap = null) {
+  const canonical = normalizeToolName(tool);
+  if (aliasMap && aliasMap[canonical]?.length) return aliasMap[canonical];
+  if (aliasMap && aliasMap[tool]?.length) return aliasMap[tool];
+  return TOOL_EQUIVALENTS[canonical] || [canonical];
+}
+
+function acceptedToolSet(tools = [], aliasMap = null) {
+  const accepted = new Set();
+  for (const tool of tools || []) {
+    for (const name of equivalentToolNames(tool, aliasMap)) accepted.add(name);
+    accepted.add(normalizeToolName(tool));
+  }
+  return accepted;
+}
+
+function toolIsExpected(tool, expectedSet = null, aliasMap = null) {
+  if (!expectedSet) return false;
+  if (expectedSet.has(tool) || expectedSet.has(normalizeToolName(tool))) return true;
+  return equivalentToolNames(tool, aliasMap).some(name =>
+    expectedSet.has(name) || expectedSet.has(normalizeToolName(name))
+  );
+}
+
+function renderToolTags(tools = [], aliasMap = null, expectedSet = null) {
+  const canonicalTools = uniq((tools || []).map(normalizeToolName));
+  return canonicalTools.map(tool =>
+    `<span class="tag ${expectedSet && !toolIsExpected(tool, expectedSet, aliasMap) ? 'miss' : ''}">${escHtml(equivalentToolNames(tool, aliasMap).join(' / '))}</span>`
+  ).join('') || '<span style="color:var(--muted)">none</span>';
+}
 
 function renderTestList() {
   const list = document.getElementById('test-list');
@@ -508,24 +657,19 @@ function renderDetail(test, result) {
   // GT vs Agent comparison
   let compareHtml = '';
   if (hasResult) {
-    const toolsExpected = new Set(gt.tools);
-    const toolsCalled = new Set(result.agent_tools);
-    const toolTags = [...toolsExpected].map(t =>
-      `<span class="tag ${toolsCalled.has(t) ? '' : 'miss'}">${t}</span>`
-    ).join('') + [...toolsCalled].filter(t => !toolsExpected.has(t)).map(t =>
-      `<span class="tag miss">+${t}</span>`
-    ).join('');
-    const agentToolTags = result.agent_tools.map(t =>
-      `<span class="tag ${toolsExpected.has(t) ? '' : 'miss'}">${t}</span>`
-    ).join('') || '<span style="color:var(--muted)">none</span>';
+    const expectedAliasMap = result.gt_tool_aliases || null;
+    const expectedTools = result.gt_tools_canonical?.length ? result.gt_tools_canonical : (gt.tools || []);
+    const expectedToolSet = acceptedToolSet(expectedTools, expectedAliasMap);
+    const gtToolTags = renderToolTags(expectedTools, expectedAliasMap);
+    const agentToolTags = renderToolTags(result.agent_tools || [], expectedAliasMap, expectedToolSet);
 
     compareHtml = `<div class="compare">
       <div class="compare-col">
         <h4>Ground Truth</h4>
-        <div class="field"><div class="field-label">Tools</div><div class="field-value">${gt.tools.map(t => `<span class="tag">${t}</span>`).join('') || 'none'}</div></div>
+        <div class="field"><div class="field-label">Tools</div><div class="field-value">${gtToolTags}</div></div>
         <div class="field"><div class="field-label">Handoff</div><div class="field-value">${gt.handoff ? 'Yes' : 'No'}</div></div>
         <div class="field"><div class="field-label">HITL</div><div class="field-value">${gt.hitl ? 'Yes' : 'No'}</div></div>
-        <div class="field"><div class="field-label">Keywords</div><div class="field-value">${gt.keywords.map(k => `<span class="tag">${k}</span>`).join('')}</div></div>
+        <div class="field"><div class="field-label">Keywords</div><div class="field-value">${(gt.keywords || []).map(k => `<span class="tag">${escHtml(k)}</span>`).join('')}</div></div>
       </div>
       <div class="compare-col">
         <h4>Agent Actual</h4>
@@ -649,6 +793,7 @@ document.addEventListener('keydown', e => {
 // ── Init ───────────────────────────────────────────────────────────────────
 
 (async function init() {
+  await syncRuntimeConfig();
   const r = await fetch(`${API}/api/status`);
   const s = await r.json();
   if (s.dataset_loaded) {

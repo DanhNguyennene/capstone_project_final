@@ -4,6 +4,8 @@ const evalHost = typeof window !== 'undefined' ? window.location.hostname : 'loc
 const EVAL_URL = `http://${evalHost}:8080`
 const LS_OPTS_KEY = 'evalPage.opts.v1'
 const LS_FILTERS_KEY = 'evalPage.filters.v1'
+const clampWorkers = value => Math.max(1, Math.min(8, Number(value) || 1))
+const defaultOpts = { approve: true, judge: false, noVariants: false }
 
 function isPlaceholderJudgeReason(reason) {
   const txt = (reason || '').trim()
@@ -18,9 +20,15 @@ export default function EvalPage({
   agentUrl,
   mcpUrl,
   llmProvider,
+  mainProvider = llmProvider,
+  specialistProvider = llmProvider,
+  judgeProvider = llmProvider,
   mainModel,
   specialistModel,
   judgeModel,
+  openaiParallel = false,
+  parallelWorkers = 1,
+  onParallelWorkersChange = null,
   sidebarOpen = true,
   onToggleGlobalSidebar = null,
 }) {
@@ -50,9 +58,12 @@ export default function EvalPage({
   const [opts, setOpts]           = useState(() => {
     try {
       const raw = localStorage.getItem(LS_OPTS_KEY)
-      if (raw) return { approve: true, judge: false, noVariants: false, ...JSON.parse(raw) }
+      if (raw) {
+        const parsed = { ...defaultOpts, ...JSON.parse(raw) }
+        return parsed
+      }
     } catch {}
-    return { approve: true, judge: false, noVariants: false }
+    return defaultOpts
   })
   const abortRef = useRef(null)
   const runTotalRef = useRef(0)
@@ -334,9 +345,14 @@ export default function EvalPage({
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
+      judge_provider: judgeProvider,
       llm_provider: llmProvider,
+      main_provider: mainProvider,
+      specialist_provider: specialistProvider,
       main_model: mainModel,
       specialist_model: specialistModel,
+      openai_parallel: openaiParallel,
+      parallel_workers: clampWorkers(parallelWorkers),
       no_variants: opts.noVariants,
       resume: 'true',
     })
@@ -369,9 +385,13 @@ export default function EvalPage({
       auto_approve: opts.approve,
       use_judge: opts.judge,
       judge_model: judgeModel,
+      judge_provider: judgeProvider,
       llm_provider: llmProvider,
+      main_provider: mainProvider,
+      specialist_provider: specialistProvider,
       main_model: mainModel,
       specialist_model: specialistModel,
+      openai_parallel: openaiParallel,
     })
     const r = await fetch(`${EVAL_URL}/api/run-single/${id}?${p}`, { method: 'POST' })
     const d = await r.json()
@@ -431,6 +451,7 @@ export default function EvalPage({
         setJudgeProgress(s.judge_progress || 0)
         setJudgeTotal(s.judge_total || 0)
         if (!s.judge_running) setJudgeCurrentId('')
+        if (s.running && s.model_config?.parallel_workers) onParallelWorkersChange?.(s.model_config.parallel_workers)
         if (typeof s.progress === 'number' && (s.total || 0) > 0) {
           setProgress((s.progress / s.total) * 100)
         }
@@ -454,9 +475,14 @@ export default function EvalPage({
             auto_approve: opts.approve,
             use_judge: opts.judge,
             judge_model: judgeModel,
+            judge_provider: judgeProvider,
             llm_provider: llmProvider,
+            main_provider: mainProvider,
+            specialist_provider: specialistProvider,
             main_model: mainModel,
             specialist_model: specialistModel,
+            openai_parallel: openaiParallel,
+            parallel_workers: clampWorkers(parallelWorkers),
             no_variants: opts.noVariants,
             resume: 'true',
           })
@@ -467,7 +493,7 @@ export default function EvalPage({
         }
       } catch {}
     })()
-  }, [agentUrl, mcpUrl, llmProvider, mainModel, specialistModel, judgeModel, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream, refreshTerminalHistory])
+  }, [agentUrl, mcpUrl, llmProvider, mainProvider, specialistProvider, judgeProvider, mainModel, specialistModel, judgeModel, openaiParallel, parallelWorkers, onParallelWorkersChange, opts.approve, opts.judge, opts.noVariants, filters.scenario, filters.category, refreshDataset, consumeRunStream, refreshTerminalHistory])
 
   // ── Keyboard nav ─────────────────────────────────────────────
 
@@ -567,6 +593,7 @@ export default function EvalPage({
           </div>
         </div>
 
+        <div className="eval-sidebar-body">
         {/* Controls */}
         <div className="eval-controls">
           <div className="eval-ctrl-row">
@@ -587,6 +614,17 @@ export default function EvalPage({
             <label className="eval-check">
               <input type="checkbox" checked={opts.noVariants} onChange={e => setOpts(o => ({ ...o, noVariants: e.target.checked }))} />
               No variants
+            </label>
+            <label className="eval-check">
+              Eval workers
+              <input
+                className="eval-worker-input"
+                type="number"
+                min="1"
+                max="8"
+                value={parallelWorkers}
+                onChange={e => onParallelWorkersChange?.(e.target.value)}
+              />
             </label>
           </div>
           {opts.judge && (
@@ -681,6 +719,7 @@ export default function EvalPage({
             <div className="eval-empty-list">Load a dataset to begin</div>
             )}
         </div>
+          </div>
       </div>
 
       {/* Right panel: detail + metrics + admin terminal */}
@@ -883,9 +922,76 @@ export default function EvalPage({
 
 // ── Test detail sub-component ──────────────────────────────────────
 
+const TOOL_ALIASES = {
+  sacctmgr_list: 'sacctmgr_show',
+  sacctmgr: 'sacctmgr_show',
+  scontrol: 'scontrol_show',
+}
+
+const TOOL_EQUIVALENTS = {
+  sacctmgr_show: ['sacctmgr_show', 'sacctmgr_list'],
+  sacctmgr_list: ['sacctmgr_show', 'sacctmgr_list'],
+}
+
+function normalizeToolName(tool) {
+  return TOOL_ALIASES[tool] || tool
+}
+
+function equivalentToolNames(tool, aliasMap = null) {
+  const canonical = normalizeToolName(tool)
+  if (aliasMap?.[canonical]?.length) return aliasMap[canonical]
+  if (aliasMap?.[tool]?.length) return aliasMap[tool]
+  return TOOL_EQUIVALENTS[canonical] || [canonical]
+}
+
+function acceptedToolSet(tools = [], aliasMap = null) {
+  const accepted = new Set()
+  tools.forEach(tool => {
+    equivalentToolNames(tool, aliasMap).forEach(name => accepted.add(name))
+    accepted.add(normalizeToolName(tool))
+  })
+  return accepted
+}
+
+function historyToolName(entry) {
+  if (entry.tool) return entry.tool
+  const tokens = (entry.cmd || '').replace(/^\$ /, '').trim().split(/\s+/).filter(Boolean)
+  if (tokens[0] === 'sacctmgr' && ['show', 'list'].includes(tokens[1])) return 'sacctmgr_list'
+  return tokens[0] || ''
+}
+
+function toolIsExpected(tool, expectedSet = null, aliasMap = null) {
+  if (!expectedSet) return false
+  if (expectedSet.has(tool) || expectedSet.has(normalizeToolName(tool))) return true
+  return equivalentToolNames(tool, aliasMap).some(name => expectedSet.has(name) || expectedSet.has(normalizeToolName(name)))
+}
+
+function ToolTagList({ tools = [], aliasMap = null, expectedSet = null }) {
+  const canonicalTools = [...new Set(tools.map(normalizeToolName))]
+  if (canonicalTools.length === 0) return <span className="text-muted">none</span>
+  return (
+    <TagList>
+      {canonicalTools.map(tool => (
+        <Tag
+          key={tool}
+          text={equivalentToolNames(tool, aliasMap).join(' / ')}
+          miss={expectedSet ? !toolIsExpected(tool, expectedSet, aliasMap) : false}
+        />
+      ))}
+    </TagList>
+  )
+}
+
+function TagList({ children }) {
+  return <span className="eval-tag-list">{children}</span>
+}
+
 function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeEnabled }) {
   if (!test) return null
   const gt = test.ground_truth
+  const resultAliasMap = result?.gt_tool_aliases || null
+  const expectedTools = (result?.gt_tools_canonical?.length ? result.gt_tools_canonical : (gt.tools || []))
+  const expectedToolSet = acceptedToolSet(expectedTools, resultAliasMap)
   const idx = dataset.findIndex(t => t.id === test.id)
   const prevId = idx > 0 ? dataset[idx - 1].id : null
   const nextId = idx < dataset.length - 1 ? dataset[idx + 1].id : null
@@ -981,17 +1087,16 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
           <div className="eval-compare">
             <div className="eval-compare-col">
               <h4>Expected</h4>
-              <Field label="Tools" value={gt.tools.map(t => <Tag key={t} text={t} />)} />
+              <Field label="Tools" value={<ToolTagList tools={expectedTools} aliasMap={resultAliasMap} />} />
               <Field label="Handoff" value={gt.handoff ? 'Yes' : 'No'} />
               <Field label="HITL" value={gt.hitl ? 'Yes' : 'No'} />
-              <Field label="Keywords" value={gt.keywords.map(k => <Tag key={k} text={k} />)} />
+              <Field label="Keywords" value={<TagList>{(gt.keywords || []).map(k => <Tag key={k} text={k} />)}</TagList>} />
             </div>
             <div className="eval-compare-col">
               <h4>Actual</h4>
               <Field label="Tools" value={
                 (result.agent_tools || []).length > 0
-                  ? result.agent_tools.map(t => <Tag key={t} text={t}
-                      miss={!new Set(gt.tools).has(t)} />)
+                  ? <ToolTagList tools={result.agent_tools} aliasMap={resultAliasMap} expectedSet={expectedToolSet} />
                   : <span className="text-muted">none</span>
               } />
               <Field label="Handoff" value={
@@ -1024,7 +1129,6 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
             <div className="eval-terminal-body">
               {(() => {
                 const history = result.tool_call_history || [];
-                const gtSet   = new Set(gt.tools);
                 if (history.length === 0 && (!result.agent_tools || result.agent_tools.length === 0)) {
                   return <span className="eval-term-empty">No tool calls recorded for this test</span>;
                 }
@@ -1035,8 +1139,8 @@ function TestDetail({ test, result, dataset, activeId, onNav, onRun, pct, judgeE
                 return lines.map((entry, i) => {
                   const cmd = entry.cmd || '';
                   if (entry.type === 'tool') {
-                    const toolName = entry.tool || cmd.replace(/^\$ /, '').split(/\s+/)[0];
-                    const isExtra  = !gtSet.has(toolName);
+                    const toolName = historyToolName(entry);
+                    const isExtra  = !toolIsExpected(toolName, expectedToolSet, resultAliasMap);
                     const cmdBody  = cmd.replace(/^\$ /, '');
                     return (
                       <div key={i} className="eval-term-block">

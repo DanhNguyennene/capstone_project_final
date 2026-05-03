@@ -21,8 +21,8 @@ xelatex -interaction=nonstopmode main.tex > /dev/null 2>&1
 echo "[4/4] Running xelatex (final pass)..."
 xelatex -interaction=nonstopmode main.tex > /dev/null 2>&1
 
-echo "transfer to remote laptop (overwriting existing file)..."
-scp main.pdf danhbuonba@10.0.0.2:'/mnt/c/Users/Danh Nguyen/Downloads/main.pdf'
+# echo "transfer to remote laptop (overwriting existing file)..."
+# scp main.pdf danhbuonba@10.0.0.2:'/mnt/c/Users/Danh Nguyen/Downloads/main.pdf'
 # Check result
 if [ -f main.pdf ]; then
     echo "=== Done! Output: main.pdf ==="

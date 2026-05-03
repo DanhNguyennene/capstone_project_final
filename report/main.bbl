@@ -62,7 +62,6 @@
       \field{note}{Accessed: 2024}
       \field{title}{Model Context Protocol Specification}
       \field{year}{2024}
-      \true{nocite}
     \endentry
     \entry{bai2022constitutional}{article}{}
       \true{moreauthor}
@@ -479,6 +478,28 @@
       \field{pages}{75\bibrangedash 82}
       \range{pages}{8}
     \endentry
+    \entry{schedmd2024slurm}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=b25088e2e33ec879a76ee12ef70183d3}{%
+           family={{SchedMD}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{b25088e2e33ec879a76ee12ef70183d3}
+      \strng{fullhash}{b25088e2e33ec879a76ee12ef70183d3}
+      \strng{bibnamehash}{b25088e2e33ec879a76ee12ef70183d3}
+      \strng{authorbibnamehash}{b25088e2e33ec879a76ee12ef70183d3}
+      \strng{authornamehash}{b25088e2e33ec879a76ee12ef70183d3}
+      \strng{authorfullhash}{b25088e2e33ec879a76ee12ef70183d3}
+      \field{extraname}{1}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.schedmd.com/}}
+      \field{note}{Accessed: 2024}
+      \field{title}{Slurm Commercial Support and Development}
+      \field{year}{2024}
+    \endentry
     \entry{slurm2024docs}{misc}{}
       \name{author}{1}{}{%
         {{hash=b25088e2e33ec879a76ee12ef70183d3}{%
@@ -491,6 +512,7 @@
       \strng{authorbibnamehash}{b25088e2e33ec879a76ee12ef70183d3}
       \strng{authornamehash}{b25088e2e33ec879a76ee12ef70183d3}
       \strng{authorfullhash}{b25088e2e33ec879a76ee12ef70183d3}
+      \field{extraname}{2}
       \field{sortinit}{S}
       \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
       \field{labelnamesource}{author}
@@ -915,7 +937,7 @@
       \field{title}{ReAct: Synergizing reasoning and acting in language models}
       \field{year}{2022}
     \endentry
-    \entry{yoo2003slurm}{article}{}
+    \entry{yoo2003slurm}{inproceedings}{}
       \name{author}{3}{}{%
         {{hash=d3b6ff35b862d01d63e6dc7633117988}{%
            family={Yoo},

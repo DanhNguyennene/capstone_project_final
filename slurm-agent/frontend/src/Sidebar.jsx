@@ -2,30 +2,47 @@ export default function Sidebar({
   open, sessions, activeId, onNew, onSelect, onDelete,
   agentUrl, onAgentUrlChange,
   mcpUrl, onMcpUrlChange,
-  llmProvider,
-  onLlmProviderChange,
+  mainProvider,
+  specialistProvider,
+  judgeProvider,
+  onMainProviderChange,
+  onSpecialistProviderChange,
+  onJudgeProviderChange,
   mainModel,
   specialistModel,
   judgeModel,
-  llmModelOptions = [],
+  mainModelOptions = [],
+  specialistModelOptions = [],
   judgeModelOptions = [],
   onMainModelChange,
   onSpecialistModelChange,
   onJudgeModelChange,
+  openaiParallel = false,
+  onOpenaiParallelChange,
+  parallelWorkers = 1,
+  onParallelWorkersChange,
   view, onViewChange,
 }) {
-  const providerOptionsFor = value => (
-    llmModelOptions.includes(value)
-      ? llmModelOptions
-      : [value, ...llmModelOptions]
+  const optionsFor = (value, options) => (
+    options.includes(value)
+      ? options
+      : [value, ...options]
   )
 
-  const judgeOptions = judgeModelOptions.length > 0
-    ? judgeModelOptions
-    : [judgeModel]
+  const providerSelect = (value, onChange) => (
+    <select
+      className="url-input provider-select"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    >
+      <option value="ollama">Ollama</option>
+      <option value="openai">OpenAI</option>
+      <option value="azure-openai">Azure OpenAI</option>
+    </select>
+  )
 
   return (
-    <nav className={`sidebar${open ? '' : ' collapsed'}`}>
+    <nav className={`sidebar${open ? '' : ' collapsed'}${view === 'eval' ? ' sidebar-eval-mode' : ''}`}>
       <div className="sidebar-brand">
         <span className="brand-icon">🖥</span>
         <span className="brand-name"><strong>Slurm</strong> Agent</span>
@@ -104,15 +121,8 @@ export default function Sidebar({
           spellCheck={false}
         />
 
-        <label className="footer-label">LLM Provider</label>
-        <select
-          className="url-input provider-select"
-          value={llmProvider}
-          onChange={e => onLlmProviderChange(e.target.value)}
-        >
-          <option value="ollama">Ollama</option>
-          <option value="openai">OpenAI</option>
-        </select>
+        <label className="footer-label">Main Provider</label>
+        {providerSelect(mainProvider, onMainProviderChange)}
 
         <label className="footer-label">Main Model</label>
         <select
@@ -120,10 +130,13 @@ export default function Sidebar({
           value={mainModel}
           onChange={e => onMainModelChange(e.target.value)}
         >
-          {providerOptionsFor(mainModel).map(model => (
+          {optionsFor(mainModel, mainModelOptions).map(model => (
             <option key={model} value={model}>{model}</option>
           ))}
         </select>
+
+        <label className="footer-label">Specialist Provider</label>
+        {providerSelect(specialistProvider, onSpecialistProviderChange)}
 
         <label className="footer-label">Specialist Model</label>
         <select
@@ -131,10 +144,13 @@ export default function Sidebar({
           value={specialistModel}
           onChange={e => onSpecialistModelChange(e.target.value)}
         >
-          {providerOptionsFor(specialistModel).map(model => (
+          {optionsFor(specialistModel, specialistModelOptions).map(model => (
             <option key={model} value={model}>{model}</option>
           ))}
         </select>
+
+        <label className="footer-label">Judge Provider</label>
+        {providerSelect(judgeProvider, onJudgeProviderChange)}
 
         <label className="footer-label">Judge Model</label>
         <select
@@ -142,13 +158,33 @@ export default function Sidebar({
           value={judgeModel}
           onChange={e => onJudgeModelChange(e.target.value)}
         >
-          {judgeOptions.map(model => (
+          {optionsFor(judgeModel, judgeModelOptions).map(model => (
             <option key={model} value={model}>{model}</option>
           ))}
         </select>
 
+        <label className={`footer-toggle${mainProvider !== 'openai' ? ' disabled' : ''}`}>
+          <input
+            type="checkbox"
+            checked={openaiParallel && mainProvider === 'openai'}
+            disabled={mainProvider !== 'openai'}
+            onChange={e => onOpenaiParallelChange?.(e.target.checked)}
+          />
+          OpenAI read parallel
+        </label>
+
+        <label className="footer-label">Parallel Eval Workers</label>
+        <input
+          className="url-input worker-input"
+          type="number"
+          min="1"
+          max="8"
+          value={parallelWorkers}
+          onChange={e => onParallelWorkersChange?.(e.target.value)}
+        />
+
         <p className="footer-hint">
-          Main and Specialist apply to chat requests. Judge applies to evaluation runs.
+          Main and Specialist can use different providers. Azure OpenAI uses backend environment credentials, never browser-stored keys.
         </p>
       </div>
     </nav>

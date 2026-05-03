@@ -14,8 +14,12 @@
 \abx@aux@segm{0}{0}{yoo2003slurm}
 \abx@aux@cite{0}{slurm2024docs}
 \abx@aux@segm{0}{0}{slurm2024docs}
+\abx@aux@cite{0}{schedmd2024slurm}
+\abx@aux@segm{0}{0}{schedmd2024slurm}
 \abx@aux@cite{0}{sabin2020hpc}
 \abx@aux@segm{0}{0}{sabin2020hpc}
+\abx@aux@cite{0}{slurm2024docs}
+\abx@aux@segm{0}{0}{slurm2024docs}
 \HyPL@Entry{14<</S/D>>}
 \@writefile{toc}{\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
@@ -32,6 +36,8 @@
 \abx@aux@segm{0}{0}{schick2023toolformer}
 \abx@aux@cite{0}{anthropic2024mcp}
 \abx@aux@segm{0}{0}{anthropic2024mcp}
+\abx@aux@cite{0}{mcpspec2024}
+\abx@aux@segm{0}{0}{mcpspec2024}
 \@writefile{toc}{\contentsline {section}{\numberline {1.2}Scope and Goals}{3}{section.1.2}\protected@file@percent }
 \newlabel{sec:scope-goals}{{1.2}{3}{Scope and Goals}{section.1.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2.1}Project Goals}{3}{subsection.1.2.1}\protected@file@percent }
@@ -49,6 +55,10 @@
 \newlabel{sec:thesis-structure}{{1.4}{7}{Thesis Structure}{section.1.4}{}}
 \abx@aux@cite{0}{yoo2003slurm}
 \abx@aux@segm{0}{0}{yoo2003slurm}
+\abx@aux@cite{0}{slurm2024docs}
+\abx@aux@segm{0}{0}{slurm2024docs}
+\abx@aux@cite{0}{schedmd2024slurm}
+\abx@aux@segm{0}{0}{schedmd2024slurm}
 \@writefile{toc}{\contentsline {chapter}{\numberline {2}Theoretical Background}{9}{chapter.2}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -58,13 +68,13 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces Slurm System Architecture}}{10}{figure.caption.10}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{fig:slurm-architecture}{{2.1}{10}{Slurm System Architecture}{figure.caption.10}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.2}Core Concepts}{10}{subsection.2.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.2}Core Concepts}{11}{subsection.2.1.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1.3}Command-Line Interface}{11}{subsection.2.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.4}Job Submission and Scheduling}{12}{subsection.2.1.4}\protected@file@percent }
 \abx@aux@cite{0}{zhong2017seq2sql}
 \abx@aux@segm{0}{0}{zhong2017seq2sql}
 \abx@aux@cite{0}{yu2018spider}
 \abx@aux@segm{0}{0}{yu2018spider}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.4}Job Submission and Scheduling}{12}{subsection.2.1.4}\protected@file@percent }
 \abx@aux@cite{0}{wang2020ratsql}
 \abx@aux@segm{0}{0}{wang2020ratsql}
 \@writefile{toc}{\contentsline {section}{\numberline {2.2}Text-to-SQL Concept}{13}{section.2.2}\protected@file@percent }
@@ -190,71 +200,75 @@
 \@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Mock Data Scenarios}}{45}{table.caption.48}\protected@file@percent }
 \newlabel{tab:mock-scenarios}{{6.2}{45}{Mock Data Scenarios}{table.caption.48}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.1.2}Scenario-Grid Dataset}{45}{subsection.6.1.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Current Dataset Distribution (367 Cases)}}{46}{table.caption.49}\protected@file@percent }
-\newlabel{tab:dataset-distribution}{{6.3}{46}{Current Dataset Distribution (367 Cases)}{table.caption.49}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Testing Environment Architecture}}{46}{figure.caption.50}\protected@file@percent }
-\newlabel{fig:test-environment}{{6.1}{46}{Testing Environment Architecture}{figure.caption.50}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.3}Automated Evaluation Framework}{46}{subsection.6.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Current Curated Dataset Distribution (455 Cases)}}{46}{table.caption.49}\protected@file@percent }
+\newlabel{tab:dataset-distribution}{{6.3}{46}{Current Curated Dataset Distribution (455 Cases)}{table.caption.49}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.3}Held-Out Paraphrase Generalization Set}{46}{subsection.6.1.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Testing Environment Architecture}}{47}{figure.caption.50}\protected@file@percent }
+\newlabel{fig:test-environment}{{6.1}{47}{Testing Environment Architecture}{figure.caption.50}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.4}Automated Evaluation Framework}{47}{subsection.6.1.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{Test Case Structure}{47}{subsubsection*.51}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{Scoring Methodology}{47}{subsubsection*.52}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Aggregate Metrics}{47}{subsubsection*.53}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Aggregate Metrics}{48}{subsubsection*.53}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{State Reset for Deterministic Runs}{48}{subsubsection*.54}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.4}Manual Scenario Validation}{48}{subsection.6.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.5}Running the Evaluation}{48}{subsection.6.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.6}Source Code and Reproducibility}{48}{subsection.6.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.7}TODO for Final Thesis Freeze}{49}{subsection.6.1.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.2}Experimental Results}{49}{section.6.2}\protected@file@percent }
-\newlabel{sec:results}{{6.2}{49}{Experimental Results}{section.6.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Benchmark Configuration Snapshot}{49}{subsection.6.2.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Evaluation Run Configuration (Latest Snapshot)}}{49}{table.caption.55}\protected@file@percent }
-\newlabel{tab:eval-run-config}{{6.4}{49}{Evaluation Run Configuration (Latest Snapshot)}{table.caption.55}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Overall Performance}{50}{subsection.6.2.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Overall Metrics (367-Case Snapshot)}}{50}{table.caption.56}\protected@file@percent }
-\newlabel{tab:overall-results}{{6.5}{50}{Overall Metrics (367-Case Snapshot)}{table.caption.56}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}Component-Level Averages}{50}{subsection.6.2.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Average Component Scores}}{50}{table.caption.57}\protected@file@percent }
-\newlabel{tab:component-averages}{{6.6}{50}{Average Component Scores}{table.caption.57}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.4}Results by Category}{51}{subsection.6.2.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Category-Level Results (Latest Snapshot)}}{51}{table.caption.58}\protected@file@percent }
-\newlabel{tab:category-results}{{6.7}{51}{Category-Level Results (Latest Snapshot)}{table.caption.58}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.5}Results by Scenario}{51}{subsection.6.2.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Scenario-Level Robustness}}{51}{table.caption.59}\protected@file@percent }
-\newlabel{tab:scenario-results}{{6.8}{51}{Scenario-Level Robustness}{table.caption.59}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.6}Failure Pattern Analysis}{52}{subsection.6.2.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Mismatch Counts Across 367 Cases}}{52}{table.caption.60}\protected@file@percent }
-\newlabel{tab:mismatch-counts}{{6.9}{52}{Mismatch Counts Across 367 Cases}{table.caption.60}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.7}Latency Characteristics}{52}{subsection.6.2.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.8}Manual Scenario Validation Summary}{52}{subsection.6.2.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.9}Comparison with Manual CLI Workflow}{53}{subsection.6.2.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{53}{table.caption.61}\protected@file@percent }
-\newlabel{tab:agent-vs-cli}{{6.10}{53}{Task Complexity: Agent vs Manual CLI}{table.caption.61}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.10}Result Interpretation}{53}{subsection.6.2.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.11}TODO for Final Thesis Freeze}{53}{subsection.6.2.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{55}{chapter.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.5}Manual Scenario Validation}{48}{subsection.6.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.6}Running the Evaluation}{49}{subsection.6.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.7}Source Code and Reproducibility}{49}{subsection.6.1.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.8}TODO for Final Thesis Freeze}{49}{subsection.6.1.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Experimental Results}{50}{section.6.2}\protected@file@percent }
+\newlabel{sec:results}{{6.2}{50}{Experimental Results}{section.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Benchmark Configuration Snapshot}{50}{subsection.6.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Evaluation Run Configuration (Latest Snapshot)}}{50}{table.caption.55}\protected@file@percent }
+\newlabel{tab:eval-run-config}{{6.4}{50}{Evaluation Run Configuration (Latest Snapshot)}{table.caption.55}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Overall Performance}{51}{subsection.6.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Overall Metrics (455-Case Curated Benchmark)}}{51}{table.caption.56}\protected@file@percent }
+\newlabel{tab:overall-results}{{6.5}{51}{Overall Metrics (455-Case Curated Benchmark)}{table.caption.56}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}Component-Level Averages}{51}{subsection.6.2.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Average Component Scores}}{51}{table.caption.57}\protected@file@percent }
+\newlabel{tab:component-averages}{{6.6}{51}{Average Component Scores}{table.caption.57}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.4}Results by Category}{52}{subsection.6.2.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Category-Level Results (455-Case Curated Benchmark)}}{52}{table.caption.58}\protected@file@percent }
+\newlabel{tab:category-results}{{6.7}{52}{Category-Level Results (455-Case Curated Benchmark)}{table.caption.58}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.5}Results by Scenario}{52}{subsection.6.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Scenario-Level Robustness}}{52}{table.caption.59}\protected@file@percent }
+\newlabel{tab:scenario-results}{{6.8}{52}{Scenario-Level Robustness}{table.caption.59}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.6}Failure Pattern Analysis}{53}{subsection.6.2.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Error Analysis Across Failed Curated-Benchmark Cases}}{53}{table.caption.60}\protected@file@percent }
+\newlabel{tab:mismatch-counts}{{6.9}{53}{Error Analysis Across Failed Curated-Benchmark Cases}{table.caption.60}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.7}Held-Out Paraphrase Generalization Results}{54}{subsection.6.2.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Separate Generalization Split Reporting}}{54}{table.caption.61}\protected@file@percent }
+\newlabel{tab:generalization-results}{{6.10}{54}{Separate Generalization Split Reporting}{table.caption.61}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.8}Latency Characteristics}{54}{subsection.6.2.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.9}Manual Scenario Validation Summary}{54}{subsection.6.2.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.10}Comparison with Manual CLI Workflow}{55}{subsection.6.2.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.11}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{55}{table.caption.62}\protected@file@percent }
+\newlabel{tab:agent-vs-cli}{{6.11}{55}{Task Complexity: Agent vs Manual CLI}{table.caption.62}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.11}Result Interpretation}{55}{subsection.6.2.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.12}TODO for Final Thesis Freeze}{56}{subsection.6.2.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{57}{chapter.7}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {7.1}Summary}{55}{section.7.1}\protected@file@percent }
-\newlabel{sec:summary}{{7.1}{55}{Summary}{section.7.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{55}{subsection.7.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{56}{subsection.7.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.3}Key Quantitative Outcomes}{56}{subsection.7.1.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Final Snapshot Highlights}}{56}{table.caption.62}\protected@file@percent }
-\newlabel{tab:summary-highlights}{{7.1}{56}{Final Snapshot Highlights}{table.caption.62}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.4}Main Findings}{57}{subsection.7.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{57}{subsection.7.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.6}TODO for Final Thesis Freeze}{57}{subsection.7.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7.2}Limitations}{57}{section.7.2}\protected@file@percent }
-\newlabel{sec:limitations}{{7.2}{57}{Limitations}{section.7.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{58}{subsection.7.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{58}{subsection.7.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{58}{subsection.7.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{58}{subsection.7.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}Summary}{57}{section.7.1}\protected@file@percent }
+\newlabel{sec:summary}{{7.1}{57}{Summary}{section.7.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{57}{subsection.7.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{58}{subsection.7.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.3}Key Quantitative Outcomes}{58}{subsection.7.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Final Snapshot Highlights}}{58}{table.caption.63}\protected@file@percent }
+\newlabel{tab:summary-highlights}{{7.1}{58}{Final Snapshot Highlights}{table.caption.63}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.4}Main Findings}{59}{subsection.7.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{59}{subsection.7.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.6}TODO for Final Thesis Freeze}{59}{subsection.7.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.2}Limitations}{60}{section.7.2}\protected@file@percent }
+\newlabel{sec:limitations}{{7.2}{60}{Limitations}{section.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{60}{subsection.7.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{60}{subsection.7.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{61}{subsection.7.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{61}{subsection.7.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{61}{subsection.7.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{61}{subsection.7.2.6}\protected@file@percent }
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{59}{subsection.7.2.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{59}{subsection.7.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.7}TODO for Limitation Mitigation}{59}{subsection.7.2.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{References}{59}{subsection.7.2.7}\protected@file@percent }
-\abx@aux@read@bbl@mdfivesum{E327399801A05A8B1593CB7907351148}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.7}TODO for Limitation Mitigation}{62}{subsection.7.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{References}{62}{subsection.7.2.7}\protected@file@percent }
+\abx@aux@read@bbl@mdfivesum{DCD742807AE0685167A02DE4754941B9}
 \abx@aux@defaultrefcontext{0}{anthropic2024mcp}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{mcpspec2024}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{bai2022constitutional}{nty/global//global/global}
@@ -269,6 +283,7 @@
 \abx@aux@defaultrefcontext{0}{fastapi2024}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{reimers2019sentence}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{sabin2020hpc}{nty/global//global/global}
+\abx@aux@defaultrefcontext{0}{schedmd2024slurm}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{slurm2024docs}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{schick2023toolformer}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{svelte2024}{nty/global//global/global}
@@ -282,7 +297,7 @@
 \abx@aux@defaultrefcontext{0}{yu2018spider}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{zheng2023judging}{nty/global//global/global}
 \abx@aux@defaultrefcontext{0}{zhong2017seq2sql}{nty/global//global/global}
-\newlabel{LastPage}{{7.2.7}{62}{TODO for Limitation Mitigation}{page.62}{}}
-\gdef\lastpage@lastpage{62}
-\gdef\lastpage@lastpageHy{62}
-\gdef \@abspage@last{76}
+\newlabel{LastPage}{{7.2.7}{65}{TODO for Limitation Mitigation}{page.65}{}}
+\gdef\lastpage@lastpage{65}
+\gdef\lastpage@lastpageHy{65}
+\gdef \@abspage@last{79}

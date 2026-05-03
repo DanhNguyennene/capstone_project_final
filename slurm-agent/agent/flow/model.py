@@ -6,6 +6,7 @@ Model configuration for the Slurm agent.
 - OLLAMA_BASE_URL           — Ollama API endpoint
 - create_ollama_model()     — OpenAI-compat Ollama client
 - create_openai_model()     — Native OpenAI API client
+- create_azure_openai_model() — Azure OpenAI API client
 - create_copilot_model()    — GitHub Copilot API (Claude Sonnet via Copilot)
 - resolve_model()           — returns correct model based on LLM_PROVIDER env var
 - REASONING_MODEL_SETTINGS  — main agent (high-quality thinking)
@@ -17,11 +18,15 @@ import os
 from agents.model_settings import ModelSettings
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 from openai import AsyncOpenAI
+try:
+    from openai import AsyncAzureOpenAI
+except ImportError:  # Older openai packages may not expose Azure helpers.
+    AsyncAzureOpenAI = None
 
 logger = logging.getLogger(__name__)
 
 # ── Provider selection ────────────────────────────────────────────────────────
-# Supported providers: ollama (default), openai, copilot, github-models.
+# Supported providers: ollama (default), openai, azure-openai, copilot, github-models.
 LLM_PROVIDER: str = os.environ.get("LLM_PROVIDER", "ollama").lower()
 
 # ── OpenAI config ─────────────────────────────────────────────────────────────
@@ -30,6 +35,21 @@ OPENAI_MODEL: str = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_API_KEY: str = (
     os.environ.get("OPENAI_API_KEY", "")
     or os.environ.get("OPEN_AI_KEY", "")
+)
+
+# ── Azure OpenAI config ──────────────────────────────────────────────────────
+AZURE_OPENAI_ENDPOINT: str = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+AZURE_OPENAI_API_KEY: str = (
+    os.environ.get("AZURE_OPENAI_API_KEY", "")
+    or os.environ.get("AZURE_OPENAI_KEY", "")
+)
+AZURE_OPENAI_API_VERSION: str = os.environ.get(
+    "AZURE_OPENAI_API_VERSION", "2024-02-15-preview"
+)
+AZURE_OPENAI_MODEL: str = (
+    os.environ.get("AZURE_OPENAI_MODEL", "")
+    or os.environ.get("AZURE_OPENAI_DEPLOYMENT", "")
+    or os.environ.get("OPENAI_MODEL", "gpt-4o")
 )
 
 # ── Copilot config ────────────────────────────────────────────────────────────
@@ -92,6 +112,39 @@ def create_openai_model(
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 
 
+def create_azure_openai_model(
+    model_name: str | None = None,
+    token: str | None = None,
+    endpoint: str | None = None,
+    api_version: str | None = None,
+) -> OpenAIChatCompletionsModel:
+    """Create an Azure OpenAI model client.
+
+    The model name is the Azure deployment name.
+    """
+    _token = token or AZURE_OPENAI_API_KEY
+    _endpoint = (endpoint or AZURE_OPENAI_ENDPOINT).rstrip("/")
+    if not _endpoint:
+        raise RuntimeError(
+            "AZURE_OPENAI_ENDPOINT env var is required for LLM_PROVIDER=azure-openai."
+        )
+    if not _token:
+        raise RuntimeError(
+            "AZURE_OPENAI_API_KEY or AZURE_OPENAI_KEY env var is required for LLM_PROVIDER=azure-openai."
+        )
+    if AsyncAzureOpenAI is None:
+        raise RuntimeError("Installed openai package does not provide AsyncAzureOpenAI.")
+    _model = model_name or AZURE_OPENAI_MODEL
+    _api_version = api_version or AZURE_OPENAI_API_VERSION
+    client = AsyncAzureOpenAI(
+        azure_endpoint=_endpoint,
+        api_key=_token,
+        api_version=_api_version,
+    )
+    logger.info(f"[model] Azure OpenAI backend: {_endpoint} deployment={_model}")
+    return OpenAIChatCompletionsModel(model=_model, openai_client=client)
+
+
 def create_copilot_model(
     model_name: str | None = None,
     token: str | None = None,
@@ -139,7 +192,9 @@ def create_github_models_model(
 def normalize_provider(provider: str | None = None) -> str:
     """Normalize provider input, falling back to env default."""
     value = (provider or LLM_PROVIDER or "ollama").strip().lower()
-    if value not in {"ollama", "openai", "copilot", "github-models"}:
+    if value in {"azure", "azure_openai", "azure-openai"}:
+        return "azure-openai"
+    if value not in {"ollama", "openai", "azure-openai", "copilot", "github-models"}:
         return "ollama"
     return value
 
@@ -156,12 +211,15 @@ def resolve_model(
 
     LLM_PROVIDER=ollama         (default) → Ollama at SLURM_AGENT_BASE_URL
     LLM_PROVIDER=openai                   → OpenAI API (needs OPENAI_API_KEY)
+    LLM_PROVIDER=azure-openai             → Azure OpenAI API (needs AZURE_OPENAI_ENDPOINT + key)
     LLM_PROVIDER=copilot                  → GitHub Copilot API (needs gh CLI token)
     LLM_PROVIDER=github-models            → GitHub Models API (works with PAT)
     """
     active_provider = normalize_provider(provider)
     if active_provider == "openai":
         return create_openai_model(model_name, token=openai_api_key, base_url=openai_base_url)
+    if active_provider == "azure-openai":
+        return create_azure_openai_model(model_name)
     if active_provider == "copilot":
         return create_copilot_model(model_name, token=github_token)
     if active_provider == "github-models":
@@ -191,6 +249,8 @@ def resolve_specialist_model(
             token=openai_api_key,
             base_url=openai_base_url,
         )
+    if active_provider == "azure-openai":
+        return create_azure_openai_model(model_name or AZURE_OPENAI_MODEL)
     return resolve_model(
         model_name,
         provider=active_provider,
@@ -218,11 +278,21 @@ CLOUD_MODEL_SETTINGS = ModelSettings(
 )
 
 
-def model_settings_for_provider(provider: str | None = None) -> ModelSettings:
+def model_settings_for_provider(
+    provider: str | None = None,
+    *,
+    parallel_tool_calls: bool = False,
+) -> ModelSettings:
     """Return model settings that match the selected provider."""
     active_provider = normalize_provider(provider)
-    if active_provider in ("openai", "copilot", "github-models"):
-        return CLOUD_MODEL_SETTINGS
+    if active_provider in ("openai", "azure-openai", "copilot", "github-models"):
+        return CLOUD_MODEL_SETTINGS.resolve(
+            ModelSettings(
+                parallel_tool_calls=bool(
+                    parallel_tool_calls and active_provider == "openai"
+                )
+            )
+        )
     return REASONING_MODEL_SETTINGS
 
 # Active settings — picked at import time based on provider

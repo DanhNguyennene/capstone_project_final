@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.12.18)  18 APR 2026 10:44
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.12.18)  3 MAY 2026 13:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1372,13 +1372,8 @@ LaTeX Font Info:    Calculating math sizes for size <13> on input line 12.
 
 ] [4
 
-]
-Overfull \hbox (5.9394pt too wide) in paragraph at lines 12--13
-\TU/TimesNewRoman(0)/m/n/13 management while identifying concrete priorities fo
-r future enhancement, including safety
- []
-
-) (./sections/table-of-glossary.tex [5] [6
+])
+(./sections/table-of-glossary.tex [5] [6
 
 ]) (./sections/contents.tex [7]
 (./main.toc [8
@@ -1430,12 +1425,12 @@ Overfull \hbox (9.1725pt too wide) in paragraph at lines 16--17
 
 ) [8]
 Chapter 2.
-(./sections/2.Background/2.1.Slurm.tex
-File: images/slurm_architecture.png Graphic file (type bmp)
-<images/slurm_architecture.png>
- [9
+(./sections/2.Background/2.1.Slurm.tex [9
 
 ]
+File: images/slurm_architecture.png Graphic file (type bmp)
+<images/slurm_architecture.png>
+
 Overfull \hbox (8.97345pt too wide) in paragraph at lines 23--24
 \TU/TimesNewRoman(0)/m/n/13 monly used accounting interface. This daemon manage
 s connections to a backend database
@@ -1577,6 +1572,11 @@ Overfull \hbox (16.92072pt too wide) in paragraph at lines 4--5
 ponse-only quality checks to architecture-
  []
 
+
+Overfull \hbox (6.84604pt too wide) in paragraph at lines 16--40
+ [][] 
+ []
+
 [43
 
 ]
@@ -1591,14 +1591,20 @@ Underfull \hbox (badness 5036) in paragraph at lines 70--71
  []
 
 [45]
-Overfull \hbox (25.69308pt too wide) in paragraph at lines 119--120
+Overfull \hbox (120.52597pt too wide) in paragraph at lines 120--120
+[]\TU/lmtt/m/n/13 python scenario_eval.py --dataset generalization_dataset.json
+ --auto-approve --judge \[] 
+ []
+
+[46]
+Overfull \hbox (25.69308pt too wide) in paragraph at lines 133--134
 \TU/TimesNewRoman(0)/m/n/13 A dedicated evaluator (\TU/lmtt/m/n/13 scenario_eva
 l.py\TU/TimesNewRoman(0)/m/n/13 ) and web evaluation backend (\TU/lmtt/m/n/13 e
 val_server.py\TU/TimesNewRoman(0)/m/n/13 )
  []
 
-[46]
-Overfull \hbox (37.78954pt too wide) detected at line 145
+[47]
+Overfull \hbox (37.78954pt too wide) detected at line 159
 [][][][][] \OT1/cmr/m/n/12 = 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 25 \OMS/cmsy/m/
 n/12 ^^A [] \OT1/cmr/m/n/12 + 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 20 \OMS/cmsy/m
 /n/12 ^^A [] \OT1/cmr/m/n/12 + 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 20 \OMS/cmsy/
@@ -1608,33 +1614,90 @@ y/m/n/12 ^^A [] \OT1/cmr/m/n/12 + 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 15 \OMS/cm
 sy/m/n/12 ^^A []
  []
 
-[47] [48]) (./sections/6.Experiments/6.2.Results.tex [49] [50] [51] [52]
-Underfull \hbox (badness 10000) in paragraph at lines 178--178
+[48]
+Overfull \hbox (0.46956pt too wide) in paragraph at lines 210--211
+\TU/TimesNewRoman(0)/m/n/13 stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-
+oss:20b judge) and freeze those
+ []
+
+) (./sections/6.Experiments/6.2.Results.tex [49] [50] [51]
+Overfull \hbox (3.64272pt too wide) in paragraph at lines 127--128
+\TU/TimesNewRoman(0)/m/n/13 Cross-scenario behavior is stable on the curated be
+nchmark (CSR = 93.4%). The \TU/lmtt/m/n/13 pending
+ []
+
+[52]
+Underfull \hbox (badness 2875) in paragraph at lines 141--142
+\TU/TimesNewRoman(0)/m/n/13 inconsistent with ground truth, es-
+ []
+
+
+Underfull \hbox (badness 4792) in paragraph at lines 142--142
+[]|\TU/TimesNewRoman(0)/m/n/13 Wrong handoff/rout-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 143--143
+[]|\TU/TimesNewRoman(0)/m/n/13 Unsafe action
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 143--143
+\TU/TimesNewRoman(0)/m/n/13 blocked or HITL
+ []
+
+
+Underfull \hbox (badness 1184) in paragraph at lines 143--144
+[]|\TU/TimesNewRoman(0)/m/n/13 The behavior either blocked/refused
+ []
+
+
+Underfull \hbox (badness 1286) in paragraph at lines 143--144
+\TU/TimesNewRoman(0)/m/n/13 an action unexpectedly or failed to
+ []
+
+[53]
+Overfull \hbox (84.36049pt too wide) in paragraph at lines 154--155
+\TU/TimesNewRoman(0)/m/n/13 generalization split. The generalization split is s
+tored in \TU/lmtt/m/n/13 evaluation/generalization_dataset.json
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 164--165
+[]|\TU/TimesNewRoman(0)/m/n/13 Frozen snapshot
+ []
+
+
+Overfull \hbox (66.1046pt too wide) in paragraph at lines 164--165
+\TU/lmtt/m/n/13 eval_all_20260430_212014.json| 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 165--166
+[]|\TU/TimesNewRoman(0)/m/n/13 Run separately under
+ []
+
+[54]
+Underfull \hbox (badness 10000) in paragraph at lines 200--200
 []|\TU/TimesNewRoman(0)/m/n/13 Diagnose pending
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 179--179
+Underfull \hbox (badness 10000) in paragraph at lines 201--201
 []|\TU/TimesNewRoman(0)/m/n/13 Cluster utilization
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 180--180
+Underfull \hbox (badness 10000) in paragraph at lines 202--202
 []|\TU/TimesNewRoman(0)/m/n/13 Safe cancellation
  []
 
 
-Overfull \hbox (94.46965pt too wide) in paragraph at lines 173--183
+Overfull \hbox (94.46965pt too wide) in paragraph at lines 195--205
  [][] 
  []
 
-
-Overfull \hbox (2.33818pt too wide) in paragraph at lines 189--190
-\TU/TimesNewRoman(0)/m/n/13 The current system is strong in read-oriented and a
-ccount-oriented assistance, and demon-
- []
-
-[53]) [54]
+[55]) [56]
 Chapter 7.
 (./sections/7.Conclusion/7.1.Summary.tex
 Overfull \hbox (3.19426pt too wide) in paragraph at lines 4--5
@@ -1642,21 +1705,21 @@ Overfull \hbox (3.19426pt too wide) in paragraph at lines 4--5
 rm Agent that enables natural-language
  []
 
-[55
+[57
 
-] [56]) (./sections/7.Conclusion/7.2.Limitations.tex [57]
-Overfull \hbox (11.09935pt too wide) in paragraph at lines 24--25
+] [58]) (./sections/7.Conclusion/7.2.Limitations.tex [59]
+Overfull \hbox (11.09935pt too wide) in paragraph at lines 26--27
 []\TU/TimesNewRoman(0)/m/n/13 These failures are predominantly structural (tool
 /routing/HITL/state mismatches) rather
  []
 
-
-Overfull \hbox (20.32533pt too wide) in paragraph at lines 30--31
+[60]
+Overfull \hbox (20.32533pt too wide) in paragraph at lines 36--37
 []\TU/TimesNewRoman(0)/b/n/13 Narrow deployment validation. \TU/TimesNewRoman(0
 )/m/n/13 The current system is validated mainly in development-
  []
 
-[58]) (./sections/references.tex) [59]
+[61]) (./sections/references.tex) [62]
 Overfull \hbox (62.62746pt too wide) in paragraph at lines 127--127
 []\TU/TimesNewRoman(0)/m/n/13 Anthropic. \TU/TimesNewRoman(0)/m/it/13 Model Con
 text Protocol Specification\TU/TimesNewRoman(0)/m/n/13 . [][]$[][][][][] [] [] 
@@ -1676,22 +1739,29 @@ s SDK\TU/TimesNewRoman(0)/m/n/13 . [][]$[][][][][] [] [] [] [][][][][][] [] [][
 ][] [] [][][][][][] [] [][][][][][] [][] [][][][][][] [][]
  []
 
-[60
+[63
 
 ]
+Overfull \hbox (8.64215pt too wide) in paragraph at lines 127--127
+[]\TU/TimesNewRoman(0)/m/n/13 SchedMD. \TU/TimesNewRoman(0)/m/it/13 Slurm Comme
+rcial Support and Development\TU/TimesNewRoman(0)/m/n/13 . [][]$[][][][][] [] [
+] [] [][][] [] [][][][][][][] []
+ []
+
+
 Overfull \hbox (4.71364pt too wide) in paragraph at lines 127--127
 []\TU/TimesNewRoman(0)/m/n/13 SchedMD. \TU/TimesNewRoman(0)/m/it/13 Slurm Workl
 oad Manager Documentation\TU/TimesNewRoman(0)/m/n/13 . [][]$[][][][][] [] [] []
  [][][][][] [] [][][][][][][] []
  []
 
-[61]
+[64]
 Overfull \hbox (3.18884pt too wide) in paragraph at lines 127--127
 []\TU/TimesNewRoman(0)/m/n/13 Lianmin Zheng et al. “Judging LLM-as-a-judge with
  MT-bench and chatbot arena”.
  []
 
-(./sections/appendixes/plan.tex) [62]
+(./sections/appendixes/plan.tex) [65]
 
 enddocument/afterlastpage: lastpage setting LastPage.
 (./main.aux)
@@ -1700,18 +1770,18 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 5B83EFBD7FCB2BBF4E3178F5DAB4726B;19869.
+(rerunfilecheck)             Checksum: C424B28F06FCA1CDAFFFF5D93A913C12;20414.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 44816 strings out of 476846
- 1039628 string characters out of 5803823
- 1983169 words of memory out of 5000000
- 65945 multiletter control sequences out of 15000+600000
+ 44822 strings out of 476846
+ 1039861 string characters out of 5803823
+ 1984375 words of memory out of 5000000
+ 65951 multiletter control sequences out of 15000+600000
  572691 words of font info for 131 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 110i,10n,107p,1149b,4849s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,10n,107p,1492b,4846s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (76 pages).
+Output written on main.pdf (79 pages).

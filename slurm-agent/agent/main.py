@@ -29,8 +29,14 @@ from flow.model import (
     OPENAI_BASE_URL,
     OPENAI_MODEL,
     OPENAI_API_KEY,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_API_VERSION,
+    AZURE_OPENAI_MODEL,
     COPILOT_BASE_URL,
+    COPILOT_MODEL,
     GITHUB_MODELS_BASE_URL,
+    GITHUB_MODELS_MODEL,
     GITHUB_TOKEN,
     normalize_provider,
 )
@@ -123,20 +129,36 @@ def _event_to_sse(event: dict) -> str | None:
 
 
 # ===== Session Management =====
-SessionAgentEntry = tuple[SlurmAgentSystem, str, str, str, str, float]
+SessionAgentEntry = tuple[SlurmAgentSystem, str, str, str, str, str, bool, float]
 _session_agents: Dict[str, SessionAgentEntry] = {}
 SESSION_TIMEOUT = 3600
 
 
+def _truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _default_model_for_provider(provider: str) -> str:
+    if provider == "azure-openai":
+        return AZURE_OPENAI_MODEL
     if provider == "openai":
         return OPENAI_MODEL
+    if provider == "copilot":
+        return COPILOT_MODEL
+    if provider == "github-models":
+        return GITHUB_MODELS_MODEL
     return DEFAULT_MODEL
 
 
 def _default_specialist_model_for_provider(provider: str) -> str:
+    if provider == "azure-openai":
+        return AZURE_OPENAI_MODEL
     if provider == "openai":
         return OPENAI_MODEL
+    if provider == "copilot":
+        return COPILOT_MODEL
+    if provider == "github-models":
+        return GITHUB_MODELS_MODEL
     return SPECIALIST_MODEL
 
 
@@ -153,20 +175,25 @@ def get_agent(
     session_id: str = "default",
     mcp_url: str | None = None,
     llm_provider: str | None = None,
+    llm_main_provider: str | None = None,
+    llm_specialist_provider: str | None = None,
     llm_model: str | None = None,
     llm_specialist_model: str | None = None,
     openai_api_key: str | None = None,
+    openai_parallel: bool = False,
 ) -> SlurmAgentSystem:
     """Get or create agent for session."""
     global _session_agents
     current_time = time.time()
     effective_mcp = mcp_url or MCP_SERVER_URL
-    effective_provider = normalize_provider(llm_provider or LLM_PROVIDER)
+    effective_provider = normalize_provider(llm_main_provider or llm_provider or LLM_PROVIDER)
+    effective_specialist_provider = normalize_provider(llm_specialist_provider or effective_provider)
     effective_model = (llm_model or "").strip() or _default_model_for_provider(effective_provider)
-    effective_specialist_model = (llm_specialist_model or "").strip() or _default_specialist_model_for_provider(effective_provider)
+    effective_specialist_model = (llm_specialist_model or "").strip() or _default_specialist_model_for_provider(effective_specialist_provider)
+    effective_openai_parallel = bool(openai_parallel and effective_provider == "openai")
 
     expired = [
-        k for k, (agent, _, _, _, _, t) in _session_agents.items()
+        k for k, (agent, _, _, _, _, _, _, t) in _session_agents.items()
         if current_time - t > SESSION_TIMEOUT
     ]
     for k in expired:
@@ -174,9 +201,18 @@ def get_agent(
         del _session_agents[k]
 
     if session_id in _session_agents:
-        agent, prev_mcp, prev_provider, prev_model, prev_specialist_model, _ = _session_agents[session_id]
+        (
+            agent,
+            prev_mcp,
+            prev_provider,
+            prev_model,
+            prev_specialist_provider,
+            prev_specialist_model,
+            prev_openai_parallel,
+            _,
+        ) = _session_agents[session_id]
         key_changed = (
-            effective_provider == "openai"
+            "openai" in {effective_provider, effective_specialist_provider}
             and bool(openai_api_key)
             and getattr(agent, "openai_api_key", "") != openai_api_key
         )
@@ -184,7 +220,9 @@ def get_agent(
             prev_mcp == effective_mcp
             and prev_provider == effective_provider
             and prev_model == effective_model
+            and prev_specialist_provider == effective_specialist_provider
             and prev_specialist_model == effective_specialist_model
+            and prev_openai_parallel == effective_openai_parallel
             and not key_changed
         ):
             _session_agents[session_id] = (
@@ -192,23 +230,29 @@ def get_agent(
                 prev_mcp,
                 prev_provider,
                 prev_model,
+                prev_specialist_provider,
                 prev_specialist_model,
+                prev_openai_parallel,
                 current_time,
             )
             return agent
         logger.info(
             f"Agent config changed for session {session_id}: "
             f"mcp {prev_mcp}->{effective_mcp}, "
-            f"provider {prev_provider}->{effective_provider}, "
+            f"main-provider {prev_provider}->{effective_provider}, "
             f"main-model {prev_model}->{effective_model}, "
-            f"specialist-model {prev_specialist_model}->{effective_specialist_model}"
+            f"specialist-provider {prev_specialist_provider}->{effective_specialist_provider}, "
+            f"specialist-model {prev_specialist_model}->{effective_specialist_model}, "
+            f"openai-parallel {prev_openai_parallel}->{effective_openai_parallel}"
         )
         _schedule_disconnect(agent)
 
     logger.info(
         f"Creating agent for session: {session_id} "
-        f"(mcp={effective_mcp}, provider={effective_provider}, "
-        f"main-model={effective_model}, specialist-model={effective_specialist_model})"
+        f"(mcp={effective_mcp}, main-provider={effective_provider}, "
+        f"main-model={effective_model}, specialist-provider={effective_specialist_provider}, "
+        f"specialist-model={effective_specialist_model}, "
+        f"openai-parallel={effective_openai_parallel})"
     )
     agent = SlurmAgentSystem(
         reasoning_model=effective_model,
@@ -217,15 +261,19 @@ def get_agent(
         auto_approve=AUTO_APPROVE,
         llm_provider=effective_provider,
         llm_model=effective_model,
+        specialist_provider=effective_specialist_provider,
         specialist_model=effective_specialist_model,
         openai_api_key=openai_api_key,
+        openai_parallel=effective_openai_parallel,
     )
     _session_agents[session_id] = (
         agent,
         effective_mcp,
         effective_provider,
         effective_model,
+        effective_specialist_provider,
         effective_specialist_model,
+        effective_openai_parallel,
         current_time,
     )
     return agent
@@ -236,7 +284,7 @@ def get_agent(
 async def lifespan(app: FastAPI):
     logger.info("Starting Slurm Agent API")
     yield
-    for sid, (agent, _, _, _, _, _) in _session_agents.items():
+    for sid, (agent, *_) in _session_agents.items():
         try:
             await agent.disconnect()
         except Exception as e:
@@ -523,6 +571,10 @@ def _build_chat_client(
 ):
     """Create an OpenAI-compatible client for the active provider."""
     from openai import AsyncOpenAI
+    try:
+        from openai import AsyncAzureOpenAI
+    except ImportError:
+        AsyncAzureOpenAI = None
 
     active_provider = normalize_provider(provider)
     target_model = (model_name or "").strip() or _default_model_for_provider(active_provider)
@@ -532,6 +584,20 @@ def _build_chat_client(
         if not token:
             raise RuntimeError("OPENAI_API_KEY missing for OpenAI provider")
         return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token), target_model, {}
+
+    if active_provider == "azure-openai":
+        if AsyncAzureOpenAI is None:
+            raise RuntimeError("Installed openai package does not provide AsyncAzureOpenAI")
+        if not AZURE_OPENAI_ENDPOINT:
+            raise RuntimeError("AZURE_OPENAI_ENDPOINT missing for Azure OpenAI provider")
+        if not AZURE_OPENAI_API_KEY:
+            raise RuntimeError("AZURE_OPENAI_API_KEY or AZURE_OPENAI_KEY missing for Azure OpenAI provider")
+        client = AsyncAzureOpenAI(
+            azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            api_key=AZURE_OPENAI_API_KEY,
+            api_version=AZURE_OPENAI_API_VERSION,
+        )
+        return client, target_model, {}
 
     if active_provider == "copilot":
         if not GITHUB_TOKEN:
@@ -607,22 +673,39 @@ async def chat(request: ChatRequest, raw_request: Request):
         logger.warning(f"No chat_id in request, generated new session: {session_id}")
 
     mcp_url = raw_request.headers.get("x-mcp-url")
-    llm_provider = normalize_provider(raw_request.headers.get("x-llm-provider") or LLM_PROVIDER)
+    legacy_provider = raw_request.headers.get("x-llm-provider")
+    llm_provider = normalize_provider(
+        raw_request.headers.get("x-llm-main-provider")
+        or legacy_provider
+        or LLM_PROVIDER
+    )
+    llm_specialist_provider = normalize_provider(
+        raw_request.headers.get("x-llm-specialist-provider") or llm_provider
+    )
     llm_model = (raw_request.headers.get("x-llm-model") or "").strip() or None
     llm_specialist_model = (raw_request.headers.get("x-llm-specialist-model") or "").strip() or None
+    openai_parallel = _truthy(
+        raw_request.headers.get("x-llm-parallel-tool-calls")
+        or raw_request.headers.get("x-openai-parallel")
+    )
     openai_api_key = (raw_request.headers.get("x-openai-api-key") or "").strip() or None
     logger.info(
         f"Chat request - session_id: {session_id}, mcp_url: {mcp_url or 'default'}, "
-        f"provider: {llm_provider}, main-model: {llm_model or '(default)'}, "
-        f"specialist-model: {llm_specialist_model or '(default)'}"
+        f"main-provider: {llm_provider}, main-model: {llm_model or '(default)'}, "
+        f"specialist-provider: {llm_specialist_provider}, "
+        f"specialist-model: {llm_specialist_model or '(default)'}, "
+        f"openai-parallel: {bool(openai_parallel and llm_provider == 'openai')}"
     )
     agent = get_agent(
         session_id,
         mcp_url=mcp_url,
         llm_provider=llm_provider,
+        llm_main_provider=llm_provider,
+        llm_specialist_provider=llm_specialist_provider,
         llm_model=llm_model,
         llm_specialist_model=llm_specialist_model,
         openai_api_key=openai_api_key,
+        openai_parallel=openai_parallel,
     )
 
     messages = [m.model_dump() for m in request.messages]
@@ -776,7 +859,7 @@ async def clear_all_sessions():
     """Clear all sessions and SQLite conversation history."""
     global _session_agents
     count = len(_session_agents)
-    for sid, (agent, _, _, _, _, _) in list(_session_agents.items()):
+    for sid, (agent, *_) in list(_session_agents.items()):
         try:
             await agent.disconnect()
         except Exception as e:
@@ -794,7 +877,7 @@ async def clear_session(session_id: str):
     """Clear a specific session."""
     global _session_agents
     if session_id in _session_agents:
-        agent, _, _, _, _, _ = _session_agents.pop(session_id)
+        agent, *_ = _session_agents.pop(session_id)
         try:
             await agent.clear_session()
             await agent.disconnect()

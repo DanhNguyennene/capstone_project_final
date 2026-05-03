@@ -12,6 +12,7 @@ automatically — no manual routing code required.
 """
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
@@ -39,6 +40,10 @@ from .model import (
     COPILOT_MODEL,
     GITHUB_MODELS_BASE_URL,
     GITHUB_MODELS_MODEL,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_API_VERSION,
+    AZURE_OPENAI_MODEL,
     OPENAI_BASE_URL,
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -78,7 +83,7 @@ class _OperatorHandoffPayload:
     """Structured payload Observer must pass when handing off to Operator."""
     action_request: str
     required_tool: str
-    targets: Any = field(default_factory=list)
+    targets: List[str] = field(default_factory=list)
     target_scope: str = "explicit"
 
 
@@ -103,6 +108,45 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 # ── Tool names given to the Operator for pre-action verification ──────────────
 _OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo"}
 _OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
+
+
+def _friendly_stream_error(exc: Exception, provider: str) -> str:
+    """Turn low-level model transport errors into user-actionable messages."""
+    msg = str(exc) or exc.__class__.__name__
+    if "Invalid JSON" in msg:
+        return "Technical issue with the response. Please rephrase."
+
+    parts = []
+    current: BaseException | None = exc
+    while current is not None:
+        parts.append(str(current))
+        parts.append(current.__class__.__name__)
+        current = current.__cause__ or current.__context__
+    details = " ".join(parts).lower()
+
+    if provider == "azure-openai":
+        if (
+            "name or service not known" in details
+            or "could not resolve" in details
+            or "temporary failure in name resolution" in details
+        ):
+            proxy_set = bool(os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"))
+            if proxy_set:
+                return (
+                    "Azure OpenAI connection error: DNS lookup failed for the Azure endpoint or proxy. "
+                    "Check AZURE_OPENAI_ENDPOINT and make sure the configured HTTPS proxy host resolves from this machine."
+                )
+            return (
+                "Azure OpenAI connection error: DNS lookup failed for the Azure endpoint. "
+                "Set HTTP_PROXY/HTTPS_PROXY for this network or check AZURE_OPENAI_ENDPOINT."
+            )
+        if "connection error" in details or "connecterror" in details:
+            return (
+                "Azure OpenAI connection error: unable to reach the Azure endpoint. "
+                "Check the proxy/network settings and AZURE_OPENAI_ENDPOINT."
+            )
+
+    return msg
 
 
 
@@ -134,17 +178,31 @@ class SlurmAgentSystem:
         auto_approve: bool = False,
         llm_provider: Optional[str] = None,
         llm_model: Optional[str] = None,
+        specialist_provider: Optional[str] = None,
         specialist_model: Optional[str] = None,
         openai_api_key: Optional[str] = None,
+        openai_parallel: bool = False,
     ):
         self.mcp_url      = mcp_url
         self.session_id   = session_id
         self.auto_approve = auto_approve
 
         self.llm_provider = normalize_provider(llm_provider or LLM_PROVIDER)
+        self.main_provider = self.llm_provider
         self.llm_model = (llm_model or reasoning_model or DEFAULT_MODEL).strip()
         self.openai_api_key = openai_api_key or OPENAI_API_KEY
-        default_specialist = OPENAI_MODEL if self.llm_provider == "openai" else SPECIALIST_MODEL
+        self.specialist_provider = normalize_provider(specialist_provider or self.llm_provider)
+        self.openai_parallel = bool(openai_parallel and self.llm_provider == "openai")
+        if self.specialist_provider == "openai":
+            default_specialist = OPENAI_MODEL
+        elif self.specialist_provider == "azure-openai":
+            default_specialist = AZURE_OPENAI_MODEL
+        elif self.specialist_provider == "copilot":
+            default_specialist = COPILOT_MODEL
+        elif self.specialist_provider == "github-models":
+            default_specialist = GITHUB_MODELS_MODEL
+        else:
+            default_specialist = SPECIALIST_MODEL
         self.specialist_model = (specialist_model or default_specialist).strip()
 
         self._reasoning_model = resolve_model(
@@ -152,7 +210,14 @@ class SlurmAgentSystem:
             provider=self.llm_provider,
             openai_api_key=self.openai_api_key,
         )
-        self._active_model_settings = model_settings_for_provider(self.llm_provider)
+        self._observer_model_settings = model_settings_for_provider(
+            self.llm_provider,
+            parallel_tool_calls=self.openai_parallel,
+        )
+        self._operator_model_settings = model_settings_for_provider(
+            self.llm_provider,
+            parallel_tool_calls=False,
+        )
 
         self._session: Optional[ChartFilteredSession] = None
         self._mcp_observer: Optional[MCPServerSse]    = None
@@ -167,6 +232,7 @@ class SlurmAgentSystem:
         self._todo = TodoTracker(
             llm_provider=self.llm_provider,
             main_model=self.llm_model,
+            specialist_provider=self.specialist_provider,
             specialist_model=self.specialist_model,
             openai_api_key=self.openai_api_key,
         )
@@ -265,7 +331,7 @@ class SlurmAgentSystem:
             name="Observer",
             instructions=observer_instructions,
             model=self._reasoning_model,
-            model_settings=self._active_model_settings.resolve(
+            model_settings=self._observer_model_settings.resolve(
                 ModelSettings(tool_choice="auto")
             ),
             mcp_servers=[self._mcp_observer],
@@ -277,7 +343,7 @@ class SlurmAgentSystem:
             name="Operator",
             instructions=operator_instructions,
             model=self._reasoning_model,
-            model_settings=self._active_model_settings.resolve(
+            model_settings=self._operator_model_settings.resolve(
                 ModelSettings(tool_choice="required")
             ),
             mcp_servers=[self._mcp_operator],
@@ -557,6 +623,10 @@ class SlurmAgentSystem:
         """Use a lightweight LLM call to produce a concise conversation summary."""
         from openai import AsyncOpenAI
         try:
+            from openai import AsyncAzureOpenAI
+        except ImportError:
+            AsyncAzureOpenAI = None
+        try:
             provider = self.llm_provider
             if provider == "copilot":
                 if not GITHUB_TOKEN:
@@ -576,6 +646,20 @@ class SlurmAgentSystem:
                     raise RuntimeError("OPENAI_API_KEY missing for openai provider")
                 client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token)
                 _model = self.llm_model or OPENAI_MODEL
+                _extra = {}
+            elif provider == "azure-openai":
+                if AsyncAzureOpenAI is None:
+                    raise RuntimeError("Installed openai package does not provide AsyncAzureOpenAI")
+                if not AZURE_OPENAI_ENDPOINT:
+                    raise RuntimeError("AZURE_OPENAI_ENDPOINT missing for azure-openai provider")
+                if not AZURE_OPENAI_API_KEY:
+                    raise RuntimeError("AZURE_OPENAI_API_KEY or AZURE_OPENAI_KEY missing for azure-openai provider")
+                client = AsyncAzureOpenAI(
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    api_key=AZURE_OPENAI_API_KEY,
+                    api_version=AZURE_OPENAI_API_VERSION,
+                )
+                _model = self.llm_model or AZURE_OPENAI_MODEL
                 _extra = {}
             else:
                 client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
@@ -1106,10 +1190,7 @@ class SlurmAgentSystem:
 
         except Exception as exc:
             logger.error(f"Streaming error: {exc}", exc_info=True)
-            msg = str(exc)
-            if "Invalid JSON" in msg:
-                msg = "Technical issue with the response. Please rephrase."
-            yield {"type": "error", "message": msg}
+            yield {"type": "error", "message": _friendly_stream_error(exc, self.llm_provider)}
 
     # ── Non-streaming run ─────────────────────────────────────────────────────
 
@@ -1168,6 +1249,11 @@ class SlurmAgentSystem:
         if self._session:
             await self._session.clear_session()
             logger.info(f"Session cleared: {self.session_id}")
+        try:
+            SlurmContext(session_id=self.session_id).clear_pending()
+        except Exception as exc:
+            logger.warning(f"Pending action cleanup failed for {self.session_id}: {exc}")
+        self._pending_approvals.pop(self.session_id, None)
 
     async def disconnect(self):
         self._mcp_observer = None

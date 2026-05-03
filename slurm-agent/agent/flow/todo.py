@@ -20,9 +20,14 @@ from .model import (
     COPILOT_MODEL,
     GITHUB_MODELS_BASE_URL,
     GITHUB_MODELS_MODEL,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_API_VERSION,
+    AZURE_OPENAI_MODEL,
     OPENAI_BASE_URL,
     OPENAI_API_KEY,
     OPENAI_MODEL,
+    normalize_provider,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,15 +72,26 @@ class TodoTracker:
         self,
         llm_provider: str = LLM_PROVIDER,
         main_model: str = DEFAULT_MODEL,
+        specialist_provider: Optional[str] = None,
         specialist_model: Optional[str] = None,
         openai_api_key: Optional[str] = None,
     ):
         self.items: list[dict] = []  # [{id, title, status}]
         self._active_step: Optional[int] = None
         self._changed = False
-        self.llm_provider = (llm_provider or LLM_PROVIDER).strip().lower()
+        self.llm_provider = normalize_provider(llm_provider or LLM_PROVIDER)
         self.main_model = (main_model or DEFAULT_MODEL).strip()
-        default_specialist = OPENAI_MODEL if self.llm_provider == "openai" else SPECIALIST_MODEL
+        self.specialist_provider = normalize_provider(specialist_provider or self.llm_provider)
+        if self.specialist_provider == "azure-openai":
+            default_specialist = AZURE_OPENAI_MODEL
+        elif self.specialist_provider == "openai":
+            default_specialist = OPENAI_MODEL
+        elif self.specialist_provider == "copilot":
+            default_specialist = COPILOT_MODEL
+        elif self.specialist_provider == "github-models":
+            default_specialist = GITHUB_MODELS_MODEL
+        else:
+            default_specialist = SPECIALIST_MODEL
         self.specialist_model = (specialist_model or default_specialist).strip()
         self.openai_api_key = openai_api_key or OPENAI_API_KEY
 
@@ -121,23 +137,42 @@ class TodoTracker:
         """Generate a plan via lightweight LLM call. Returns True if successful."""
         try:
             from openai import AsyncOpenAI
-            if self.llm_provider == "copilot":
+            try:
+                from openai import AsyncAzureOpenAI
+            except ImportError:
+                AsyncAzureOpenAI = None
+            provider = self.specialist_provider
+            if provider == "copilot":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for copilot provider")
                 client = AsyncOpenAI(base_url=COPILOT_BASE_URL, api_key=GITHUB_TOKEN)
-                _model = COPILOT_MODEL
+                _model = self.specialist_model or COPILOT_MODEL
                 _create_kwargs: dict = {}
-            elif self.llm_provider == "github-models":
+            elif provider == "github-models":
                 if not GITHUB_TOKEN:
                     raise RuntimeError("GITHUB_TOKEN missing for github-models provider")
                 client = AsyncOpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=GITHUB_TOKEN)
-                _model = GITHUB_MODELS_MODEL
+                _model = self.specialist_model or GITHUB_MODELS_MODEL
                 _create_kwargs = {}
-            elif self.llm_provider == "openai":
+            elif provider == "openai":
                 if not self.openai_api_key:
                     raise RuntimeError("OPENAI_API_KEY missing for openai provider")
                 client = AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=self.openai_api_key)
                 _model = self.specialist_model or OPENAI_MODEL
+                _create_kwargs = {}
+            elif provider == "azure-openai":
+                if AsyncAzureOpenAI is None:
+                    raise RuntimeError("Installed openai package does not provide AsyncAzureOpenAI")
+                if not AZURE_OPENAI_ENDPOINT:
+                    raise RuntimeError("AZURE_OPENAI_ENDPOINT missing for azure-openai provider")
+                if not AZURE_OPENAI_API_KEY:
+                    raise RuntimeError("AZURE_OPENAI_API_KEY or AZURE_OPENAI_KEY missing for azure-openai provider")
+                client = AsyncAzureOpenAI(
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    api_key=AZURE_OPENAI_API_KEY,
+                    api_version=AZURE_OPENAI_API_VERSION,
+                )
+                _model = self.specialist_model or AZURE_OPENAI_MODEL
                 _create_kwargs = {}
             else:
                 client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")

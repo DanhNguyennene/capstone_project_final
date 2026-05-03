@@ -21,7 +21,10 @@ import time
 import argparse
 import uuid
 import os
-from contextlib import asynccontextmanager
+import subprocess
+import sys
+import socket
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
@@ -32,12 +35,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from scenario_eval import (
-    load_dataset, filter_dataset, run_agent, score_test, judge_flow,
+    load_dataset, filter_dataset, run_agent, clear_agent_session, score_test, judge_flow,
     compute_metrics, compute_pass_k, save_results,
     AgentTrace, TestResult,
     AGENT_URL, JUDGE_MODEL, PASS_THRESHOLD, WEIGHTS, WEIGHTS_WITH_JUDGE,
     DATASET_PATH, RESULTS_DIR, CHAT_LLM_PROVIDER, MAIN_MODEL, SPECIALIST_MODEL,
-    _judge_uses_openai,
+    JUDGE_PROVIDER, _judge_uses_openai, _judge_provider_for,
 )
 
 # ── State ─────────────────────────────────────────────────────────────────────
@@ -53,10 +56,15 @@ class EvalState:
     metrics: dict = {}
     agent_url: str = AGENT_URL
     llm_provider: str = CHAT_LLM_PROVIDER
+    main_provider: str = CHAT_LLM_PROVIDER
+    specialist_provider: str = CHAT_LLM_PROVIDER
     main_model: str = MAIN_MODEL
     specialist_model: str = SPECIALIST_MODEL
     use_judge: bool = False
+    judge_provider: str = _judge_provider_for(JUDGE_MODEL, JUDGE_PROVIDER)
     judge_model: str = JUDGE_MODEL
+    openai_parallel: bool = False
+    parallel_workers: int = 1
     auto_approve: bool = True
     mcp_url: str = os.getenv("MCP_SERVER_URL", "http://localhost:3002")
     run_task: Optional[asyncio.Task] = None
@@ -73,36 +81,90 @@ class EvalState:
 state = EvalState()
 # Serialize access to mutable mock-Slurm state between eval runs and admin terminal.
 _mcp_state_lock = asyncio.Lock()
+EVAL_TEST_DELAY = float(os.getenv("EVAL_TEST_DELAY", "0") or "0")
+EVAL_MAX_PARALLEL_WORKERS = max(1, int(os.getenv("EVAL_MAX_PARALLEL_WORKERS", "8") or "8"))
+EVAL_MCP_WORKER_BASE_PORT = int(os.getenv("EVAL_MCP_WORKER_BASE_PORT", "3302") or "3302")
+
+
+@asynccontextmanager
+async def _no_mcp_state_lock():
+    yield
+
+
+def _normalize_provider(provider: str | None, fallback: str = "ollama") -> str:
+    value = (provider or fallback or "ollama").strip().lower()
+    if value in {"azure", "azure_openai", "azure-openai"}:
+        return "azure-openai"
+    return value if value in {"ollama", "openai", "azure-openai", "copilot", "github-models"} else fallback
+
+
+def _openai_parallel_effective(main_provider: str, enabled: bool) -> bool:
+    return bool(enabled and _normalize_provider(main_provider, CHAT_LLM_PROVIDER) == "openai")
+
+
+def _clamp_parallel_workers(value: int | str | None) -> int:
+    try:
+        parsed = int(value or 1)
+    except Exception:
+        parsed = 1
+    return max(1, min(parsed, EVAL_MAX_PARALLEL_WORKERS))
 
 
 def _model_config() -> dict:
     return {
-        "llm_provider": state.llm_provider,
+        "llm_provider": state.main_provider,
+        "main_provider": state.main_provider,
+        "specialist_provider": state.specialist_provider,
         "main_model": state.main_model,
         "specialist_model": state.specialist_model,
+        "judge_provider": state.judge_provider,
         "judge_model": state.judge_model,
+        "openai_parallel": state.openai_parallel,
+        "parallel_workers": state.parallel_workers,
         "runtime_defaults": {
             "llm_provider": CHAT_LLM_PROVIDER,
+            "main_provider": CHAT_LLM_PROVIDER,
+            "specialist_provider": CHAT_LLM_PROVIDER,
             "main_model": MAIN_MODEL,
             "specialist_model": SPECIALIST_MODEL,
+            "judge_provider": _judge_provider_for(JUDGE_MODEL, JUDGE_PROVIDER),
             "judge_model": JUDGE_MODEL,
+            "openai_parallel": False,
+            "parallel_workers": 1,
         },
     }
 
 
-def _normalize_judge_model(requested_model: str) -> str:
-    """Ensure judge model/provider combination is executable in current env."""
+def _normalize_judge_config(requested_provider: str, requested_model: str) -> tuple[str, str]:
+    """Ensure judge provider/model combination is executable in current env."""
     model = (requested_model or "").strip() or JUDGE_MODEL
-    if _judge_uses_openai(model):
+    provider = _judge_provider_for(model, requested_provider)
+    if provider == "openai":
         openai_key = (os.getenv("OPENAI_API_KEY") or os.getenv("OPEN_AI_KEY") or "").strip()
-        if not openai_key and not _judge_uses_openai(JUDGE_MODEL):
+        default_provider = _judge_provider_for(JUDGE_MODEL, JUDGE_PROVIDER)
+        if not openai_key and default_provider != "openai":
             logger.warning(
                 "Requested OpenAI judge model '%s' but no OPENAI_API_KEY found; falling back to '%s'.",
                 model,
                 JUDGE_MODEL,
             )
-            return JUDGE_MODEL
-    return model
+            return default_provider, JUDGE_MODEL
+    elif provider == "azure-openai":
+        azure_endpoint = (os.getenv("AZURE_OPENAI_ENDPOINT") or "").strip()
+        azure_key = (os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY") or "").strip()
+        default_provider = _judge_provider_for(JUDGE_MODEL, JUDGE_PROVIDER)
+        if (not azure_endpoint or not azure_key) and default_provider != "azure-openai":
+            logger.warning(
+                "Requested Azure OpenAI judge model '%s' but Azure endpoint/key is missing; falling back to '%s'.",
+                model,
+                JUDGE_MODEL,
+            )
+            return default_provider, JUDGE_MODEL
+    return provider, model
+
+
+def _normalize_judge_model(requested_model: str) -> str:
+    return _normalize_judge_config(state.judge_provider, requested_model)[1]
 
 
 def _heal_run_state() -> None:
@@ -162,6 +224,80 @@ async def _call_mcp_tool(
     async with _mcp_session(mcp_url) as mcp:
         result = await mcp.call_tool(tool_name, args or {})
         return _mcp_content_to_text(result)
+
+
+def _available_worker_ports(count: int) -> list[int]:
+    ports: list[int] = []
+    port = EVAL_MCP_WORKER_BASE_PORT
+    while len(ports) < count:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.1)
+            if sock.connect_ex(("127.0.0.1", port)) != 0:
+                ports.append(port)
+        port += 1
+    return ports
+
+
+async def _wait_for_mcp_ready(mcp_url: str, timeout_s: float = 12.0) -> None:
+    deadline = time.monotonic() + timeout_s
+    last_error = ""
+    while time.monotonic() < deadline:
+        try:
+            async with _mcp_session(mcp_url):
+                return
+        except Exception as exc:
+            last_error = str(exc)
+            await asyncio.sleep(0.25)
+    raise RuntimeError(f"MCP worker at {mcp_url} did not become ready: {last_error}")
+
+
+async def _start_isolated_mcp_workers(count: int, run_id: str) -> list[dict]:
+    """Start one mock MCP process per eval worker for isolated mutable state."""
+    if count <= 1:
+        return []
+    script = Path(__file__).resolve().parents[1] / "mcp-server" / "slurm_mcp_sse.py"
+    if not script.exists():
+        raise RuntimeError(f"MCP worker script not found: {script}")
+
+    workers: list[dict] = []
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    for index, port in enumerate(_available_worker_ports(count)):
+        url = f"http://localhost:{port}"
+        proc = subprocess.Popen(
+            [sys.executable, str(script), "--port", str(port)],
+            cwd=str(script.parent),
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        worker = {"index": index, "port": port, "url": url, "process": proc}
+        workers.append(worker)
+        try:
+            await _wait_for_mcp_ready(url)
+        except Exception:
+            await _stop_isolated_mcp_workers(workers)
+            raise
+        _push_event("worker_ready", {"run_id": run_id, "worker": index + 1, "mcp_url": url}, run_id)
+    return workers
+
+
+async def _stop_isolated_mcp_workers(workers: list[dict]) -> None:
+    for worker in workers:
+        proc = worker.get("process")
+        if not proc:
+            continue
+        with suppress(Exception):
+            proc.terminate()
+    for worker in workers:
+        proc = worker.get("process")
+        if not proc:
+            continue
+        with suppress(Exception):
+            await asyncio.to_thread(proc.wait, 5)
+        if proc.poll() is None:
+            with suppress(Exception):
+                proc.kill()
 
 
 async def _reset_state_for_test(
@@ -677,8 +813,16 @@ async def _run_judge_background(
     queue: "asyncio.Queue[Optional[tuple[dict, AgentTrace, int]]]",
     run_id: str,
     total_to_judge: int,
+    worker_count: int = 1,
+    results_lock: Optional[asyncio.Lock] = None,
 ) -> None:
     """Judge completed traces independently from agent execution."""
+    judge_worker_count = min(_clamp_parallel_workers(worker_count), max(1, total_to_judge))
+    progress_lock = asyncio.Lock()
+    results_lock = results_lock or asyncio.Lock()
+    audit_keys = ("eval_run_id", "eval_session_id", "eval_worker", "eval_mcp_url")
+    judge_model = state.judge_model
+    judge_provider = state.judge_provider
     state.judge_running = total_to_judge > 0
     state.judge_total = total_to_judge
     state.judge_progress = 0
@@ -686,68 +830,104 @@ async def _run_judge_background(
         "run_id": run_id,
         "total": total_to_judge,
         "done": 0,
+        "judge_workers": judge_worker_count,
     }, run_id)
 
     judged = 0
-    while True:
-        item = await queue.get()
-        if item is None:
-            break
-        test, trace, scope_pos = item
-        test_id = test["id"]
-        _push_event("judge_test_start", {
-            "run_id": run_id,
-            "id": test_id,
-            # Stable index within filtered scope (independent of resume gaps)
-            "index": scope_pos,
-            "done": judged,
-            "total": total_to_judge,
-        }, run_id)
 
-        try:
-            judged_result = await score_test(
-                test,
-                trace,
-                use_judge=True,
-                judge_model=state.judge_model,
-            )
-            rd = asdict(judged_result)
-        except Exception as exc:
-            # Keep structural result, mark judge failure explicitly.
-            fallback = await score_test(
-                test,
-                trace,
-                use_judge=False,
-                judge_model=state.judge_model,
-            )
-            rd = asdict(fallback)
-            rd["judge_score"] = 0.0
-            rd["judge_reason"] = f"judge error: {exc}"
-            rd["judge_ran"] = True
+    async def _judge_worker(worker_index: int) -> None:
+        nonlocal judged
+        judge_worker = worker_index + 1
+        while True:
+            item = await queue.get()
+            if item is None:
+                return
 
-        rd["judge_pending"] = False
-        state.results[test_id] = rd
-        judged += 1
-        state.judge_progress = judged
-        _persist_state()
-        _push_event("judge_done", {
-            "run_id": run_id,
-            "id": test_id,
-            "index": scope_pos,
-            "done": judged,
-            "total": total_to_judge,
-            "result": rd,
-        }, run_id)
+            test, trace, scope_pos = item
+            test_id = test["id"]
+            async with progress_lock:
+                done_before = judged
+            _push_event("judge_test_start", {
+                "run_id": run_id,
+                "id": test_id,
+                # Stable index within filtered scope (independent of resume gaps)
+                "index": scope_pos,
+                "done": done_before,
+                "total": total_to_judge,
+                "judge_worker": judge_worker,
+                "judge_workers": judge_worker_count,
+            }, run_id)
+
+            try:
+                judged_result = await score_test(
+                    test,
+                    trace,
+                    use_judge=True,
+                    judge_model=judge_model,
+                    judge_provider=judge_provider,
+                )
+                rd = asdict(judged_result)
+            except Exception as exc:
+                # Keep structural result, mark judge failure explicitly.
+                fallback = await score_test(
+                    test,
+                    trace,
+                    use_judge=False,
+                    judge_model=judge_model,
+                    judge_provider=judge_provider,
+                )
+                rd = asdict(fallback)
+                rd["judge_score"] = 0.0
+                rd["judge_reason"] = f"judge error: {exc}"
+                rd["judge_ran"] = True
+
+            rd["judge_pending"] = False
+            rd["judge_worker"] = judge_worker
+            rd["judge_parallel_workers"] = judge_worker_count
+            async with results_lock:
+                existing = state.results.get(test_id) or {}
+                for key in audit_keys:
+                    if key in existing:
+                        rd[key] = existing[key]
+                state.results[test_id] = rd
+                async with progress_lock:
+                    judged += 1
+                    done = judged
+                    state.judge_progress = done
+                _persist_state()
+
+            _push_event("judge_done", {
+                "run_id": run_id,
+                "id": test_id,
+                "index": scope_pos,
+                "done": done,
+                "total": total_to_judge,
+                "judge_worker": judge_worker,
+                "judge_workers": judge_worker_count,
+                "result": rd,
+            }, run_id)
+
+    workers = [asyncio.create_task(_judge_worker(i)) for i in range(judge_worker_count)]
+    try:
+        await asyncio.gather(*workers)
+    finally:
+        for task in workers:
+            if not task.done():
+                task.cancel()
+        if any(not task.done() for task in workers):
+            await asyncio.gather(*workers, return_exceptions=True)
 
     state.judge_running = False
     state.judge_progress = judged
     if judged != state.judge_total:
         state.judge_total = judged
-    _persist_state()
+    async with results_lock:
+        _persist_state()
     _push_event("judge_complete", {
         "run_id": run_id,
         "done": judged,
         "total": state.judge_total,
+        "judge_workers": judge_worker_count,
     }, run_id)
 
 
@@ -759,8 +939,12 @@ async def _run_eval_background(
     mcp_url: str,
     auto_approve: bool,
     llm_provider: str,
+    main_provider: str,
+    specialist_provider: str,
     main_model: str,
     specialist_model: str,
+    openai_parallel: bool,
+    parallel_workers: int,
     use_judge: bool,
     run_id: str,
     scenario_label: str,
@@ -769,6 +953,9 @@ async def _run_eval_background(
     pending_judge_items = pending_judge_items or []
     scope_index = {t["id"]: i for i, t in enumerate(scope_ds)}
     judge_total = len(ds_to_run) + len(pending_judge_items) if use_judge else 0
+    requested_worker_count = _clamp_parallel_workers(parallel_workers)
+    worker_count = min(requested_worker_count, max(1, len(ds_to_run)))
+    judge_worker_count = min(requested_worker_count, max(1, judge_total)) if use_judge and judge_total else 0
     state.running = True
     state.total = len(scope_ds)
     state.progress = max(0, len(scope_ds) - len(ds_to_run))
@@ -786,148 +973,209 @@ async def _run_eval_background(
             "judge": use_judge,
             "judge_total": judge_total,
             "judge_resume_pending": len(pending_judge_items),
+            "parallel_workers": worker_count,
+            "judge_parallel_workers": judge_worker_count,
             "model_config": _model_config(),
             "run_id": run_id,
         },
         run_id,
     )
 
+    results_lock = asyncio.Lock()
     judge_queue: Optional[asyncio.Queue] = None
     judge_task: Optional[asyncio.Task] = None
     if use_judge and judge_total:
         judge_queue = asyncio.Queue()
         judge_task = asyncio.create_task(
-            _run_judge_background(judge_queue, run_id, judge_total)
+            _run_judge_background(
+                judge_queue,
+                run_id,
+                judge_total,
+                worker_count=judge_worker_count,
+                results_lock=results_lock,
+            )
         )
         for test, trace, scope_pos in pending_judge_items:
             await judge_queue.put((test, trace, scope_pos))
 
-    try:
-        for i, test in enumerate(ds_to_run):
-            # Stable absolute position in filtered scope (for UI row mapping/logging).
-            scope_pos = scope_index.get(test["id"], i)
-            # Monotonic resume-progress counter (for progress bar semantics).
-            completed_before = already_done + i
-            state.current_test = test["id"]
-            state.progress = completed_before
+    mcp_workers: list[dict] = []
+    completed_count = already_done
+    completed_lock = asyncio.Lock()
 
-            ok = False
-            msg = ""
-            run_error: Optional[str] = None
-            trace: Optional[AgentTrace] = None
-            session_id = f"eval_{test['id']}_{int(time.time())}"
+    async def _mark_completed() -> int:
+        nonlocal completed_count
+        async with completed_lock:
+            completed_count += 1
+            state.progress = completed_count
+            return completed_count
 
-            # Lock around reset + agent execution to prevent terminal/eval
-            # interleaving from corrupting shared mock state.
-            async with _mcp_state_lock:
-                # Deterministic baseline: restore test source_state before each case.
-                ok, msg = await _reset_state_for_test(mcp_url, test)
-                _push_event("state_reset", {
-                    "index": scope_pos,
-                    "completed": completed_before,
-                    "id": test["id"],
-                    "ok": ok,
-                    "details": msg[:600],
-                    "run_id": run_id,
-                }, run_id)
+    async def _execute_test(test: dict, scope_pos: int, worker_mcp_url: str, worker_index: int) -> None:
+        test_id = test["id"]
+        async with completed_lock:
+            completed_before = completed_count
+        state.current_test = test_id if worker_count == 1 else f"{worker_count} workers active"
 
-                if ok:
-                    _push_event("test_start", {
-                        "index": scope_pos,
-                        "completed": completed_before,
-                        "id": test["id"],
-                        "category": test["category"],
-                        "scenario": test["scenario"],
-                        "input": test["input"],
-                        "run_id": run_id,
-                    }, run_id)
-                    try:
-                        trace = await run_agent(
-                            test["input"], session_id, agent_url, auto_approve,
-                            llm_provider=llm_provider,
-                            main_model=main_model,
-                            specialist_model=specialist_model,
-                        )
-                    except Exception as e:
-                        run_error = str(e)
+        ok = False
+        msg = ""
+        run_error: Optional[str] = None
+        trace: Optional[AgentTrace] = None
+        session_id = f"eval_{run_id}_{worker_index}_{test_id}_{uuid.uuid4().hex[:8]}"
+        lock_cm = _no_mcp_state_lock() if mcp_workers else _mcp_state_lock
 
-            if not ok:
-                gt = test.get("ground_truth", {})
-                reset_err = f"state reset failed: {msg}"
-                failed = TestResult(
-                    test_id=test["id"],
-                    scenario=test.get("scenario", ""),
-                    category=test.get("category", ""),
-                    prompt=test.get("input", ""),
-                    gt_tools=gt.get("tools", []),
-                    gt_handoff=bool(gt.get("handoff", False)),
-                    gt_hitl=bool(gt.get("hitl", False)),
-                    gt_keywords=gt.get("keywords", []),
-                    agent_tools=[],
-                    agent_handoff=False,
-                    agent_hitl=False,
-                    agent_response="",
-                    agent_thinking="",
-                    tool_recall=0.0,
-                    routing_match=0.0,
-                    hitl_match=0.0,
-                    keyword_score=0.0,
-                    state_match=0.0,
-                    judge_score=0.0,
-                    judge_reason=reset_err,
-                    judge_ran=bool(use_judge),
-                    overall=0.0,
-                    passed=False,
-                    latency_s=0.0,
-                    is_variant=bool(test.get("variant_of")),
-                    error=reset_err,
-                    tool_call_history=[],
-                )
-                rd = asdict(failed)
-                rd["judge_pending"] = False
-                state.results[test["id"]] = rd
-                _persist_state()
-                _push_event("test_done", {
-                    "index": scope_pos,
-                    "completed": completed_before + 1,
-                    "id": test["id"],
-                    "result": rd,
-                    "run_id": run_id,
-                }, run_id)
-                continue
-
-            if trace is None:
-                trace = AgentTrace([], False, False, "", 0.0, run_error or "agent execution failed")
-            result = await score_test(test, trace, use_judge=False)
-
-            rd = asdict(result)
-            if use_judge:
-                rd["judge_pending"] = True
-                rd["judge_ran"] = False
-                rd["judge_score"] = 0.0
-                rd["judge_reason"] = "LLM judge pending"
-                rd["_pending_trace"] = asdict(trace)
-            else:
-                rd["judge_pending"] = False
-            state.results[test["id"]] = rd
-            _persist_state()   # write after every test so a mid-run crash loses nothing
-
-            _push_event("test_done", {
+        async with lock_cm:
+            ok, msg = await _reset_state_for_test(worker_mcp_url, test)
+            _push_event("state_reset", {
                 "index": scope_pos,
-                "completed": completed_before + 1,
-                "id": test["id"],
-                "result": rd,
+                "completed": completed_before,
+                "id": test_id,
+                "ok": ok,
+                "details": msg[:600],
+                "worker": worker_index + 1,
                 "run_id": run_id,
             }, run_id)
 
-            if use_judge and judge_queue is not None:
-                await judge_queue.put((test, trace, scope_pos))
+            if ok:
+                _push_event("test_start", {
+                    "index": scope_pos,
+                    "completed": completed_before,
+                    "id": test_id,
+                    "category": test["category"],
+                    "scenario": test["scenario"],
+                    "input": test["input"],
+                    "worker": worker_index + 1,
+                    "run_id": run_id,
+                }, run_id)
+                try:
+                    trace = await run_agent(
+                        test["input"], session_id, agent_url, auto_approve,
+                        mcp_url=worker_mcp_url,
+                        llm_provider=llm_provider,
+                        main_provider=main_provider,
+                        specialist_provider=specialist_provider,
+                        main_model=main_model,
+                        specialist_model=specialist_model,
+                        openai_parallel=openai_parallel,
+                    )
+                except Exception as e:
+                    run_error = str(e)
+                finally:
+                    await clear_agent_session(agent_url, session_id)
 
-            await asyncio.sleep(0.5)
+        if not ok:
+            gt = test.get("ground_truth", {})
+            reset_err = f"state reset failed: {msg}"
+            failed = TestResult(
+                test_id=test_id,
+                scenario=test.get("scenario", ""),
+                category=test.get("category", ""),
+                prompt=test.get("input", ""),
+                gt_tools=gt.get("tools", []),
+                gt_handoff=bool(gt.get("handoff", False)),
+                gt_hitl=bool(gt.get("hitl", False)),
+                gt_keywords=gt.get("keywords", []),
+                agent_tools=[],
+                agent_handoff=False,
+                agent_hitl=False,
+                agent_response="",
+                agent_thinking="",
+                tool_recall=0.0,
+                routing_match=0.0,
+                hitl_match=0.0,
+                keyword_score=0.0,
+                state_match=0.0,
+                judge_score=0.0,
+                judge_reason=reset_err,
+                judge_ran=bool(use_judge),
+                overall=0.0,
+                passed=False,
+                latency_s=0.0,
+                is_variant=bool(test.get("variant_of")),
+                error=reset_err,
+                tool_call_history=[],
+            )
+            rd = asdict(failed)
+            rd["judge_pending"] = False
+            rd["eval_run_id"] = run_id
+            rd["eval_session_id"] = session_id
+            rd["eval_worker"] = worker_index + 1
+            rd["eval_mcp_url"] = worker_mcp_url
+            completed = await _mark_completed()
+            async with results_lock:
+                state.results[test_id] = rd
+                _persist_state()
+            _push_event("test_done", {
+                "index": scope_pos,
+                "completed": completed,
+                "id": test_id,
+                "result": rd,
+                "worker": worker_index + 1,
+                "run_id": run_id,
+            }, run_id)
+            return
+
+        if trace is None:
+            trace = AgentTrace([], False, False, "", 0.0, run_error or "agent execution failed")
+        result = await score_test(test, trace, use_judge=False)
+
+        rd = asdict(result)
+        if use_judge:
+            rd["judge_pending"] = True
+            rd["judge_ran"] = False
+            rd["judge_score"] = 0.0
+            rd["judge_reason"] = "LLM judge pending"
+            rd["_pending_trace"] = asdict(trace)
+        else:
+            rd["judge_pending"] = False
+        rd["eval_run_id"] = run_id
+        rd["eval_session_id"] = session_id
+        rd["eval_worker"] = worker_index + 1
+        rd["eval_mcp_url"] = worker_mcp_url
+        completed = await _mark_completed()
+        async with results_lock:
+            state.results[test_id] = rd
+            _persist_state()
+
+        _push_event("test_done", {
+            "index": scope_pos,
+            "completed": completed,
+            "id": test_id,
+            "result": rd,
+            "worker": worker_index + 1,
+            "run_id": run_id,
+        }, run_id)
+
+        if use_judge and judge_queue is not None:
+            await judge_queue.put((test, trace, scope_pos))
+        if EVAL_TEST_DELAY > 0:
+            await asyncio.sleep(EVAL_TEST_DELAY)
+
+    try:
+        if worker_count > 1 and ds_to_run:
+            mcp_workers = await _start_isolated_mcp_workers(worker_count, run_id)
+            work_queue: asyncio.Queue[tuple[int, dict]] = asyncio.Queue()
+            for i, test in enumerate(ds_to_run):
+                await work_queue.put((scope_index.get(test["id"], i), test))
+
+            async def _worker(worker: dict) -> None:
+                while True:
+                    try:
+                        scope_pos, test = work_queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        return
+                    try:
+                        await _execute_test(test, scope_pos, worker["url"], int(worker["index"]))
+                    finally:
+                        work_queue.task_done()
+
+            await asyncio.gather(*(_worker(worker) for worker in mcp_workers))
+        else:
+            for i, test in enumerate(ds_to_run):
+                await _execute_test(test, scope_index.get(test["id"], i), mcp_url, 0)
 
         # Finish independent judging queue before final aggregate.
         if judge_queue is not None and judge_task is not None:
-            await judge_queue.put(None)
+            for _ in range(judge_worker_count):
+                await judge_queue.put(None)
             await judge_task
 
         # Compute final metrics over the full selected scope, including any
@@ -970,6 +1218,8 @@ async def _run_eval_background(
     except Exception as e:
         _push_event("error", {"run_id": run_id, "error": str(e)}, run_id)
     finally:
+        if mcp_workers:
+            await _stop_isolated_mcp_workers(mcp_workers)
         if judge_task and not judge_task.done():
             judge_task.cancel()
             try:
@@ -1048,6 +1298,30 @@ def _restore_latest() -> None:
 
         state.metrics = data.get("metrics", {})
         state.dataset_id = data.get("dataset_id", "")
+        cfg = data.get("model_config", {}) if isinstance(data.get("model_config", {}), dict) else {}
+        saved_main_provider = _normalize_provider(
+            cfg.get("main_provider") or cfg.get("llm_provider") or state.main_provider,
+            CHAT_LLM_PROVIDER,
+        )
+        state.main_provider = saved_main_provider
+        state.llm_provider = saved_main_provider
+        state.specialist_provider = _normalize_provider(
+            cfg.get("specialist_provider") or saved_main_provider,
+            saved_main_provider,
+        )
+        state.main_model = (cfg.get("main_model") or state.main_model or MAIN_MODEL).strip()
+        state.specialist_model = (cfg.get("specialist_model") or state.specialist_model or SPECIALIST_MODEL).strip()
+        judge_provider, judge_model = _normalize_judge_config(
+            cfg.get("judge_provider") or state.judge_provider,
+            cfg.get("judge_model") or state.judge_model,
+        )
+        state.judge_provider = judge_provider
+        state.judge_model = judge_model
+        state.openai_parallel = _openai_parallel_effective(
+            state.main_provider,
+            bool(cfg.get("openai_parallel", False)),
+        )
+        state.parallel_workers = _clamp_parallel_workers(cfg.get("parallel_workers", 1))
 
         # Load the default dataset so list navigation works immediately
         ds = load_dataset(DATASET_PATH)
@@ -1453,9 +1727,14 @@ async def run_eval(
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = JUDGE_MODEL,
+    judge_provider: str = JUDGE_PROVIDER,
     llm_provider: str = CHAT_LLM_PROVIDER,
+    main_provider: str = "",
+    specialist_provider: str = "",
     main_model: str = MAIN_MODEL,
     specialist_model: str = SPECIALIST_MODEL,
+    openai_parallel: bool = False,
+    parallel_workers: int = 1,
     resume: bool = True,
     force: bool = False,
 ):
@@ -1489,11 +1768,15 @@ async def run_eval(
     state.agent_url = agent_url
     if mcp_url:
         state.mcp_url = mcp_url
-    state.llm_provider = (llm_provider or CHAT_LLM_PROVIDER).strip().lower() or CHAT_LLM_PROVIDER
+    state.main_provider = _normalize_provider(main_provider or llm_provider, CHAT_LLM_PROVIDER)
+    state.llm_provider = state.main_provider
+    state.specialist_provider = _normalize_provider(specialist_provider or state.main_provider, state.main_provider)
     state.main_model = (main_model or MAIN_MODEL).strip() or MAIN_MODEL
     state.specialist_model = (specialist_model or SPECIALIST_MODEL).strip() or SPECIALIST_MODEL
     state.use_judge = use_judge
-    state.judge_model = _normalize_judge_model(judge_model)
+    state.judge_provider, state.judge_model = _normalize_judge_config(judge_provider, judge_model)
+    state.openai_parallel = _openai_parallel_effective(state.main_provider, openai_parallel)
+    state.parallel_workers = _clamp_parallel_workers(parallel_workers)
     state.auto_approve = auto_approve
 
     scope_ds = filter_dataset(state.dataset, scenario=scenario, category=category, no_variants=no_variants)
@@ -1544,8 +1827,12 @@ async def run_eval(
             mcp_url=state.mcp_url,
             auto_approve=auto_approve,
             llm_provider=state.llm_provider,
+            main_provider=state.main_provider,
+            specialist_provider=state.specialist_provider,
             main_model=state.main_model,
             specialist_model=state.specialist_model,
+            openai_parallel=state.openai_parallel,
+            parallel_workers=state.parallel_workers,
             use_judge=use_judge,
             run_id=run_id,
             scenario_label=scenario_label,
@@ -1589,9 +1876,13 @@ async def run_single(
     auto_approve: bool = True,
     use_judge: bool = False,
     judge_model: str = "",
+    judge_provider: str = JUDGE_PROVIDER,
     llm_provider: str = CHAT_LLM_PROVIDER,
+    main_provider: str = "",
+    specialist_provider: str = "",
     main_model: str = MAIN_MODEL,
     specialist_model: str = SPECIALIST_MODEL,
+    openai_parallel: bool = False,
 ):
     """Run a single test case."""
     test = next((t for t in state.dataset if t["id"] == test_id), None)
@@ -1600,32 +1891,42 @@ async def run_single(
 
     if mcp_url:
         state.mcp_url = mcp_url
-    state.llm_provider = (llm_provider or CHAT_LLM_PROVIDER).strip().lower() or CHAT_LLM_PROVIDER
+    state.main_provider = _normalize_provider(main_provider or llm_provider, CHAT_LLM_PROVIDER)
+    state.llm_provider = state.main_provider
+    state.specialist_provider = _normalize_provider(specialist_provider or state.main_provider, state.main_provider)
     state.main_model = (main_model or MAIN_MODEL).strip() or MAIN_MODEL
     state.specialist_model = (specialist_model or SPECIALIST_MODEL).strip() or SPECIALIST_MODEL
-    if judge_model:
-        state.judge_model = _normalize_judge_model(judge_model)
-    else:
-        state.judge_model = _normalize_judge_model(state.judge_model)
+    state.judge_provider, state.judge_model = _normalize_judge_config(
+        judge_provider or state.judge_provider,
+        judge_model or state.judge_model,
+    )
+    state.openai_parallel = _openai_parallel_effective(state.main_provider, openai_parallel)
 
     # Reset to this test's declared baseline before single-run evaluation.
     await _reset_state_for_test(state.mcp_url, test)
 
-    session_id = f"eval_{test_id}_{int(time.time())}"
+    session_id = f"eval_single_{test_id}_{uuid.uuid4().hex[:8]}"
     try:
         trace = await run_agent(
             test["input"], session_id, agent_url, auto_approve,
+            mcp_url=state.mcp_url,
             llm_provider=state.llm_provider,
+            main_provider=state.main_provider,
+            specialist_provider=state.specialist_provider,
             main_model=state.main_model,
             specialist_model=state.specialist_model,
+            openai_parallel=state.openai_parallel,
         )
     except Exception as e:
         trace = AgentTrace([], False, False, "", 0.0, str(e))
+    finally:
+        await clear_agent_session(agent_url, session_id)
     result = await score_test(
         test,
         trace,
         use_judge=use_judge,
         judge_model=state.judge_model,
+        judge_provider=state.judge_provider,
     )
     rd = asdict(result)
     rd["judge_pending"] = False

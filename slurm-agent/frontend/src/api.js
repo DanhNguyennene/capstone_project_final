@@ -14,10 +14,21 @@ export async function* streamChat(
   llmSpecialistModel = null,
   llmJudgeModel = null,
   hitlDecision = null,
+  llmMainProvider = null,
+  llmSpecialistProvider = null,
+  llmJudgeProvider = null,
+  openaiParallel = false,
 ) {
   const headers = { 'Content-Type': 'application/json' }
+  const mainProvider = llmMainProvider || llmProvider
   if (mcpUrl) headers['X-MCP-URL'] = mcpUrl
-  if (llmProvider) headers['X-LLM-Provider'] = llmProvider
+  if (mainProvider) {
+    headers['X-LLM-Provider'] = mainProvider
+    headers['X-LLM-Main-Provider'] = mainProvider
+  }
+  if (llmSpecialistProvider) headers['X-LLM-Specialist-Provider'] = llmSpecialistProvider
+  if (llmJudgeProvider) headers['X-LLM-Judge-Provider'] = llmJudgeProvider
+  if (openaiParallel && mainProvider === 'openai') headers['X-LLM-Parallel-Tool-Calls'] = 'true'
   if (llmModel) headers['X-LLM-Model'] = llmModel
   if (llmSpecialistModel) headers['X-LLM-Specialist-Model'] = llmSpecialistModel
   if (llmJudgeModel) headers['X-LLM-Judge-Model'] = llmJudgeModel

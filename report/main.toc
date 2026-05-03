@@ -15,7 +15,7 @@
 \contentsline {chapter}{\numberline {2}Theoretical Background}{9}{chapter.2}%
 \contentsline {section}{\numberline {2.1}Slurm Workload Manager}{9}{section.2.1}%
 \contentsline {subsection}{\numberline {2.1.1}Architecture Overview}{9}{subsection.2.1.1}%
-\contentsline {subsection}{\numberline {2.1.2}Core Concepts}{10}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.2}Core Concepts}{11}{subsection.2.1.2}%
 \contentsline {subsection}{\numberline {2.1.3}Command-Line Interface}{11}{subsection.2.1.3}%
 \contentsline {subsection}{\numberline {2.1.4}Job Submission and Scheduling}{12}{subsection.2.1.4}%
 \contentsline {section}{\numberline {2.2}Text-to-SQL Concept}{13}{section.2.2}%
@@ -98,41 +98,43 @@
 \contentsline {subsubsection}{Hardware and Software Configuration}{44}{subsubsection*.45}%
 \contentsline {subsubsection}{Mock Data System}{44}{subsubsection*.47}%
 \contentsline {subsection}{\numberline {6.1.2}Scenario-Grid Dataset}{45}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}Automated Evaluation Framework}{46}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.3}Held-Out Paraphrase Generalization Set}{46}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Automated Evaluation Framework}{47}{subsection.6.1.4}%
 \contentsline {subsubsection}{Test Case Structure}{47}{subsubsection*.51}%
 \contentsline {subsubsection}{Scoring Methodology}{47}{subsubsection*.52}%
-\contentsline {subsubsection}{Aggregate Metrics}{47}{subsubsection*.53}%
+\contentsline {subsubsection}{Aggregate Metrics}{48}{subsubsection*.53}%
 \contentsline {subsubsection}{State Reset for Deterministic Runs}{48}{subsubsection*.54}%
-\contentsline {subsection}{\numberline {6.1.4}Manual Scenario Validation}{48}{subsection.6.1.4}%
-\contentsline {subsection}{\numberline {6.1.5}Running the Evaluation}{48}{subsection.6.1.5}%
-\contentsline {subsection}{\numberline {6.1.6}Source Code and Reproducibility}{48}{subsection.6.1.6}%
-\contentsline {subsection}{\numberline {6.1.7}TODO for Final Thesis Freeze}{49}{subsection.6.1.7}%
-\contentsline {section}{\numberline {6.2}Experimental Results}{49}{section.6.2}%
-\contentsline {subsection}{\numberline {6.2.1}Benchmark Configuration Snapshot}{49}{subsection.6.2.1}%
-\contentsline {subsection}{\numberline {6.2.2}Overall Performance}{50}{subsection.6.2.2}%
-\contentsline {subsection}{\numberline {6.2.3}Component-Level Averages}{50}{subsection.6.2.3}%
-\contentsline {subsection}{\numberline {6.2.4}Results by Category}{51}{subsection.6.2.4}%
-\contentsline {subsection}{\numberline {6.2.5}Results by Scenario}{51}{subsection.6.2.5}%
-\contentsline {subsection}{\numberline {6.2.6}Failure Pattern Analysis}{52}{subsection.6.2.6}%
-\contentsline {subsection}{\numberline {6.2.7}Latency Characteristics}{52}{subsection.6.2.7}%
-\contentsline {subsection}{\numberline {6.2.8}Manual Scenario Validation Summary}{52}{subsection.6.2.8}%
-\contentsline {subsection}{\numberline {6.2.9}Comparison with Manual CLI Workflow}{53}{subsection.6.2.9}%
-\contentsline {subsection}{\numberline {6.2.10}Result Interpretation}{53}{subsection.6.2.10}%
-\contentsline {subsection}{\numberline {6.2.11}TODO for Final Thesis Freeze}{53}{subsection.6.2.11}%
-\contentsline {chapter}{\numberline {7}Conclusion}{55}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Summary}{55}{section.7.1}%
-\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{55}{subsection.7.1.1}%
-\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{56}{subsection.7.1.2}%
-\contentsline {subsection}{\numberline {7.1.3}Key Quantitative Outcomes}{56}{subsection.7.1.3}%
-\contentsline {subsection}{\numberline {7.1.4}Main Findings}{57}{subsection.7.1.4}%
-\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{57}{subsection.7.1.5}%
-\contentsline {subsection}{\numberline {7.1.6}TODO for Final Thesis Freeze}{57}{subsection.7.1.6}%
-\contentsline {section}{\numberline {7.2}Limitations}{57}{section.7.2}%
-\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{58}{subsection.7.2.1}%
-\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{58}{subsection.7.2.2}%
-\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{58}{subsection.7.2.3}%
-\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{58}{subsection.7.2.4}%
-\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{59}{subsection.7.2.5}%
-\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{59}{subsection.7.2.6}%
-\contentsline {subsection}{\numberline {7.2.7}TODO for Limitation Mitigation}{59}{subsection.7.2.7}%
-\contentsline {chapter}{References}{59}{subsection.7.2.7}%
+\contentsline {subsection}{\numberline {6.1.5}Manual Scenario Validation}{48}{subsection.6.1.5}%
+\contentsline {subsection}{\numberline {6.1.6}Running the Evaluation}{49}{subsection.6.1.6}%
+\contentsline {subsection}{\numberline {6.1.7}Source Code and Reproducibility}{49}{subsection.6.1.7}%
+\contentsline {subsection}{\numberline {6.1.8}TODO for Final Thesis Freeze}{49}{subsection.6.1.8}%
+\contentsline {section}{\numberline {6.2}Experimental Results}{50}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Benchmark Configuration Snapshot}{50}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Overall Performance}{51}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Component-Level Averages}{51}{subsection.6.2.3}%
+\contentsline {subsection}{\numberline {6.2.4}Results by Category}{52}{subsection.6.2.4}%
+\contentsline {subsection}{\numberline {6.2.5}Results by Scenario}{52}{subsection.6.2.5}%
+\contentsline {subsection}{\numberline {6.2.6}Failure Pattern Analysis}{53}{subsection.6.2.6}%
+\contentsline {subsection}{\numberline {6.2.7}Held-Out Paraphrase Generalization Results}{54}{subsection.6.2.7}%
+\contentsline {subsection}{\numberline {6.2.8}Latency Characteristics}{54}{subsection.6.2.8}%
+\contentsline {subsection}{\numberline {6.2.9}Manual Scenario Validation Summary}{54}{subsection.6.2.9}%
+\contentsline {subsection}{\numberline {6.2.10}Comparison with Manual CLI Workflow}{55}{subsection.6.2.10}%
+\contentsline {subsection}{\numberline {6.2.11}Result Interpretation}{55}{subsection.6.2.11}%
+\contentsline {subsection}{\numberline {6.2.12}TODO for Final Thesis Freeze}{56}{subsection.6.2.12}%
+\contentsline {chapter}{\numberline {7}Conclusion}{57}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Summary}{57}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{57}{subsection.7.1.1}%
+\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{58}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Key Quantitative Outcomes}{58}{subsection.7.1.3}%
+\contentsline {subsection}{\numberline {7.1.4}Main Findings}{59}{subsection.7.1.4}%
+\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{59}{subsection.7.1.5}%
+\contentsline {subsection}{\numberline {7.1.6}TODO for Final Thesis Freeze}{59}{subsection.7.1.6}%
+\contentsline {section}{\numberline {7.2}Limitations}{60}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{60}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{60}{subsection.7.2.2}%
+\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{61}{subsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{61}{subsection.7.2.4}%
+\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{61}{subsection.7.2.5}%
+\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{61}{subsection.7.2.6}%
+\contentsline {subsection}{\numberline {7.2.7}TODO for Limitation Mitigation}{62}{subsection.7.2.7}%
+\contentsline {chapter}{References}{62}{subsection.7.2.7}%

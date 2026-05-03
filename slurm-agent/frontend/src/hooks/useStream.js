@@ -9,9 +9,13 @@ export function useStream({
   agentUrl,
   mcpUrl,
   llmProvider,
+  llmMainProvider,
+  llmSpecialistProvider,
+  llmJudgeProvider,
   llmMainModel,
   llmSpecialistModel,
   llmJudgeModel,
+  openaiParallel,
   activeIdRef,
   setSessions,
   setStreaming,
@@ -74,6 +78,10 @@ export function useStream({
         llmSpecialistModel,
         llmJudgeModel,
         hitlDecision,
+        llmMainProvider,
+        llmSpecialistProvider,
+        llmJudgeProvider,
+        openaiParallel,
       )) {
         // Reasoning tokens
         if (delta.reasoning_content || delta.reasoning)
