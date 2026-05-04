@@ -1,0 +1,6 @@
+{
+  "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "data": "training/out/specialist_sft_smoke.jsonl",
+  "samples": 8,
+  "adapter_dir": "training/out/slurm-specialist-qwen05b-lora-smoke"
+}

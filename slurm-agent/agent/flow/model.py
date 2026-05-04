@@ -199,6 +199,85 @@ def normalize_provider(provider: str | None = None) -> str:
     return value
 
 
+def model_uses_default_sampling(model_name: str | None) -> bool:
+    """Return true for models that reject non-default sampling controls."""
+    value = (model_name or "").strip().lower()
+    return value.startswith(("gpt-5", "o1", "o3", "o4"))
+
+
+def _provider_env_prefix(provider: str | None) -> str | None:
+    active_provider = normalize_provider(provider)
+    if active_provider == "openai":
+        return "OPENAI"
+    if active_provider == "azure-openai":
+        return "AZURE_OPENAI"
+    if active_provider == "copilot":
+        return "COPILOT"
+    if active_provider == "github-models":
+        return "GITHUB_MODELS"
+    return None
+
+
+def _configured_sampling_value(
+    setting: str,
+    *,
+    provider: str | None,
+    default: float | None,
+) -> tuple[bool, float | None]:
+    env_names = []
+    prefix = _provider_env_prefix(provider)
+    if prefix:
+        env_names.append(f"{prefix}_{setting}")
+    env_names.append(f"LLM_{setting}")
+
+    for env_name in env_names:
+        raw_value = os.environ.get(env_name)
+        if raw_value is None or raw_value.strip() == "":
+            continue
+        normalized = raw_value.strip().lower()
+        if normalized in {"default", "omit", "none", "null"}:
+            return True, None
+        try:
+            return True, float(normalized)
+        except ValueError:
+            logger.warning("Ignoring invalid %s=%r; expected number or 'default'.", env_name, raw_value)
+            return False, default
+    return False, default
+
+
+def chat_completion_sampling_kwargs(
+    model_name: str | None,
+    *,
+    provider: str | None = None,
+    default_temperature: float | None = 0.0,
+    default_top_p: float | None = None,
+) -> dict:
+    """Return sampling kwargs, omitting unsupported defaults for GPT-5/O-series models."""
+    temperature_configured, temperature = _configured_sampling_value(
+        "TEMPERATURE",
+        provider=provider,
+        default=default_temperature,
+    )
+    top_p_configured, top_p = _configured_sampling_value(
+        "TOP_P",
+        provider=provider,
+        default=default_top_p,
+    )
+
+    if model_uses_default_sampling(model_name):
+        if not temperature_configured:
+            temperature = None
+        if not top_p_configured:
+            top_p = None
+
+    kwargs = {}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if top_p is not None:
+        kwargs["top_p"] = top_p
+    return kwargs
+
+
 def resolve_model(
     model_name: str | None = None,
     *,
@@ -270,10 +349,8 @@ REASONING_MODEL_SETTINGS = ModelSettings(
     extra_body={"think": False, "options": {"num_ctx": 16384}},
 )
 
-# Cloud providers: no Ollama-specific extras.
+# Cloud providers: no Ollama-specific extras. Sampling is added per model.
 CLOUD_MODEL_SETTINGS = ModelSettings(
-    temperature=0.0,
-    top_p=0.7,
     parallel_tool_calls=False,
 )
 
@@ -281,13 +358,21 @@ CLOUD_MODEL_SETTINGS = ModelSettings(
 def model_settings_for_provider(
     provider: str | None = None,
     *,
+    model_name: str | None = None,
     parallel_tool_calls: bool = False,
 ) -> ModelSettings:
     """Return model settings that match the selected provider."""
     active_provider = normalize_provider(provider)
     if active_provider in ("openai", "azure-openai", "copilot", "github-models"):
+        sampling_kwargs = chat_completion_sampling_kwargs(
+            model_name,
+            provider=active_provider,
+            default_temperature=0.0,
+            default_top_p=0.7,
+        )
         return CLOUD_MODEL_SETTINGS.resolve(
             ModelSettings(
+                **sampling_kwargs,
                 parallel_tool_calls=bool(
                     parallel_tool_calls and active_provider == "openai"
                 )

@@ -48,22 +48,47 @@ from .model import (
     OPENAI_MODEL,
     LLM_PROVIDER,
     normalize_provider,
+    chat_completion_sampling_kwargs,
     model_settings_for_provider,
     resolve_model,
 )
 from .skills import (
     load_observer_skills,
+    load_slurm_docs,
 )
-from .slurm_guard import SlurmGuard, normalize_target_scope, looks_like_job_id
+# SlurmGuard admission is disabled by request.
+# from .slurm_guard import SlurmGuard, normalize_target_scope, looks_like_job_id
 from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
     make_guarded_dangerous_tools,
     make_operator_read_tools,
+    make_slurm_docs_lookup_tool,
     make_skill_lookup_tool,
 )
 
 logger = logging.getLogger(__name__)
+
+
+_DISCOVERY_SCOPES = {"broad", "dynamic", "discovery", "discover", "resolve", "resolved", "query"}
+_EXPLICIT_SCOPES = {"explicit", "ids", "id", "targets", "target", "provided", "concrete"}
+_NO_TARGET_SCOPES = {"none", "no_target", "not_applicable", "na", "cluster", "global"}
+
+
+def normalize_target_scope(raw_scope: object, *, targets: List[str] | None = None) -> str:
+    text = re.sub(r"[^a-z0-9_]+", "_", str(raw_scope or "").strip().lower()).strip("_")
+    if text in _EXPLICIT_SCOPES:
+        return "explicit"
+    if text in _DISCOVERY_SCOPES:
+        return "discovery"
+    if text in _NO_TARGET_SCOPES:
+        return "none"
+    return "explicit" if targets else "none"
+
+
+def looks_like_job_id(value: str) -> bool:
+    text = (value or "").strip()
+    return bool(re.fullmatch(r"\d+(?:_\d+|_\[\d+(?:-\d+)?\])?", text))
 
 
 # ── Mutable state container for stream event processing ──────────────────────
@@ -105,7 +130,7 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
-_OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo"}
+_OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo", "sacctmgr_list", "scontrol_reservation_show"}
 _OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
 
 
@@ -159,6 +184,8 @@ class SlurmAgentSystem:
             default_specialist = COPILOT_MODEL
         elif self.specialist_provider == "github-models":
             default_specialist = GITHUB_MODELS_MODEL
+        elif self.specialist_provider == "azure-openai":
+            default_specialist = AZURE_OPENAI_MODEL
         else:
             default_specialist = SPECIALIST_MODEL
         self.specialist_model = (specialist_model or default_specialist).strip()
@@ -170,10 +197,12 @@ class SlurmAgentSystem:
         )
         self._observer_model_settings = model_settings_for_provider(
             self.llm_provider,
+            model_name=self.llm_model,
             parallel_tool_calls=self.openai_parallel,
         )
         self._operator_model_settings = model_settings_for_provider(
             self.llm_provider,
+            model_name=self.llm_model,
             parallel_tool_calls=False,
         )
 
@@ -216,6 +245,8 @@ class SlurmAgentSystem:
         # 3. Load Observer-only skill lookup tool (local markdown runbooks)
         observer_skills = load_observer_skills()
         skill_lookup_tool = make_skill_lookup_tool(observer_skills) if observer_skills else None
+        slurm_docs = load_slurm_docs()
+        slurm_docs_lookup_tool = make_slurm_docs_lookup_tool(slurm_docs) if slurm_docs else None
 
         # 4. MCP servers — Observer gets read-only tools minus internal control tools
         observer_mcp_names = (self._catalog.analysis_names | self._catalog.safe_names) - _OBSERVER_HIDDEN_MCP_TOOLS
@@ -225,9 +256,10 @@ class SlurmAgentSystem:
         # so we can enforce per-handoff policies.
         self._mcp_operator = _make_mcp_server(self.mcp_url, set(), "slurm-operator-mcp")
 
-        # 5. Guarded dangerous FunctionTools (HITL: needs_approval=True)
+        # 5. Dangerous FunctionTools (HITL: needs_approval=True)
         dangerous_fns = make_guarded_dangerous_tools(self.mcp_url, self._catalog.dangerous)
-        slurm_guard = SlurmGuard(self._catalog.dangerous)
+        # SlurmGuard admission is disabled by request.
+        # slurm_guard = SlurmGuard(self._catalog.dangerous)
         operator_read_defs = [
             t for t in (self._catalog.analysis + self._catalog.safe)
             if t.name in _OPERATOR_READ_TOOLS
@@ -271,17 +303,22 @@ class SlurmAgentSystem:
             targets: List[str],
             target_scope: str,
         ) -> str:
-            decision = slurm_guard.admit_handoff(
-                action_request=action_request,
-                required_tool=required_tool,
-                targets=targets,
-                target_scope=target_scope,
-            )
-            return "" if decision.allowed else decision.reason
+            # SlurmGuard admission is disabled by request.
+            # decision = slurm_guard.admit_handoff(
+            #     action_request=action_request,
+            #     required_tool=required_tool,
+            #     targets=targets,
+            #     target_scope=target_scope,
+            # )
+            # return "" if decision.allowed else decision.reason
+            _ = (action_request, required_tool, targets, target_scope)
+            return ""
 
         # 6. Build agents with bidirectional handoffs
         #    Keep Observer tool surface focused on operational tools.
         _observer_tools: list = []
+        if slurm_docs_lookup_tool:
+            _observer_tools.append(slurm_docs_lookup_tool)
         if skill_lookup_tool:
             _observer_tools.append(skill_lookup_tool)
 
@@ -383,8 +420,10 @@ class SlurmAgentSystem:
                     if targets:
                         lines.append(f"Targets: {', '.join(targets)}")
                     if target_scope == "discovery":
-                        lines.append("Resolve concrete targets with one read tool before calling the action tool.")
-                    if required_tool:
+                        lines.append("IMPORTANT: Your FIRST tool call must be a read tool (squeue/sinfo/scontrol_show) to resolve concrete numeric IDs.")
+                        lines.append("NEVER call the action tool with placeholder IDs like 0, ALL, or flags.")
+                        lines.append(f"Only after discovery, call {required_tool} with the resolved IDs." if required_tool else "Only after discovery, call the action tool with the resolved IDs.")
+                    elif required_tool:
                         lines.append(f"First action tool call MUST use {required_tool}.")
                     canonical_text = "\n".join(lines)
                 break
@@ -637,8 +676,12 @@ class SlurmAgentSystem:
                     )},
                     {"role": "user", "content": conversation_text},
                 ],
-                temperature=0.1,
                 max_tokens=500,
+                **chat_completion_sampling_kwargs(
+                    _model,
+                    provider=provider,
+                    default_temperature=0.1,
+                ),
                 **(({"extra_body": _extra}) if _extra else {}),
             )
             summary = (resp.choices[0].message.content or "").strip()
@@ -912,6 +955,14 @@ class SlurmAgentSystem:
                     ctx = run_state._context.context if run_state._context else ctx
                 else:
                     augmented_message = user_message
+                    todo.reset()
+                    if await todo.generate_plan(user_message):
+                        snap = todo.get_snapshot()
+                        if snap:
+                            yield {"type": "todo", "items": snap}
+                        plan_context = todo.format_for_llm()
+                        if plan_context:
+                            augmented_message = f"{plan_context}\n\nUser request:\n{user_message}"
 
                     result = Runner.run_streamed(
                         starting_agent=self.main_agent,
@@ -1165,9 +1216,17 @@ class SlurmAgentSystem:
             if self._mcp_observer is None or self._mcp_operator is None:
                 raise RuntimeError("MCP servers are not initialized")
             async with self._mcp_observer, self._mcp_operator:
+                runner_input = user_message
+                todo = self._todo
+                todo.reset()
+                if await todo.generate_plan(user_message):
+                    plan_context = todo.format_for_llm()
+                    if plan_context:
+                        runner_input = f"{plan_context}\n\nUser request:\n{user_message}"
+
                 result = await Runner.run(
                     starting_agent=self.main_agent,
-                    input=user_message,
+                    input=runner_input,
                     session=session,
                     context=ctx,
                     max_turns=100,

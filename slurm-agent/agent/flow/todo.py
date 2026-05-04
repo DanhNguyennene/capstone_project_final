@@ -28,6 +28,7 @@ from .model import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
     normalize_provider,
+    chat_completion_sampling_kwargs,
 )
 
 logger = logging.getLogger(__name__)
@@ -184,8 +185,12 @@ class TodoTracker:
                     {"role": "system", "content": _PLAN_SYSTEM_PROMPT},
                     {"role": "user", "content": user_message},
                 ],
-                temperature=0.1,
                 max_tokens=300,
+                **chat_completion_sampling_kwargs(
+                    _model,
+                    provider=provider,
+                    default_temperature=0.1,
+                ),
                 **_create_kwargs,
             )
             raw = (resp.choices[0].message.content or "").strip()

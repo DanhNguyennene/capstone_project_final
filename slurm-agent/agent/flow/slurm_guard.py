@@ -33,7 +33,7 @@ JOB_ID_TOOLS = {
 ACTIVE_JOB_STATE_POLICY = {
     "scancel": {"RUNNING", "PENDING", "SUSPENDED", "CONFIGURING", "COMPLETING", "RESIZING"},
     "scontrol_hold": {"PENDING"},
-    "scontrol_release": {"PENDING"},
+    "scontrol_release": {"HOLD", "PENDING"},
     "scontrol_suspend": {"RUNNING"},
     "scontrol_resume_job": {"SUSPENDED"},
     "scontrol_update": {"RUNNING", "PENDING", "SUSPENDED", "CONFIGURING", "COMPLETING", "RESIZING"},
@@ -104,14 +104,25 @@ def _parse_squeue_state(text: str, job_id: str) -> str:
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
     if not lines or any("no such job" in line.lower() for line in lines):
         return ""
-    header = lines[0].split("|")
+
+    header_line = lines[0]
+    if "|" in header_line:
+        header = [part.strip().upper() for part in header_line.split("|")]
+        splitter = lambda line: [part.strip() for part in line.split("|")]
+    else:
+        header = [part.strip().upper() for part in header_line.split()]
+        splitter = lambda line: line.split()
+
     try:
         job_index = header.index("JOBID")
         state_index = header.index("STATE")
     except ValueError:
         return "UNKNOWN"
+
     for line in lines[1:]:
-        columns = line.split("|")
+        if set(line) <= {"-"}:
+            continue
+        columns = splitter(line)
         if len(columns) <= max(job_index, state_index):
             continue
         if columns[job_index].strip() == job_id:

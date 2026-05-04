@@ -39,6 +39,7 @@ from flow.model import (
     GITHUB_MODELS_MODEL,
     GITHUB_TOKEN,
     normalize_provider,
+    chat_completion_sampling_kwargs,
 )
 from flow.skills import load_observer_skills
 
@@ -551,8 +552,12 @@ async def _describe_image(
                     ],
                 },
             ],
-            temperature=0.1,
             max_tokens=220,
+            **chat_completion_sampling_kwargs(
+                VISION_MODEL,
+                provider=provider,
+                default_temperature=0.1,
+            ),
             **extra_kwargs,
         )
         desc = (resp.choices[0].message.content or "").strip()
@@ -791,7 +796,11 @@ async def chat(request: ChatRequest, raw_request: Request):
                 response = await client.chat.completions.create(
                     model=generation_model,
                     messages=messages,
-                    temperature=0.2,
+                    **chat_completion_sampling_kwargs(
+                        generation_model,
+                        provider=agent.llm_provider,
+                        default_temperature=0.2,
+                    ),
                     **extra_kwargs,
                 )
                 content = response.choices[0].message.content or ""

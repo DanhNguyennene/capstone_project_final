@@ -23,7 +23,9 @@ from .guardrails import (
     TOOL_INPUT_GUARDRAILS,
     guard_redact_secrets,
 )
-from .slurm_guard import SlurmGuard
+# SlurmGuard admission is disabled by request. HITL approval still gates all
+# dangerous tools through FunctionTool.needs_approval=True below.
+# from .slurm_guard import SlurmGuard
 from .tool_discovery import DiscoveredTool
 
 logger = logging.getLogger(__name__)
@@ -119,7 +121,8 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
     """
     base = mcp_url.rstrip("/")
     result = []
-    slurm_guard = SlurmGuard(dangerous_tools)
+    # SlurmGuard admission is disabled by request.
+    # slurm_guard = SlurmGuard(dangerous_tools)
 
     # Safety policy: dangerous actions always require HITL approval before execution.
     # We do not bypass approval for malformed arguments.
@@ -159,14 +162,15 @@ def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredT
                         "Job actions require concrete Slurm numeric job IDs; unresolved labels or invalid IDs are not executable.",
                     )
 
-                admission = await slurm_guard.admit_dangerous_call(
-                    tool_name=captured_name,
-                    args=args,
-                    context=ctx_obj,
-                    live_mcp_call=lambda tool, tool_args: _mcp_call(base, tool, tool_args),
-                )
-                if not admission.allowed:
-                    return _block_operator_action(ctx_obj, admission.reason)
+                # SlurmGuard admission is disabled by request.
+                # admission = await slurm_guard.admit_dangerous_call(
+                #     tool_name=captured_name,
+                #     args=args,
+                #     context=ctx_obj,
+                #     live_mcp_call=lambda tool, tool_args: _mcp_call(base, tool, tool_args),
+                # )
+                # if not admission.allowed:
+                #     return _block_operator_action(ctx_obj, admission.reason)
 
                 args_str    = ", ".join(f"{k}={v}" for k, v in args.items()) if args else ""
                 description = f"{captured_name}({args_str})"
@@ -486,6 +490,180 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
                     "description": "Max titles to return for list/search (default: 12).",
                 }
             },
+            "additionalProperties": False,
+        },
+        on_invoke_tool=_invoke,
+        timeout_seconds=5.0,
+        timeout_behavior="error_as_result",
+    )
+
+
+# ── Slurm documentation retrieval (local RAG) ────────────────────────────────
+
+def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
+    """Create a small lexical retriever over the local Slurm documentation corpus."""
+    import re
+
+    def _normalize(raw: str) -> str:
+        txt = (raw or "").lower()
+        txt = re.sub(r"[^a-z0-9_\-\s]", " ", txt)
+        return re.sub(r"\s+", " ", txt).strip()
+
+    def _tokens(raw: str) -> list[str]:
+        return [tok for tok in _normalize(raw).split(" ") if len(tok) >= 2]
+
+    def _title_for(content: str, fallback: str) -> str:
+        frontmatter_title = re.search(r'^title:\s*"?([^"\n]+)"?', content, re.MULTILINE)
+        if frontmatter_title:
+            return frontmatter_title.group(1).strip()
+        heading = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+        return heading.group(1).strip() if heading else fallback
+
+    def _source_for(content: str) -> str:
+        source = re.search(r"^source_url:\s*(\S+)", content, re.MULTILINE)
+        return source.group(1).strip() if source else "local Slurm docs corpus"
+
+    def _clean_content(content: str) -> str:
+        if content.startswith("---"):
+            end = content.find("---", 3)
+            if end >= 0:
+                return content[end + 3 :].strip()
+        return content.strip()
+
+    def _chunks(content: str) -> list[str]:
+        body = _clean_content(content)
+        parts = re.split(r"\n(?=#{1,3}\s+)", body)
+        chunks = []
+        for part in parts:
+            compact = re.sub(r"\n{3,}", "\n\n", part).strip()
+            if len(compact) < 80:
+                continue
+            if len(compact) <= 1400:
+                chunks.append(compact)
+                continue
+            paragraphs = [p.strip() for p in re.split(r"\n\s*\n", compact) if p.strip()]
+            buffer = ""
+            for paragraph in paragraphs:
+                candidate = f"{buffer}\n\n{paragraph}".strip() if buffer else paragraph
+                if len(candidate) > 1400 and buffer:
+                    chunks.append(buffer)
+                    buffer = paragraph
+                else:
+                    buffer = candidate
+            if buffer:
+                chunks.append(buffer[:1800])
+        return chunks
+
+    def _parse_limit(raw_limit: object, default: int = 5) -> int:
+        try:
+            value = int(str(raw_limit))
+        except Exception:
+            value = default
+        return max(1, min(10, value))
+
+    pages = []
+    for doc_path, content in sorted(docs.items()):
+        title = _title_for(content, doc_path)
+        source = _source_for(content)
+        page_norm = _normalize(f"{doc_path} {title}")
+        for chunk in _chunks(content):
+            pages.append({
+                "path": doc_path,
+                "title": title,
+                "source": source,
+                "chunk": chunk,
+                "norm": _normalize(f"{doc_path} {title} {chunk}"),
+                "page_norm": page_norm,
+            })
+
+    async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
+        if not pages:
+            return "No local Slurm documentation corpus is loaded."
+
+        args = _parse_tool_args(args_json)
+        query = str(args.get("query", "")).strip()
+        limit = _parse_limit(args.get("limit", 5))
+        if not query:
+            return "Provide a concise Slurm documentation query."
+
+        query_norm = _normalize(query)
+        query_tokens = _tokens(query)
+        if not query_tokens:
+            return "Query is too short to search local Slurm docs."
+
+        scored: list[tuple[int, dict]] = []
+        phrase = f" {query_norm} "
+        for page in pages:
+            score = 0
+            norm = f" {page['norm']} "
+            page_norm = f" {page['page_norm']} "
+            if phrase in norm:
+                score += 120
+            for token in query_tokens:
+                token_pattern = f" {token} "
+                if token_pattern in page_norm:
+                    score += 16
+                if token_pattern in norm:
+                    score += min(18, norm.count(token_pattern) * 3)
+                if token in page["path"].lower():
+                    score += 20
+            if score > 0:
+                scored.append((score, page))
+
+        scored.sort(key=lambda item: (-item[0], item[1]["path"], item[1]["title"]))
+        if not scored:
+            return f'No local Slurm documentation snippets matched "{query}". Try web_search with site:slurm.schedmd.com.'
+
+        seen = set()
+        results = []
+        for score, page in scored:
+            key = (page["path"], page["chunk"][:100])
+            if key in seen:
+                continue
+            seen.add(key)
+            snippet = page["chunk"].strip()
+            if len(snippet) > 950:
+                snippet = snippet[:950].rstrip() + "..."
+            results.append((score, page, snippet))
+            if len(results) >= limit:
+                break
+
+        lines = [
+            f'Local Slurm docs results for "{query}" ({len(results)}/{len(scored)} snippets).',
+            "Use these snippets as documentation context; verify live cluster state with Slurm tools.",
+        ]
+        for index, (score, page, snippet) in enumerate(results, 1):
+            lines.append(
+                f"\n[{index}] {page['title']}\n"
+                f"Source: {page['source']}\n"
+                f"Path: {page['path']}\n"
+                f"Score: {score}\n"
+                f"Snippet:\n{snippet}"
+            )
+        return "\n".join(lines)
+
+    return FunctionTool(
+        name="lookup_slurm_docs",
+        description=(
+            "Retrieve ranked snippets from the local official Slurm documentation corpus. "
+            "Use for Slurm command syntax, reason codes, states, accounting/QOS, resources, and admin reference questions. "
+            "Do not use for live cluster state; call Slurm tools for that."
+        ),
+        params_json_schema={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Concise Slurm documentation query, e.g. 'sbatch dependency afterok'.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "description": "Maximum snippets to return (default: 5).",
+                },
+            },
+            "required": ["query"],
             "additionalProperties": False,
         },
         on_invoke_tool=_invoke,

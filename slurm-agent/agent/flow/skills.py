@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
 ARCHIVE_SKILLS_DIR = SKILLS_DIR / "arhive"  # legacy path in repo (intentional spelling)
+SLURM_KNOWLEDGE_DIR = SKILLS_DIR / "slurm_knowledge"
 OBSERVER_SKILLS_DIRS = [SKILLS_DIR, SKILLS_DIR / "observer", ARCHIVE_SKILLS_DIR]
 OPERATOR_SKILLS_DIRS = [SKILLS_DIR / "operator"]
 
@@ -66,6 +67,29 @@ def load_observer_skills() -> dict[str, str]:
 def load_operator_skills() -> dict[str, str]:
     """Load Operator-specific write-action skills."""
     return load_skills(OPERATOR_SKILLS_DIRS)
+
+
+def load_slurm_docs() -> dict[str, str]:
+    """Load the generated local Slurm documentation corpus recursively."""
+    docs: dict[str, str] = {}
+    if not SLURM_KNOWLEDGE_DIR.exists():
+        logger.info("Slurm docs corpus not found: %s", SLURM_KNOWLEDGE_DIR)
+        return docs
+
+    for file_path in sorted(SLURM_KNOWLEDGE_DIR.rglob("*.md")):
+        if file_path.name == "SLURM_DOCS_INDEX.md":
+            continue
+        try:
+            content = file_path.read_text(encoding="utf-8").strip()
+            if not content:
+                continue
+            relative_name = file_path.relative_to(SLURM_KNOWLEDGE_DIR).as_posix()
+            docs[relative_name] = content
+        except Exception as exc:
+            logger.error("Failed to load Slurm doc %s: %s", file_path, exc)
+
+    logger.info("Loaded %d local Slurm documentation pages from %s", len(docs), SLURM_KNOWLEDGE_DIR)
+    return docs
 
 
 def _compress_skill(name: str, content: str) -> str:
