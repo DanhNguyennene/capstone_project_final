@@ -1,132 +1,49 @@
-\section{Frontend Implementation}
-\label{sec:frontend}
+\section{Runtime Interface and Evaluation Integration}
+\label{sec:runtime-interface}
 
-This section describes the current frontend architecture for interacting with the Slurm Agent system. The active implementation is a custom React + Vite web application with two integrated modes: a chat interface and an evaluation dashboard. An Open WebUI bridge remains available as an optional compatibility deployment path.
+The user interface is not treated as a primary research contribution of this thesis. It is a supporting layer that exposes the agent backend, human-confirmation flow, and evaluation runner during development. The main implementation focus remains the agent architecture, MCP tool layer, resettable mock states, dataset construction process, and trace-based evaluation.
 
-\subsection{Architecture Overview}
+\subsection{Interface Role in the System}
 
-The frontend stack can be used in two modes:
+The implementation provides a lightweight React + Vite interface for sending natural-language requests to the FastAPI agent service. Its role is deliberately narrow:
 
-\begin{enumerate}
-    \item \textbf{Primary mode (used in this report)}: React + Vite frontend (chat + evaluation views) communicating directly with the agent API and evaluation API.
-    \item \textbf{Compatibility mode}: Open WebUI + middleware router forwarding to the same agent API.
-\end{enumerate}
+\begin{itemize}
+    \item submit user prompts to the OpenAI-compatible chat endpoint,
+    \item display final answers and selected status events from the agent runtime,
+    \item relay explicit confirm/cancel decisions for pending state-changing operations,
+    \item expose trace information that is useful for debugging agent behavior.
+\end{itemize}
 
+% TODO: Replace with actual screenshots
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated frontend integration architecture (React UI, agent API, evaluation API, SSE stream handling, optional Open WebUI bridge).]}}}
-    \caption{Frontend Integration Architecture}
-    \label{fig:frontend-architecture}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{3cm}\textbf{Frontend UI Screenshot}\\[0.5em]\small Chat interface with tool steps panel, confirmation dialog, and chart rendering\vspace{3cm}}}
+    \caption{Slurm Agent Chat Interface}
+    \label{fig:frontend-ui}
 \end{figure}
 
-\subsection{Technology Stack}
-
-The active frontend uses the following stack:
-
-\begin{itemize}
-    \item \textbf{React 18 + Vite}: client rendering and build tooling
-    \item \textbf{FastAPI} \cite{fastapi2024}: agent backend and evaluation backend APIs
-    \item \textbf{SSE over Fetch Streams}: incremental rendering of reasoning, status, and answer tokens
-    \item \textbf{Mermaid}: inline chart rendering in chat/evaluation artifacts
-    \item \textbf{LocalStorage-based session state}: frontend conversation persistence
-\end{itemize}
-
-\subsection{Primary Frontend Structure (React Application)}
-
-The primary application is composed of modular React components:
-
-\begin{itemize}
-    \item \textbf{App shell}: top-level layout and view switching (Chat/Eval)
-    \item \textbf{Sidebar}: sessions, server settings, and mode toggle
-    \item \textbf{Messages/Input components}: conversational interaction and HITL action buttons
-    \item \textbf{Eval view}: dataset loading, run controls, live progress, per-test trace inspection
-\end{itemize}
-
-The integrated evaluation view allows end-to-end testing without leaving the primary UI. It displays per-test status, model traces, and aggregate metrics in real time.
-
-\subsection{Streaming Response Flow}
-
-The frontend consumes OpenAI-compatible SSE chunks from the backend. Key delta fields include:
-
-\begin{itemize}
-    \item \texttt{status\_update}
-    \item \texttt{tool\_output}
-    \item \texttt{reasoning\_content}
-    \item \texttt{content}
-    \item \texttt{chart\_artifact}
-    \item \texttt{todo\_update}
-    \item \texttt{pending\_actions}
-\end{itemize}
-
-This structured stream enables independent rendering of tool traces, model thinking, final answer content, and user confirmation controls.
-
-\subsection{Evaluation UI Integration}
-
-The evaluation interface is now a first-class frontend mode. It provides:
-
-\begin{itemize}
-    \item dataset load/upload and filtering,
-    \item run-all and run-single controls,
-    \item real-time test progression with pass/fail states,
-    \item per-test drill-down for tools, routing, HITL, response, thinking, and judge output,
-    \item aggregate metrics display.
-\end{itemize}
-
-This integration shortens the iteration loop between feature development and behavioral evaluation.
-
-\subsection{Optional Open WebUI Integration Path}
-
-Open WebUI integration remains available for environments requiring Open WebUI ecosystem features (organizational deployment, existing plugin stack). In this mode, a middleware router forwards chat requests to the same agent backend. This path is considered optional in the current implementation baseline.
+This interface makes manual testing convenient, but the architectural boundary is the backend API.
 
 \subsection{Agent Service API}
 
-The frontend communicates with OpenAI-compatible endpoints exposed by \texttt{agent/main.py}. Key endpoints include:
+The agent service is implemented in \texttt{agent/main.py}. It exposes an OpenAI-compatible \texttt{/v1/chat/completions} endpoint that receives the user request, initializes or resumes the session, routes the request through the multi-agent backend, and streams structured events back to the caller. The event stream is mainly an implementation mechanism for carrying status updates, tool outputs, pending actions, final answer text, and evaluation traces.
+
+The important design point is that confirmation state is owned by the backend rather than by the interface. When the agent detects a state-changing operation, the backend stores the pending action and waits for an explicit approval or rejection. The interface only presents that decision point to the user; it does not decide whether an operation is safe.
+
+\subsection{Evaluation Integration}
+
+The evaluation path uses the same backend behavior as manual interaction. The evaluator loads cases from \texttt{evaluation/dataset.json}, resets the mock Slurm state to the case's \texttt{source\_state}, submits the prompt to the live agent endpoint, records observed tools and handoffs, applies HITL decisions when required, and scores the result against ground truth labels.
+
+An auxiliary evaluation backend provides controls for running single cases, running the full benchmark, stopping a run, and exporting result artifacts. An optional inspection view can display these artifacts, but the thesis treats the artifact itself as the evidence: dataset row, source state, target state, expected tools, observed tools, routing behavior, HITL behavior, response evidence, and state score.
+
+\subsection{Deployment Scripts}
+
+The repository includes script-based startup for the local development stack:
 
 \begin{itemize}
-    \item \textbf{\texttt{GET /v1/models}}: model list exposure
-    \item \textbf{\texttt{POST /v1/chat/completions}}: The primary chat endpoint that processes user queries through the multi-agent system and streams responses
-    \item \textbf{\texttt{GET /health}}: Health check endpoint for container orchestration
+    \item \texttt{start.sh}: launches the MCP server, agent API, and optional local interface preview,
+    \item \texttt{start\_eval\_server.sh}: launches the evaluation backend,
+    \item \texttt{restart.sh}: restarts the local stack for repeated implementation and evaluation runs.
 \end{itemize}
 
-The dedicated evaluation backend (\texttt{evaluation/eval\_server.py}) exposes additional endpoints for dataset loading, test execution, stopping, and persistent result snapshots.
-
-\subsection{Current User-Facing Capabilities}
-
-The frontend currently supports:
-
-\begin{itemize}
-    \item live chat with streaming responses,
-    \item HITL confirmation/cancellation controls,
-    \item inline markdown and Mermaid rendering,
-    \item multi-session navigation,
-    \item integrated evaluation workflow in a dedicated tab.
-\end{itemize}
-
-Figure~\ref{fig:frontend-demo} shows the current web interface.
-
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.85\textwidth}{\centering \textit{[Placeholder: Updated frontend screenshot showing chat mode, integrated Eval tab, live status stream, and HITL action controls.]}}}
-    \caption{Frontend Demo Interface}
-    \label{fig:frontend-demo}
-\end{figure}
-
-\subsection{Deployment Configuration}
-
-The project includes script-based startup for local development:
-
-\begin{itemize}
-    \item \textbf{start.sh}: launches MCP server, agent API, and built frontend preview
-    \item \textbf{start\_eval\_server.sh}: launches standalone evaluation backend
-    \item \textbf{MCP scenario switching}: allows deterministic evaluation in healthy/failed/pending/mixed/debug\_needed states
-\end{itemize}
-
-Containerized and Open WebUI-based deployments remain possible, but are not the only deployment model.
-
-\subsection{TODO for Final Thesis Freeze}
-
-\begin{itemize}
-    \item Add one updated screenshot of the integrated Eval tab (current figure set is chat-heavy).
-    \item Add a sequence diagram for chat mode vs eval mode request paths.
-    \item Document exact frontend build/version hash used for final experiments.
-\end{itemize}
+These scripts are practical engineering support. They are included to make the implementation reproducible, while the thesis analysis focuses on the behavior of the agent and evaluation pipeline rather than interface design.

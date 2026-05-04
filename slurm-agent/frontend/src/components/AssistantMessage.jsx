@@ -2,8 +2,11 @@
 import { memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeKatex from 'rehype-katex'
 import 'highlight.js/styles/github.min.css'
+import 'katex/dist/katex.min.css'
 
 import MermaidDiagram from './MermaidDiagram'
 import ThinkingBlock  from './ThinkingBlock'
@@ -48,8 +51,8 @@ const AssistantMessage = memo(function AssistantMessage({ msg, onAction }) {
 
           {hasContent && (
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }]]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex, [rehypeHighlight, { ignoreMissing: true }]]}
               components={MarkdownComponents}
             >
               {processContent(msg.content)}

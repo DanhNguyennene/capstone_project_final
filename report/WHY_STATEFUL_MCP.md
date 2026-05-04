@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS pending_actions (
 - **User approval required**: Agent queues actions, user confirms via `confirm_action` tool
 - **Cross-request persistence**: User sees "3 actions pending", confirms later
 
-**Without it**: Cannot implement safety guardrails. Dangerous operations would execute immediately or fail.
+**Without it**: Cannot implement the confirmation workflow. Dangerous operations would execute immediately or fail.
 
 ---
 
@@ -235,7 +235,7 @@ Agent: [tries to call scancel]
        ERROR: No session_id - cannot queue for confirmation
 ```
 
-**Impact**: Safety guardrails cannot work. Either execute immediately (dangerous) or reject (unusable).
+**Impact**: The confirmation workflow cannot work. The system must either execute immediately (dangerous) or reject the request (unusable).
 
 ### 3. **Multi-Step Workflows Break**
 ```
@@ -380,7 +380,7 @@ This is **NOT** in the MCP specification. It's an OpenAI-specific extension.
 **Stateful MCP is necessary because**:
 
 1. **Conversation Memory**: Users expect "Cancel those jobs" to work without re-specifying which jobs
-2. **Safety Guardrails**: Dangerous operations must queue for confirmation across requests
+2. **Confirmation Workflow**: Dangerous operations must queue for confirmation across requests
 3. **SDK Compatibility**: OpenAI Agents SDK requires bidirectional SSE transport
 4. **Token Efficiency**: Server-side history management prevents exponential token costs
 5. **Microservice Architecture**: Network transport allows independent scaling/deployment

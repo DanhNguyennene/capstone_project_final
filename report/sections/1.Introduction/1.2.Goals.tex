@@ -1,17 +1,14 @@
 \section{Goals}
 
-The primary goal of this thesis is to develop an intelligent agent system that simplifies the interaction between users and Slurm-managed HPC clusters. Specifically, the objectives are:
+The primary goal of this thesis is to develop and evaluate an intelligent agent system that simplifies interaction between users and Slurm-managed HPC clusters. Specifically, the objectives are:
 
 \begin{itemize}
-    \item \textbf{Natural Language Interface.} Design and implement a conversational interface that allows users to query cluster status, submit jobs, and troubleshoot errors using natural language instead of memorizing complex command syntax.
+    \item \textbf{Natural Language Interface.} Design and implement a conversational interface that allows users to query cluster status, inspect accounting and resource limits, submit jobs, manage jobs, and troubleshoot errors using natural language instead of memorizing complex command syntax.
     
-    \item \textbf{Multi-Agent Architecture.} Develop a modular multi-agent system where specialized subagents handle distinct tasks such as cluster analysis, chart generation, and web search, orchestrated by a main reasoning agent.
+    \item \textbf{Observer/Operator Control Flow.} Develop a Slurm-specific workflow where read-only observation is separated from state-changing operation, with structured handoffs and confirmation requirements for risky actions.
     
-    \item \textbf{MCP Integration.} Implement Model Context Protocol (MCP) servers that expose Slurm operations as tools, enabling seamless integration between LLM reasoning and HPC system commands.
+    \item \textbf{Risk-Aware MCP Integration.} Implement Model Context Protocol (MCP) tools that expose Slurm operations through typed interfaces while preserving the risk distinction between monitoring, diagnosis, submission, job control, and administrative actions.
     
-    \item \textbf{Dynamic Visualization.} Create a visualization pipeline that automatically generates charts and dashboards for cluster metrics including GPU utilization, job queue status, and resource allocation trends.
+    \item \textbf{Curated Slurm Benchmark Dataset.} Contribute a broad 3,135-case benchmark dataset for natural-language Slurm operations, balanced across eleven categories with expected tool, routing, confirmation, and state-transition behavior.
     
-    \item \textbf{Automated Troubleshooting.} Integrate web search capabilities to automatically retrieve solutions for error messages, reducing the time users spend debugging failed jobs.
-    
-    \item \textbf{Real-time Streaming.} Implement Server-Sent Events (SSE) for streaming agent responses, providing immediate feedback during long-running operations.
 \end{itemize}

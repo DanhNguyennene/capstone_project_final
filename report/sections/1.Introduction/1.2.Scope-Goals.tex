@@ -3,19 +3,15 @@
 
 \subsection{Project Goals}
 
-The primary objective of this research is to design and implement an intelligent agent system that provides a natural language interface for Slurm cluster management. This system aims to democratize access to HPC resources by enabling users to interact with Slurm using conversational queries rather than complex command-line syntax. The following goals guide the development of this solution:
+The primary objective of this research is to design, implement, and evaluate an intelligent agent system for Slurm cluster management. The project aims to make Slurm more accessible through natural-language interaction, but it also contributes the evaluation infrastructure needed to measure whether such an agent behaves correctly and safely. The following goals guide the development of this solution:
 
-\textbf{Goal 1: Natural Language Interface for Slurm Operations.} The system shall enable users to perform common Slurm operations through natural language queries. Users should be able to check job status, view cluster resources, submit jobs, and monitor queues without explicit knowledge of Slurm command syntax. The agent must interpret user intent accurately and translate queries into appropriate Slurm commands.
+\textbf{Goal 1: Natural Language Interface for Broad Slurm Operations.} The system shall enable users to perform a broad set of Slurm operations through natural language queries. Users should be able to inspect jobs, partitions, nodes, accounting records, QoS and resource limits, reservations, scheduler health, submit workloads, and perform human-confirmed job-control operations without explicit knowledge of Slurm command syntax. The agent must interpret user intent accurately and translate queries into appropriate Slurm commands or documentation lookups.
 
-\textbf{Goal 2: Multi-Agent Architecture with Specialized Capabilities.} The system shall implement a multi-agent architecture where specialized agents handle different aspects of cluster management. This includes agents for command execution, data visualization, and web search. The handoff mechanism between agents should be seamless and transparent to the user.
+\textbf{Goal 2: Slurm-Specific Observer/Operator Control Flow.} The system shall implement a specialized agent workflow where read-only observation is separated from state-changing job management. Documentation retrieval, data visualization, and web search fallback should remain read-only support capabilities, while handoffs to state-changing execution must carry explicit action intent, target scope, and safety context.
 
-\textbf{Goal 3: Standardized Tool Integration via MCP.} The system shall utilize the Model Context Protocol to provide standardized tool interfaces between the LLM agents and Slurm infrastructure. The MCP server should expose Slurm functionality as discrete tools that can be invoked by the agent, ensuring clean separation between the AI layer and system operations.
+\textbf{Goal 3: Risk-Aware Slurm Tool Integration via MCP.} The system shall utilize the Model Context Protocol to provide standardized tool interfaces between the LLM agents and Slurm infrastructure. The MCP server should expose Slurm functionality as discrete, typed tools, while the agent layer classifies tools by operational risk and routes state-changing actions through confirmation before command execution.
 
-\textbf{Goal 4: Visualization of Cluster Metrics.} The system shall provide visualization capabilities for cluster data, enabling users to request charts and graphs showing resource utilization, job distributions, and other metrics. Visualizations should be generated dynamically based on user queries and current cluster state.
-
-\textbf{Goal 5: Real-Time Streaming Responses.} The system shall support real-time streaming of agent responses using Server-Sent Events (SSE), providing users with immediate feedback during long-running operations. This improves user experience by eliminating the perception of system unresponsiveness.
-
-\textbf{Goal 6: Web-Based User Interface.} The system shall provide an intuitive web-based interface that supports markdown rendering, code highlighting, and inline visualization display. The interface should be accessible and usable without specialized client software.
+\textbf{Goal 4: Curated Slurm Benchmark Dataset.} The project shall construct a broad, scorable Slurm benchmark dataset for evaluating natural-language cluster operations. The active dataset shall cover monitoring, diagnosis, action, bulk operations, submission, safety, accounting, documentation, domain-specific Slurm workflows, multi-step reasoning, and edge cases. Each case should include expected tool behavior, routing expectations, confirmation policy, and source-to-target state information where applicable. The current active benchmark contains 3,135 curated cases, balanced across eleven categories with 285 cases each.
 
 \subsection{Project Scope}
 
@@ -24,12 +20,13 @@ The scope of this project encompasses the design, implementation, and evaluation
 \textbf{In Scope:}
 \begin{itemize}
     \item Development of an MCP server exposing Slurm functionality as tools
-    \item Implementation of a multi-agent system using the OpenAI Agents SDK
+    \item Implementation of an Observer/Operator workflow with Slurm-specific risk separation and confirmation routing
     \item Design and implementation of a web-based frontend interface
-    \item Integration of chart visualization capabilities using matplotlib
-    \item Implementation of web search functionality for documentation assistance
-    \item Real-time response streaming using SSE
-    \item Testing on a single-node Slurm cluster configuration
+    \item Integration of predefined chart artifact rendering for selected Slurm summaries
+    \item Implementation of local Slurm documentation retrieval and web search fallback for documentation assistance
+    \item Construction of a 3,135-case curated Slurm benchmark dataset with balanced categories
+    \item Evaluation support through scripts, resettable mock scenarios, result artifacts, and dashboard monitoring
+    \item Testing on a single-node Slurm cluster configuration and resettable mock Slurm scenarios
 \end{itemize}
 
 % \textbf{Out of Scope:}
@@ -42,4 +39,4 @@ The scope of this project encompasses the design, implementation, and evaluation
 %     \item Mobile application development
 % \end{itemize}
 
-This project focuses on demonstrating the feasibility and effectiveness of using LLM agents with MCP for HPC cluster management, providing a foundation for future research and development in this domain.
+This project focuses on demonstrating the feasibility of a tool-grounded Slurm agent with explicit confirmation for state-changing actions and on contributing the dataset and evaluation system needed to measure that behavior. The intended outcome is therefore both a working natural-language Slurm assistant and a reproducible benchmark foundation for future research in AI-assisted HPC operations.

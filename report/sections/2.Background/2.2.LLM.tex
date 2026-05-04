@@ -1,89 +1,87 @@
 \section{Large Language Models}
 \label{sec:llm}
 
-Large Language Models (LLMs) represent a class of artificial intelligence systems trained on vast corpora of text data to understand and generate human language \cite{brown2020language}. These models have demonstrated remarkable capabilities in natural language understanding, reasoning, and generation, enabling a wide range of applications from conversational assistants to code synthesis. This section examines the fundamental concepts underlying LLMs and their relevance to the development of intelligent agents.
+Large Language Models (LLMs) are neural networks trained to model and generate natural language from large text corpora. Recent LLMs can follow instructions, summarize technical material, reason over multi-step requests, and call external tools, which makes them useful as natural-language interfaces for complex systems \cite{brown2020language, openai2023gpt4}. In this thesis, the LLM is not treated as an authority on live cluster state. Instead, it is used as an intent interpretation and orchestration component that must be grounded through external tools, documentation, and structured responses.
 
-\subsection{Transformer Architecture}
+\subsection{Transformer-Based Language Modeling}
 
-Modern LLMs are built upon the Transformer architecture, introduced by Vaswani et al. in 2017. The Transformer revolutionized natural language processing by replacing recurrent neural network architectures with self-attention mechanisms, enabling efficient parallel processing of sequential data and capturing long-range dependencies in text.
+Most modern LLMs are based on the Transformer architecture introduced by Vaswani et al. \cite{vaswani2017attention}. The key mechanism is self-attention, which allows each token representation to attend to other tokens in the sequence and model long-range dependencies.
 
-The self-attention mechanism allows each token in a sequence to attend to all other tokens, computing relevance weights that determine how much information to gather from each position. This is expressed mathematically as:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/transformer_architecture.png}
+    \caption{Transformer Architecture Components~\cite{vaswani2017attention}}
+    \label{fig:transformer-architecture}
+\end{figure}
+
+In self-attention, token representations are projected into query ($Q$), key ($K$), and value ($V$) vectors. The attention output is computed as:
 
 \begin{equation}
     \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
 \end{equation}
 
-where $Q$, $K$, and $V$ represent query, key, and value matrices derived from the input, and $d_k$ is the dimension of the key vectors. The scaling factor $\sqrt{d_k}$ prevents the softmax function from entering regions of extremely small gradients.
+where $d_k$ is the key-vector dimension. Multi-head attention performs this computation across several learned projections, allowing different heads to capture different relationships in the text. Stacked attention and feed-forward layers then produce contextual representations used for next-token prediction.
 
-% Placeholder: Transformer architecture diagram
-\begin{figure}[H]
-    \centering
-    % \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram of the Transformer architecture showing encoder-decoder structure with attention layers]}}}
-    \includegraphics[width=0.5\textwidth]{images/transformer_architecture.png}
-    \caption{Transformer Architecture Overview}
-    \label{fig:transformer}
-\end{figure}
-
-Transformers typically employ multi-head attention, where multiple attention computations are performed in parallel with different learned projections. This enables the model to capture different types of relationships and patterns simultaneously:
+Most LLMs are trained with an autoregressive objective, where the model predicts the next token from the preceding context:
 
 \begin{equation}
-    \text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, ..., \text{head}_h)W^O
+    P(x) = \prod_{i=1}^{n} P(x_i \mid x_1, \ldots, x_{i-1})
 \end{equation}
 
-The architecture includes layer normalization, residual connections, and position-wise feed-forward networks that contribute to training stability and model expressiveness.
+This objective allows the model to learn linguistic patterns, factual associations, programming conventions, and domain terminology from training data. However, the generated output remains probabilistic. A fluent answer can still be incomplete, stale, or unsupported by the current state of an external system.
 
-\subsection{Autoregressive Language Modeling}
+\subsection{Instruction Following and Alignment}
 
-LLMs are typically trained using autoregressive language modeling, where the model learns to predict the next token in a sequence given all preceding tokens. This training objective can be formalized as maximizing the log-likelihood:
+Base language models are optimized for continuation, not necessarily for helpful task completion. Instruction tuning improves this behavior by training models on instruction-response examples. Reinforcement Learning from Human Feedback (RLHF) further adjusts model behavior according to human preferences for helpfulness, relevance, and safety \cite{ouyang2022training}. Other alignment approaches, such as Constitutional AI, use explicit principles to critique and revise model outputs \cite{bai2022constitutional}.
 
-\begin{equation}
-    \mathcal{L}(\theta) = \sum_{i=1}^{n} \log P(x_i | x_1, x_2, ..., x_{i-1}; \theta)
-\end{equation}
+These techniques make LLMs better suited for conversational systems, but they do not remove the need for domain constraints. In a Slurm environment, an apparently correct response may still use the wrong partition, assume outdated job state, or omit an operational precondition. Therefore, alignment must be combined with tool grounding, parameter validation, and confirmation for actions that affect cluster state.
 
-where $\theta$ represents the model parameters and $x_1, ..., x_n$ is the training sequence.
+\subsection{Tool Use and Structured Output}
 
-During inference, the model generates text by sampling or selecting tokens autoregressively, where each generated token becomes part of the context for generating subsequent tokens. Various decoding strategies exist, including:
+Tool use extends an LLM beyond static model knowledge. Instead of answering only from its parameters, the model can choose an external function, provide structured arguments, inspect the returned result, and continue the conversation using that result. This pattern is important for operational domains because live state must be queried from the system of record.
+
+Function calling and structured output make tool use more reliable than free-form command generation. A developer defines available tools with names, descriptions, argument schemas, and required fields. The model then emits a structured call that software can validate before execution. For example, a natural-language request such as checking a user's queued jobs can be mapped to a job-query tool rather than a raw shell string.
+
+Structured tool calls support three important properties in this thesis:
+
 \begin{itemize}
-    \item \textbf{Greedy decoding}: Always selecting the highest-probability token
-    \item \textbf{Beam search}: Maintaining multiple candidate sequences simultaneously
-    \item \textbf{Sampling}: Probabilistically selecting tokens based on the predicted distribution
-    \item \textbf{Top-k/Top-p sampling}: Restricting sampling to the most likely candidates
+    \item \textbf{Grounding}: the agent can retrieve live Slurm state instead of relying on memorized or guessed information.
+    \item \textbf{Control}: the application can restrict the available tool set according to the current interaction mode.
+    \item \textbf{Validation}: typed parameters can be checked before a command is executed against the cluster interface.
 \end{itemize}
 
-\subsection{Instruction Tuning and Alignment}
+\subsection{Retrieval-Augmented Generation}
+\label{sec:rag-background}
 
-While base language models are trained purely on next-token prediction, they require additional training to become useful assistants. Instruction tuning fine-tunes models on datasets of instructions paired with desired responses, enabling the model to follow user directives effectively.
+Retrieval-Augmented Generation (RAG) addresses a core limitation of LLMs: their parametric knowledge is frozen at training time and cannot reflect new documentation, version-specific syntax, or domain-specific reference material~\cite{lewis2020retrieval}. RAG augments the generative model with a retrieval step that fetches relevant passages from an external corpus before generation, grounding the output in authoritative source material.
 
-Reinforcement Learning from Human Feedback (RLHF) further aligns models with human preferences \cite{bai2022constitutional}. This process involves:
+A typical RAG pipeline consists of three stages:
 \begin{enumerate}
-    \item Training a reward model on human preference data
-    \item Using the reward model to provide training signal
-    \item Optimizing the language model policy using reinforcement learning algorithms
+    \item \textbf{Indexing}: documents are split into chunks and encoded into dense vector representations using a pre-trained embedding model such as Sentence-BERT~\cite{reimers2019sentence}.
+    \item \textbf{Retrieval}: at query time, the user query is embedded with the same model and the top-$k$ most similar chunks are retrieved via cosine similarity.
+    \item \textbf{Generation}: the retrieved chunks are prepended to the LLM prompt as context, and the model generates an answer grounded in those passages.
 \end{enumerate}
 
-The alignment process helps models produce outputs that are helpful, harmless, and honest—critical properties for deployment in real-world applications.
+\subsubsection{Lexical vs.\ Semantic Retrieval}
 
-\subsection{Emergent Capabilities}
+Lexical retrieval (e.g., BM25, TF-IDF) matches based on token overlap between query and document. It is fast and effective for keyword-rich queries but fails when the user paraphrases concepts without using the exact terminology present in documents.
 
-As LLMs scale in parameters and training data, they exhibit emergent capabilities not explicitly trained for. These include:
+Semantic retrieval encodes both queries and documents into a shared embedding space where cosine similarity captures meaning rather than surface form. For example, the query ``how to chain jobs so one runs after another'' can match documentation about \texttt{--dependency=afterok} even though no keywords overlap.
 
-\textbf{In-context learning}: The ability to learn new tasks from examples provided in the prompt, without parameter updates. By presenting a few demonstrations of the desired input-output mapping, the model can generalize to new inputs.
+\subsubsection{Hybrid Retrieval and Reciprocal Rank Fusion}
 
-\textbf{Chain-of-thought reasoning}: When prompted appropriately, LLMs can generate intermediate reasoning steps that improve performance on complex problems. This capability is particularly important for multi-step tasks requiring logical deduction.
+Neither method dominates across all queries. Hybrid retrieval combines both by fusing their ranked result lists. Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocal} merges rankings without requiring score normalization:
 
-\textbf{Tool use}: Models can learn to interact with external tools and APIs by generating appropriate function calls or structured outputs. This capability enables LLMs to access real-time information, perform calculations, and interact with external systems.
+\begin{equation}
+    \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + \text{rank}_r(d)}
+\end{equation}
 
-\subsection{Function Calling and Structured Output}
+where $R$ is the set of retrieval systems and $k$ is a smoothing constant (typically 60). Documents that rank highly in both lexical and semantic systems receive the highest fused score, while documents that appear in only one system are still surfaced.
 
-Modern LLMs support function calling, where the model can output structured requests to invoke external tools. Given a set of available functions with specified parameter schemas, the model determines when to call functions and how to construct appropriate arguments.
+This approach is well-suited for operational documentation retrieval where queries range from exact command names (``sbatch --parsable'') to conceptual questions (``why is my job stuck'').
 
-The function calling paradigm follows this pattern:
-\begin{enumerate}
-    \item The system prompt defines available functions with their descriptions and parameter schemas
-    \item The model receives a user query and determines if function calls are needed
-    \item The model outputs structured function call requests with appropriate arguments
-    \item The application executes the function and returns results to the model
-    \item The model incorporates results and continues generation
-\end{enumerate}
+\subsection{Limitations in Operational Settings}
 
-This capability is fundamental to building LLM-based agents, as it provides the mechanism by which language models can take actions in the world rather than merely generating text responses.
+LLMs introduce risks that are especially relevant to HPC operations. They may hallucinate non-existent commands, merge similar options from different tools, provide outdated documentation, or infer an action that the user did not explicitly approve. They may also produce plausible explanations for failures without actually checking logs, accounting records, or scheduler state.
+
+For these reasons, the agent architecture in this project separates language understanding from operational execution. The LLM interprets intent and decides which typed tool may be relevant, while external tools provide authoritative data and the application enforces confirmation before state-changing operations. This design uses the LLM for its strengths in language and orchestration while limiting its authority over the cluster.

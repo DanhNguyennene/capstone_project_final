@@ -3,7 +3,7 @@ FastAPI Server for Slurm Agent with OpenAI SDK
 Supports OpenWebUI streaming format for chat integration.
 """
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -48,13 +48,12 @@ MCP_SERVER_URL = "http://localhost:3002"
 AUTO_APPROVE = os.environ.get("AUTO_APPROVE", "false").lower() in ("1", "true", "yes")
 # Per-event timeout: if the agent produces no event for this many seconds, abort
 STREAM_TIMEOUT = int(os.environ.get("STREAM_TIMEOUT", "75"))
-CHARTS_DIR = "/tmp/slurm_charts"
+
 UPLOADS_DIR = "/tmp/slurm_uploads"
 VISION_MODEL = os.environ.get("SLURM_AGENT_VISION_MODEL", "").strip()
 MAX_IMAGE_BYTES = int(os.environ.get("SLURM_AGENT_MAX_IMAGE_BYTES", "2000000"))
 MAX_IMAGE_ATTACHMENTS = int(os.environ.get("SLURM_AGENT_MAX_IMAGE_ATTACHMENTS", "3"))
 
-os.makedirs(CHARTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 logging.basicConfig(level=logging.INFO)
@@ -87,22 +86,6 @@ def create_stream_chunk(
     return f"data: {json.dumps(chunk)}\n\n"
 
 
-def create_todo_chunk(items: list[dict]) -> str:
-    """Create SSE chunk for todo panel updates."""
-    chunk = {
-        "id": f"slurm-{uuid.uuid4()}",
-        "object": "chat.completion.chunk",
-        "created": int(time.time()),
-        "model": "slurm-agent",
-        "choices": [{
-            "index": 0,
-            "finish_reason": None,
-            "delta": {"todo_update": items},
-        }],
-    }
-    return f"data: {json.dumps(chunk)}\n\n"
-
-
 def _event_to_sse(event: dict) -> str | None:
     """Convert an agent event dict to an SSE data line, or None to skip."""
     t = event.get("type")
@@ -124,8 +107,6 @@ def _event_to_sse(event: dict) -> str | None:
         return create_stream_chunk(content=c) if c else None
     elif t == "chart":
         return _chunk({"chart_artifact": event.get("mermaid", "")})
-    elif t == "todo":
-        return _chunk({"todo_update": event.get("items", [])})
     return None  # web_results, unknown → skip
 
 
@@ -324,7 +305,6 @@ class ChatRequest(BaseModel):
 # ===== File Attachment Pre-processing =====
 _ATTACH_RE = re.compile(r'\[Attached file:\s*([^\]]+)\]')
 _SKILL_CMD_RE = re.compile(r"^\s*/skill\s+(list|search|use)\b(.*)$", re.IGNORECASE | re.DOTALL)
-_TODO_CMD_RE = re.compile(r"^\s*/todo\b(.*)$", re.IGNORECASE | re.DOTALL)
 _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
 
 
@@ -363,85 +343,6 @@ def _preprocess_attachments(user_message: str) -> str:
     if clean_text:
         return f"{file_block}\n\nUser request: {clean_text}"
     return f"{file_block}\n\nUser request: Process these files."
-
-
-def _parse_todo_steps(raw: str) -> list[str]:
-    text = (raw or "").strip()
-    if not text:
-        return []
-    parts = [text]
-    if ";" in text:
-        parts = [p.strip() for p in text.split(";")]
-    elif "\n" in text:
-        parts = [p.strip() for p in text.splitlines()]
-    cleaned: list[str] = []
-    for part in parts:
-        s = re.sub(r"^\s*[-*]\s*", "", part).strip()
-        s = re.sub(r"^\s*\d+[\.)]\s*", "", s).strip()
-        if s:
-            cleaned.append(s[:100])
-    return cleaned[:20]
-
-
-def _format_todo_text(items: list[dict]) -> str:
-    if not items:
-        return "Todo list is empty."
-    lines = ["Todo list:"]
-    for item in items:
-        status = str(item.get("status", "not-started"))
-        marker = "[x]" if status == "completed" else "[>]" if status == "in-progress" else "[ ]"
-        lines.append(f"{marker} {item.get('id', '?')}. {item.get('title', '')}")
-    return "\n".join(lines)
-
-
-def _handle_todo_command(agent: SlurmAgentSystem, user_message: str) -> Optional[Dict[str, Any]]:
-    m = _TODO_CMD_RE.match((user_message or "").strip())
-    if not m:
-        return None
-
-    payload = (m.group(1) or "").strip()
-    if not payload:
-        payload = "show"
-    parts = payload.split(None, 1)
-    sub = parts[0].lower()
-    rest = parts[1].strip() if len(parts) > 1 else ""
-
-    if sub in {"show", "list"}:
-        items = agent._todo.get_items()
-        return {"message": _format_todo_text(items), "todo_items": items}
-
-    if sub == "clear":
-        agent._todo.reset()
-        return {"message": "Cleared todo list.", "todo_items": []}
-
-    if sub == "set":
-        steps = _parse_todo_steps(rest)
-        if not steps:
-            return {
-                "message": 'Usage: /todo set step 1; step 2; step 3',
-                "todo_items": agent._todo.get_items(),
-            }
-        items = [{"id": i + 1, "title": title, "status": "not-started"} for i, title in enumerate(steps)]
-        agent._todo.set_from_tool(items)
-        return {"message": f"Set todo list ({len(items)} items).", "todo_items": agent._todo.get_items()}
-
-    if sub == "add":
-        title = rest.strip()
-        if not title:
-            return {
-                "message": "Usage: /todo add <task>",
-                "todo_items": agent._todo.get_items(),
-            }
-        items = agent._todo.get_items()
-        next_id = max((int(i.get("id", 0)) for i in items), default=0) + 1
-        items.append({"id": next_id, "title": title[:100], "status": "not-started"})
-        agent._todo.set_from_tool(items)
-        return {"message": f"Added todo #{next_id}.", "todo_items": agent._todo.get_items()}
-
-    return {
-        "message": "Todo commands: /todo show | /todo clear | /todo set <a; b; c> | /todo add <task>",
-        "todo_items": agent._todo.get_items(),
-    }
 
 
 def _search_skill_titles(skills: dict[str, str], query: str, limit: int = 12) -> list[str]:
@@ -731,19 +632,9 @@ async def chat(request: ChatRequest, raw_request: Request):
             "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}],
         }
 
-    async def _direct_stream(content: str, todo_items: Optional[list[dict]] = None):
-        if todo_items is not None:
-            yield create_todo_chunk(todo_items)
+    async def _direct_stream(content: str):
         yield create_stream_chunk(content=content, finish_reason="stop")
         yield "data: [DONE]\n\n"
-
-    todo_cmd = _handle_todo_command(agent, user_message)
-    if todo_cmd is not None:
-        msg = str(todo_cmd.get("message", "")).strip() or "Done."
-        todo_items = todo_cmd.get("todo_items", [])
-        if request.stream:
-            return StreamingResponse(_direct_stream(msg, todo_items), media_type="text/event-stream")
-        return _direct_completion(msg)
 
     skill_cmd = _handle_skill_command(user_message)
     if skill_cmd is not None:
@@ -901,16 +792,6 @@ async def clear_session(session_id: str):
         except Exception as e:
             logger.warning(f"Error clearing orphaned session {session_id}: {e}")
         return {"cleared": session_id}
-
-
-@app.get("/charts/{chart_filename}")
-async def get_chart(chart_filename: str):
-    if not chart_filename.endswith('.png') or '/' in chart_filename or '\\' in chart_filename:
-        raise HTTPException(status_code=400, detail="Invalid chart filename")
-    chart_path = os.path.join(CHARTS_DIR, chart_filename)
-    if not os.path.exists(chart_path):
-        raise HTTPException(status_code=404, detail="Chart not found")
-    return FileResponse(chart_path, media_type="image/png")
 
 
 @app.get("/api/cluster/status")

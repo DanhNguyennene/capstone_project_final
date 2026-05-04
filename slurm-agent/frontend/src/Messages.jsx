@@ -9,7 +9,7 @@ const SUGGESTIONS = [
   'Show all running jobs',
   'Why is my job pending?',
   'Show cluster resource usage',
-  'Generate a system health chart',
+  'Show system health overview',
   'List failed jobs today',
   'Show GPU resource availability',
 ]

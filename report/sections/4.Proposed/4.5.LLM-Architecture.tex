@@ -1,0 +1,64 @@
+\section{Large Language Model Architecture}
+\label{sec:llm-architecture}
+
+\subsection{ReAct Reasoning Loop}
+
+The agent follows the ReAct paradigm~\cite{yao2022react}, alternating reasoning traces with tool actions:
+
+\begin{equation}
+    (t_1, a_1, o_1), (t_2, a_2, o_2), \ldots, (t_n, a_n, o_n), r
+\end{equation}
+
+where each thought $t_i$ conditions on $(q, t_1, a_1, o_1, \ldots, t_{i-1}, a_{i-1}, o_{i-1})$. This suits HPC operations because Slurm diagnosis typically requires multiple tool calls, and the visible reasoning trace makes decisions auditable.
+
+% TODO: Replace with actual diagram
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.75\textwidth}{\centering\vspace{2cm}\textbf{ReAct Reasoning Loop}\\[0.5em]\small Think $\rightarrow$ Act (tool call) $\rightarrow$ Observe (result) $\rightarrow$ Repeat or Finish\vspace{2cm}}}
+    \caption{ReAct Reasoning Cycle}
+    \label{fig:react-cycle}
+\end{figure}
+
+\subsection{Multi-Provider Model Configuration}
+
+\begin{table}[H]
+    \centering
+    \caption{Supported LLM Providers}
+    \label{tab:llm-providers}
+    \small
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Provider} & \textbf{Interface} & \textbf{Use Case} \\
+        \hline
+        Ollama & Local HTTP API & Development, offline eval, privacy \\
+        OpenAI & Chat Completions API & Production evaluation \\
+        Azure OpenAI & Azure-hosted API & Enterprise deployment \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Configuration is per-session: main model (Observer/Operator reasoning), specialist model (planning/structured output), and temperature (0 for deterministic evaluation). The same system prompts are used across all providers to ensure behavioral differences reflect model capability.
+
+\subsection{Instruction Design}
+
+The \textbf{Observer} prompt defines tool categories, routing rules for Operator handoff, evidence requirements (responses must cite tool output), documentation retrieval triggers, and output structure.
+
+The \textbf{Operator} prompt defines confirmation requirements for destructive operations, scope preservation rules, discovery-read permissions, error handling, and return protocol.
+
+\subsection{Tool Calling Integration}
+
+Two patterns are supported: (1)~native function calling (OpenAI, Azure) where structured JSON tool calls are validated and dispatched; (2)~text-based calling for models without native support, parsed by the runtime. Invalid parameters are rejected with feedback for self-correction.
+
+Read-only tools may execute in parallel within a single reasoning step (e.g., \texttt{squeue}+\texttt{sinfo}+\texttt{sdiag} for cluster overview). Destructive tools always execute sequentially with confirmation.
+
+\subsection{Context Management}
+
+\begin{itemize}
+    \item Chart artifacts stored separately, excluded from subsequent reasoning
+    \item Large tool outputs truncated above a configurable threshold
+    \item Session-scoped history with evaluation isolation per test case
+\end{itemize}
+
+\subsection{Streaming Events}
+
+The structured stream carries: \texttt{token}, \texttt{thinking}, \texttt{tool\_start}, \texttt{tool\_result}, \texttt{chart\_artifact}, \texttt{pending\_action}, \texttt{todo\_update}, and \texttt{status} events. This provides real-time visibility for interactive use and structured trace data for evaluation scoring.

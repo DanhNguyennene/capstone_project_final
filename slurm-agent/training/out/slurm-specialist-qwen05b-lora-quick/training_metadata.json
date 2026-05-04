@@ -1,6 +1,0 @@
-{
-  "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
-  "data": "training/out/specialist_sft.jsonl",
-  "samples": 3135,
-  "adapter_dir": "training/out/slurm-specialist-qwen05b-lora-quick"
-}

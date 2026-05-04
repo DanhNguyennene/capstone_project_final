@@ -1,16 +1,26 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Slurm System Architecture}}{10}{figure.caption.10}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Typical Resource Management using Slurm~\blx@tocontentsinit {0}\cite {abhishek2022dynamic}}}{7}{figure.caption.10}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Transformer Architecture Components~\blx@tocontentsinit {0}\cite {vaswani2017attention}}}{10}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Model Context Protocol Architecture~\blx@tocontentsinit {0}\cite {hou2025mcp}}}{14}{figure.caption.14}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces The ReAct Think-Act-Observe Loop}}{17}{figure.caption.16}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent Application Concept}}{18}{figure.caption.11}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces Slurm Agent Flow Chart}}{19}{figure.caption.12}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces Slurm Agent System Architecture}}{20}{figure.caption.13}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent System Architecture}}{26}{figure.caption.21}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Observer/Operator Routing and Confirmation Flow}}{28}{figure.caption.24}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Request Lifecycle Data Flow}}{29}{figure.caption.28}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces ReAct Reasoning Cycle}}{31}{figure.caption.30}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Confirmation Flow for Dangerous Operations}}{26}{figure.caption.18}%
-\contentsline {figure}{\numberline {5.2}{\ignorespaces Chart Artifact Isolation in the Backend Pipeline}}{28}{figure.caption.19}%
-\contentsline {figure}{\numberline {5.3}{\ignorespaces Frontend Integration Architecture}}{38}{figure.caption.43}%
-\contentsline {figure}{\numberline {5.4}{\ignorespaces Frontend Demo Interface}}{41}{figure.caption.44}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Slurm Agent Chat Interface}}{37}{figure.caption.39}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {6.1}{\ignorespaces Testing Environment Architecture}}{47}{figure.caption.50}%
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{40}{figure.caption.42}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{41}{figure.caption.43}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{41}{figure.caption.44}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Tool Distribution After Normalization}}{42}{figure.caption.45}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Aggregate Scoring Dimensions (Radar Chart)}}{45}{figure.caption.48}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces Pass Rate and Average Score by Category}}{46}{figure.caption.50}%
+\contentsline {figure}{\numberline {6.7}{\ignorespaces Scoring Dimensions by Category (Heatmap)}}{46}{figure.caption.51}%
+\contentsline {figure}{\numberline {6.8}{\ignorespaces Distribution of Overall Scores}}{47}{figure.caption.52}%
+\contentsline {figure}{\numberline {6.9}{\ignorespaces Safety Category: HITL Compliance}}{47}{figure.caption.53}%
+\contentsline {figure}{\numberline {6.10}{\ignorespaces Response Latency by Category}}{48}{figure.caption.54}%
 \addvspace {10\p@ }

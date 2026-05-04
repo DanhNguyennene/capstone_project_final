@@ -1,5 +1,5 @@
 \documentclass[12pt]{report}
-\usepackage[fontsize=13pt]{scrextend}
+\usepackage[fontsize=12pt]{scrextend}
 \usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=2cm]{geometry}
 % \usepackage{svg}
 \usepackage{tgtermes}
@@ -22,7 +22,7 @@
 \usepackage{titlesec}
 \usepackage{listings}
 \usepackage{lscape}
-\linespread{1.5}
+\linespread{1.25}
 \usepackage{hyperref}
 \usepackage{longtable}
 \hypersetup{
@@ -46,7 +46,8 @@
 \newcommand{\Khang}[1]{\textcolor{red!70!pink}{\textbf{\textit{#1}}}}
 
 % Define chapter font size to be 15pt
-\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\chapter}[display]{\normalfont\Large\bfseries}{\chaptertitlename\ \thechapter}{12pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{-20pt}{15pt}
 
 \begin{document}
 
@@ -70,8 +71,6 @@
 \input{sections/contents}
 
 \listoftables
-\newpage
-
 \listoffigures
 \newpage
 
@@ -91,7 +90,13 @@
 
 \input{sections/2.Background/2.1.Slurm}
 
-\input{sections/2.Background/2.2.Text-to-SQL}
+\input{sections/2.Background/2.2.LLM}
+
+\input{sections/2.Background/2.3.MCP}
+
+\input{sections/2.Background/2.4.Agent-Architectures}
+
+% \input{sections/2.Background/2.2.Text-to-SQL} % Removed: tangential to core contribution
 
 \chapter{Related Tools and Works}
 \label{chapter:related}
@@ -102,7 +107,13 @@
 
 \input{sections/4.Proposed/4.1.Introduction}
 
+\input{sections/4.Proposed/4.2.Requirements}
+
 \input{sections/4.Proposed/4.3.Architecture}
+
+\input{sections/4.Proposed/4.4.Module-Specifications}
+
+\input{sections/4.Proposed/4.5.LLM-Architecture}
 
 \chapter{Implementation}
 
@@ -126,7 +137,6 @@
 
 \input{sections/references}
 
-\input{sections/appendixes/plan}
-% add appendix later on
+% \input{sections/appendixes/plan} % Moved to supplementary
 
 \end{document}

@@ -39,16 +39,30 @@ Before production deployment, the system should integrate:
 
 These controls are essential for institutional HPC environments.
 
-\subsection{Priority 4: Productization and UX}
+\subsection{Priority 4: Multi-Turn Behavioral Evaluation}
 
-On the frontend/runtime side, practical enhancements include:
+The current benchmark evaluates single-turn interactions exclusively. Real users interact across multiple turns---asking follow-up questions, refining requests, and referencing prior context. Future work should:
 
 \begin{itemize}
-    \item clearer operator-facing explanations for pending confirmations,
-    \item tighter per-test and per-run trace inspection for debugging,
-    \item improved latency optimization in high-cost categories.
+    \item extend the dataset format to support ordered turn sequences with per-turn ground truth,
+    \item modify the evaluation runner to maintain session state across turns within a single test case,
+    \item design metrics for context retention (does the agent correctly resolve ``that job'' from a prior turn?) and conversational consistency (does tool routing remain correct across turns?).
 \end{itemize}
+
+Multi-turn evaluation is challenging because the space of valid follow-up behaviors is larger than single-turn, making automated scoring less deterministic.
+
+\subsection{Priority 5: Web-Grounded Retrieval Reproducibility}
+
+The system includes a web search fallback for documentation queries not covered by the local corpus. However, web search results are inherently non-reproducible: page content changes, search rankings shift, and network availability varies. Future work should:
+
+\begin{itemize}
+    \item develop a cached web snapshot mechanism for evaluation (freeze search results at test-creation time),
+    \item create benchmark cases that specifically test the local-RAG-to-web escalation path,
+    \item evaluate whether web-grounded answers improve factual coverage compared to local-only retrieval across version-specific and community-sourced questions.
+\end{itemize}
+
+Until reproducible web grounding is achieved, the evaluation excludes web-dependent cases to maintain result determinism.
 
 \subsection{Summary Roadmap}
 
-In short, the near-term roadmap is: \textbf{stabilize benchmark weaknesses} $\rightarrow$ \textbf{validate on real clusters} $\rightarrow$ \textbf{harden security/governance} $\rightarrow$ \textbf{optimize deployment UX}. This sequence keeps research outcomes aligned with practical HPC adoption constraints.
+In short, the near-term roadmap is: \textbf{stabilize benchmark weaknesses} $\rightarrow$ \textbf{validate on real clusters} $\rightarrow$ \textbf{harden security/governance} $\rightarrow$ \textbf{improve traceability and runtime maintainability}. This sequence keeps research outcomes aligned with practical HPC adoption constraints.

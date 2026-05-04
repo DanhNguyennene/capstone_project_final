@@ -90,8 +90,13 @@ export function useStream({
         // Tool step trace
         if (delta.status_update) {
           const s = delta.status_update
-          if (steps.length === 0 || steps[steps.length - 1] !== s)
-            steps = [...steps, s]
+          if (steps.length === 0 || steps[steps.length - 1]?.text !== s)
+            steps = [...steps, { type: 'step', text: s }]
+        }
+
+        // Raw tool output (terminal display)
+        if (delta.tool_output) {
+          steps = [...steps, { type: 'output', text: delta.tool_output }]
         }
 
         // Pending actions for confirm/cancel buttons

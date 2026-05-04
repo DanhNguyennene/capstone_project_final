@@ -1,221 +1,60 @@
 \section{MCP Server Implementation}
 \label{sec:mcp-implementation}
 
-This section details the implementation of the MCP server that exposes Slurm functionality as tools for the agent system. The server provides the bridge between the AI agents and the underlying cluster infrastructure, translating natural language-derived tool calls into actual Slurm command executions.
+The MCP server bridges the AI agents and Slurm infrastructure, translating tool calls into command executions. It is implemented in Python using the official MCP SDK with asyncio-based non-blocking I/O.
 
-\subsection{Technology Stack}
+\subsection{Design Principles}
 
-The MCP server is implemented using Python 3.10+ as the primary language, selected for its compatibility with the MCP Python SDK and the agent backend. The official MCP Python SDK provides the protocol implementation and server infrastructure. Asynchronous I/O via the asyncio library enables non-blocking command execution, which is essential for maintaining responsiveness when multiple tool calls are in flight. Subprocess management handles the actual Slurm command invocation with proper output capture and error handling.
+\textbf{Stateless tools}: Each tool takes parameters, executes a command, and returns results without maintaining session state between invocations.
 
-\subsection{Architectural Design Decisions}
+\textbf{Injection prevention}: Parameters are never interpolated into shell strings; they are passed as discrete subprocess arguments, preventing command injection regardless of parameter content.
 
-Several key architectural decisions shape the MCP server implementation:
+\textbf{Consistent output}: Explicit format flags (\texttt{--format}, \texttt{--parsable2}) produce pipe-delimited or tabular output suitable for LLM consumption. Empty results return header-only responses.
 
-\subsubsection{Stateless Tool Design}
+\subsection{Tool Surface}
 
-Each tool is implemented as a stateless function that takes parameters, executes a command, and returns results. This design simplifies scaling, testing, and error recovery. No session state is maintained between tool invocations, ensuring that each call is independent and idempotent for read operations.
-
-\subsubsection{Parameter Validation and Command Construction}
-
-Tool parameters are validated before command construction to prevent invalid Slurm command execution. Parameters are never directly interpolated into shell commands; instead, they are passed as discrete arguments to subprocess execution, preventing shell injection vulnerabilities. This parameterized approach ensures that user-provided values cannot alter command structure or execute unintended operations.
-
-\subsubsection{Output Formatting}
-
-The MCP server uses explicit format flags when invoking Slurm commands (e.g., \texttt{--format} for \texttt{squeue} and \texttt{sacct}) to ensure consistent, structured output suitable for LLM consumption. This approach produces pipe-delimited or tabular output that is predictable and easy to parse. Empty result sets are handled gracefully with appropriate header-only responses, and error messages are converted to descriptive responses that the LLM can interpret and communicate to users.
-
-\subsection{Tool Implementation Patterns}
-
-Each Slurm operation is exposed as a distinct tool with well-defined parameters and behavior. Table~\ref{tab:mcp-tools} provides a complete reference of all available tools.
+Table~\ref{tab:mcp-tools} summarizes the 67 tools grouped by operational role.
 
 \begin{table}[H]
     \centering
     \caption{MCP Server Tool Reference}
     \label{tab:mcp-tools}
     \small
-    \begin{tabular}{|l|l|l|}
+    \begin{tabular}{|p{3.5cm}|p{2cm}|p{7.5cm}|}
         \hline
-        \textbf{Tool} & \textbf{Category} & \textbf{Description} \\
+        \textbf{Tool Family} & \textbf{Category} & \textbf{Description} \\
         \hline
-        \multicolumn{3}{|l|}{\textit{Query Tools (Read-Only)}} \\
+        Queue/Job inspection & Query & Current queue, job details, accounting history \\
+        Node/Partition inspection & Query & Partition state, node reasons, topology \\
+        Accounting/Policy & Query & Accounts, QoS, fair-share, priority \\
+        Scheduler diagnostics & Query & Controller ping, backfill health, counters \\
+        Reports/Licenses & Query & Utilization reports, license pools \\
         \hline
-        \texttt{squeue} & Query & List jobs in the queue with filters \\
-        \texttt{sacct} & Query & Job accounting and history records \\
-        \texttt{sinfo} & Query & Node and partition status \\
-        \texttt{scontrol\_show} & Query & Detailed job/node/partition info \\
-        \texttt{sacctmgr\_show} & Query & Account/user/QOS information \\
-        \texttt{sreport} & Query & Usage reports and statistics \\
+        Submission & Action & Batch/interactive submission, file staging \\
+        Job control & Action & Cancel, hold, release, requeue, suspend \\
+        Node control & Action & Drain, resume, power state, GRES updates \\
+        Reservation control & Action & Create, update, delete reservations \\
         \hline
-        \multicolumn{3}{|l|}{\textit{Action Tools (State-Modifying)}} \\
+        Controller admin & Admin & Reconfigure, shutdown, debug, tokens \\
+        Accounting admin & Admin & Add/modify/delete accounts, archive \\
+        Triggers & Admin & List, create, clear event triggers \\
         \hline
-        \texttt{sbatch} & Submit & Submit batch job scripts \\
-        \texttt{scancel} & Control & Cancel running or pending jobs \\
-        \texttt{scontrol\_hold} & Control & Hold pending jobs \\
-        \texttt{scontrol\_release} & Control & Release held jobs \\
-        \texttt{scontrol\_update} & Control & Modify job parameters \\
-        \texttt{scontrol\_requeue} & Control & Requeue failed jobs \\
-        \texttt{srun} & Interactive & Run commands on allocated nodes \\
-        \texttt{salloc} & Interactive & Obtain interactive allocation \\
-        \hline
-        \multicolumn{3}{|l|}{\textit{Administrative Tools (High Risk)}} \\
-        \hline
-        \texttt{scontrol\_create} & Admin & Create partitions/reservations \\
-        \texttt{scontrol\_delete} & Admin & Delete partitions/reservations \\
-        \texttt{scontrol\_reconfigure} & Admin & Reload Slurm configuration \\
-        \texttt{sacctmgr\_add} & Admin & Add accounts/users/QOS \\
-        \texttt{sacctmgr\_modify} & Admin & Modify account settings \\
-        \texttt{sacctmgr\_delete} & Admin & Delete accounts/users \\
-        \hline
-        \multicolumn{3}{|l|}{\textit{Extended Tools}} \\
-        \hline
-        \texttt{run\_analysis} & Script & Execute predefined analysis scripts \\
-        \texttt{generate\_chart} & Visual & Generate data visualizations \\
-        \texttt{web\_search} & Search & Search web for documentation/solutions \\
+        Documentation & Reference & Local Slurm docs lookup \\
+        Web search & Reference & DuckDuckGo search + page fetch \\
         \hline
     \end{tabular}
 \end{table}
 
-\subsubsection{Query Tools}
+\subsection{Dual Execution Modes}
 
-Query tools retrieve information from the Slurm cluster without modifying state. Each tool follows a consistent pattern: accept optional filter parameters, construct the appropriate Slurm command, execute asynchronously with timeout protection, and return formatted results. Error conditions return descriptive messages rather than raising exceptions, enabling the LLM to communicate issues to users.
+\textbf{Real mode}: Tool calls invoke actual Slurm CLI commands on the management node with subprocess timeout protection (30s default).
 
-\subsubsection{Action Tools}
+\textbf{Mock mode}: Tools operate against mutable in-memory state simulating a Slurm cluster. Five scenarios (healthy, failed, pending, mixed, debug\_needed) provide reproducible starting states. The evaluator resets state before each test case and verifies source-to-target transitions.
 
-Action tools modify cluster state through operations such as job submission, cancellation, hold, and release. These tools require additional safeguards because their effects are not reversible. The server implementation focuses on parameter validation and clear result reporting.
+\subsection{Web Search}
 
-For dangerous operations (those that can cause data loss or significant disruption), the tools themselves do not implement confirmation logic. Instead, the agent backend layer intercepts these calls through the confirmation context mechanism described in Section~\ref{sec:agent-backend}. This separation of concerns keeps the MCP server focused on command execution while the agent layer handles safety policies.
+The \texttt{web\_search} tool uses DuckDuckGo's HTML search to retrieve external documentation. The \texttt{fetch\_web\_content} tool retrieves full page text by stripping HTML to readable content (max 4000 chars). These complement the local documentation corpus for topics not covered offline.
 
-\subsubsection{Predefined Analysis Scripts}
+\subsection{Transport}
 
-The \texttt{run\_analysis} tool executes predefined shell scripts that perform comprehensive multi-step analysis operations. These scripts encapsulate common administrative workflows that would otherwise require multiple tool calls and complex reasoning. Table~\ref{tab:analysis-scripts} lists the available scripts.
-
-\begin{table}[H]
-    \centering
-    \caption{Predefined Analysis Scripts}
-    \label{tab:analysis-scripts}
-    \small
-    \begin{tabular}{|l|l|p{6cm}|}
-        \hline
-        \textbf{Script ID} & \textbf{Category} & \textbf{Description} \\
-        \hline
-        \texttt{analyze\_my\_jobs} & Jobs & Comprehensive analysis of user's running, pending, completed, and failed jobs \\
-        \texttt{analyze\_failed\_jobs} & Debug & Deep analysis of failed, timed out, and OOM jobs with pattern identification \\
-        \texttt{analyze\_pending\_jobs} & Debug & Why jobs are pending---resource availability, queue position, wait estimates \\
-        \texttt{analyze\_cluster\_status} & Cluster & Complete cluster status---all partitions, nodes, utilization \\
-        \texttt{analyze\_gpu\_resources} & Cluster & GPU availability, allocation status, queue depth \\
-        \texttt{analyze\_my\_usage} & User & Usage statistics, resource consumption, fair share standing \\
-        \texttt{analyze\_my\_efficiency} & User & Job efficiency analysis---over-requesting resources? \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsubsection{Visualization Tools}
-
-The \texttt{generate\_chart} tool creates data visualizations using predefined Python scripts that gather cluster data and render Mermaid diagrams. Each chart script is self-contained, executing necessary Slurm queries internally. Table~\ref{tab:chart-scripts} lists available visualizations.
-
-\begin{table}[H]
-    \centering
-    \caption{Predefined Chart Visualizations}
-    \label{tab:chart-scripts}
-    \small
-    \begin{tabular}{|l|p{8cm}|}
-        \hline
-        \textbf{Chart ID} & \textbf{Description} \\
-        \hline
-        \texttt{system\_health} & Dashboard showing node health, job counts, and resource utilization \\
-        \texttt{cluster\_topology} & Visual representation of cluster structure and node states \\
-        \texttt{pending\_analysis} & Analysis of pending jobs with resource requirements \\
-        \texttt{resource\_map} & Resource allocation across partitions \\
-        \texttt{job\_lifecycle} & Timeline visualization of job state transitions \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsubsection{Web Search Tool}
-
-The \texttt{web\_search} tool enables the agent to retrieve external documentation, troubleshooting guides, and solutions for Slurm-related issues. This capability extends the agent's knowledge beyond its training data, allowing it to provide up-to-date assistance.
-
-\paragraph{Search Engine Integration}
-
-The tool uses DuckDuckGo's search API via the \texttt{duckduckgo-search} Python library, selected for its privacy-focused approach and lack of rate limiting compared to commercial alternatives. Search queries are passed directly to the API without modification---the implementation follows a ``pass-through'' design where user intent is preserved rather than enhanced or reformulated. The \texttt{region} parameter is set to \texttt{us-en} to ensure English-language results regardless of server location.
-
-\paragraph{Content Fetching}
-
-Beyond returning search snippets, the tool supports optional full-page content retrieval via the \texttt{fetch\_content} parameter. When enabled, the tool fetches the HTML content of top results and extracts readable text by:
-\begin{enumerate}
-    \item Removing script, style, navigation, and footer elements
-    \item Stripping HTML tags while preserving paragraph structure
-    \item Decoding HTML entities and normalizing whitespace
-    \item Truncating to a configurable maximum length (default: 3000 characters)
-\end{enumerate}
-
-\paragraph{Bot Detection Bypass}
-
-Many websites employ bot detection mechanisms that block requests from automated tools. The implementation uses a layered HTTP client strategy:
-\begin{enumerate}
-    \item \textbf{Primary}: The \texttt{curl\_cffi} library with browser impersonation (\texttt{chrome110} profile) provides TLS fingerprints identical to real browsers, bypassing fingerprint-based blocking used by sites like StackOverflow.
-    \item \textbf{Fallback}: The \texttt{httpx} library with browser-like headers (User-Agent, Accept-Language) handles sites without aggressive bot detection.
-\end{enumerate}
-
-This approach successfully retrieves content from previously-blocked sources including StackOverflow, Reddit, and documentation sites that reject standard Python HTTP requests.
-
-\paragraph{Parameters}
-
-The web search tool accepts the following parameters:
-\begin{itemize}
-    \item \texttt{query} (required): The search query string
-    \item \texttt{max\_results} (optional, default: 5): Maximum number of results to return
-    \item \texttt{fetch\_content} (optional, default: false): Whether to fetch full page content
-    \item \texttt{fetch\_top\_n} (optional, default: 2): Number of top results to fetch content for
-\end{itemize}
-
-\paragraph{Limitations}
-
-The web search implementation has several inherent limitations:
-\begin{itemize}
-    \item \textbf{Region filtering unreliability}: DuckDuckGo's \texttt{region} parameter does not reliably filter results by language. The implementation includes a domain-based post-filter to exclude known non-English sites (e.g., zhihu.com, baidu.com), but this requires explicit domain enumeration and cannot catch all cases.
-    \item \textbf{Bot detection}: Despite browser impersonation, some websites still block automated requests, resulting in failed content fetches for certain URLs.
-    \item \textbf{Content extraction quality}: HTML-to-text extraction is heuristic-based and may lose important formatting, code blocks, or structural information from complex pages.
-    \item \textbf{Rate limiting}: High-frequency searches may trigger DuckDuckGo's rate limiting, causing temporary failures.
-\end{itemize}
-
-\subsection{Command Execution Infrastructure}
-
-Command execution is handled through a utility layer that provides consistent error handling, timeout management, and output processing.
-
-\subsubsection{Asynchronous Execution}
-
-Commands are executed asynchronously using Python's asyncio subprocess API. This non-blocking approach ensures that the MCP server remains responsive even when individual commands take significant time to complete. Multiple concurrent tool calls can be processed without blocking each other.
-
-\subsubsection{Timeout Management}
-
-All command executions are bounded by configurable timeouts (default: 30 seconds). This prevents the system from hanging indefinitely on unresponsive commands or deadlocked Slurm daemons. When a timeout occurs, the subprocess is terminated and an appropriate error message is returned to the caller.
-
-\subsubsection{Error Categorization}
-
-Command execution errors are categorized for appropriate handling: non-zero exit codes indicate Slurm-level errors (invalid job ID, permission denied) and return the stderr content as the error message; timeout errors indicate infrastructure issues and suggest retry or escalation; and exception errors indicate unexpected failures requiring investigation.
-
-\subsection{Transport Configuration}
-
-The server supports SSE (Server-Sent Events) transport for remote connections, enabling the agent backend to connect over HTTP. This transport choice reflects the deployment architecture where the MCP server may run on a different host than the agent backend, particularly in scenarios where the MCP server runs directly on a cluster head node while the agent backend runs on a separate application server.
-
-The SSE transport maintains a persistent connection over which tool calls and responses are transmitted as events. This eliminates the overhead of connection establishment for each tool call while providing reliable delivery through HTTP infrastructure.
-
-\subsection{Security Considerations}
-
-The MCP server implementation incorporates multiple security measures appropriate for HPC environment deployment.
-
-\subsubsection{Command Injection Prevention}
-
-As described above, all tool parameters are validated and passed as discrete subprocess arguments rather than interpolated into shell command strings. This fundamental design choice prevents command injection attacks regardless of parameter content.
-
-\subsubsection{Read-Focused Default Behavior}
-
-The primary tools focus on read operations that cannot cause harm. Write operations are explicitly categorized and can be restricted through configuration or agent-level policies. This defense-in-depth approach ensures that even if an attacker gains access to tool invocation, the damage potential is limited.
-
-\subsubsection{Output Sanitization}
-
-Command outputs are processed before returning to ensure that sensitive information is not inadvertently exposed. This includes filtering of internal paths, configuration details, and any data that should not be visible to end users.
-
-\subsubsection{Timeout Enforcement}
-
-Mandatory timeouts on all command executions prevent resource exhaustion attacks that could otherwise consume server resources indefinitely.
+The server uses SSE (Server-Sent Events) transport for remote connections, enabling the agent backend to connect over HTTP. This supports deployment where the MCP server runs on a cluster head node while the agent runs on a separate application server.

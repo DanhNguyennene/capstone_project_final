@@ -7,7 +7,7 @@ The current Slurm Agent demonstrates promising behavior on the curated benchmark
 
 \textbf{Mock-state dominance.} The benchmark primarily uses deterministic mock scenarios. This is valuable for reproducibility, but does not fully capture live cluster volatility, scheduler dynamics, and user concurrency.
 
-\textbf{Curated-benchmark emphasis.} The 93.6\% pass rate is measured on the curated 455-case benchmark. Because this benchmark informed development, it should not be interpreted as proof that the agent is robust to all Slurm phrasings or workflows.
+\textbf{Curated-benchmark emphasis.} The active benchmark is a manually constructed synthetic scenario grid. Because the benchmark informed development, results on this dataset should be interpreted as controlled coverage of intended Slurm workflows rather than proof that the agent is robust to all possible Slurm phrasings or site policies.
 
 \textbf{Held-out paraphrase coverage is still small.} A separate 40-case paraphrase/generalization split has been added, but it is a first robustness probe rather than an exhaustive natural-language evaluation.
 
@@ -15,11 +15,11 @@ The current Slurm Agent demonstrates promising behavior on the curated benchmark
 
 \subsection{Behavioral Reliability Limitations}
 
-The latest curated 455-case results still expose reliability gaps in specific categories:
+Development-stage construction checks exposed reliability risks in specific workflow families:
 
 \begin{itemize}
-    \item \textbf{submission}: 77\% pass in the curated snapshot,
-    \item \textbf{action}: 83\% pass,
+    \item \textbf{submission}: batch scripts, dependencies, GPU/GRES requests, and reservation constraints,
+    \item \textbf{action}: update, release, cancellation, and other mutation-heavy operations,
     \item residual failures involving release/update actions, dependency submissions, and strict keyword/scorer alignment.
 \end{itemize}
 
@@ -53,9 +53,9 @@ These failures are predominantly structural (tool/routing/HITL/state mismatches)
 
 \textbf{Judge dependence.} Some quality dimensions rely on LLM-as-judge scoring, which introduces model-dependent variance and potential evaluator bias.
 
-\textbf{Metric interpretation.} The correct claim is that the agent passes 93.6\% on the curated benchmark. Robustness remains partially evaluated until the held-out paraphrase split, repeated runs, and live-cluster user prompts are reported.
+\textbf{Metric interpretation.} Benchmark metrics should be tied to a specific dataset artifact, model stack, and run identifier. Development-stage runs are useful for validating the dataset and scoring method, but they should not be confused with final robustness claims. Robustness remains partially evaluated until the held-out paraphrase split, repeated runs, and live-cluster user prompts are reported.
 
-\subsection{TODO for Limitation Mitigation}
+\subsection{Limitation Mitigation Plan}
 
 \begin{itemize}
     \item Add repeated full-run statistics (pass\textasciicircum{}k and confidence intervals) under the pinned local-Ollama model stack.

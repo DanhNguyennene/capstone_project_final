@@ -46,13 +46,6 @@ slurm-agent/
 │   │   ├── analyze_pending_jobs.sh
 │   │   ├── analyze_my_efficiency.sh
 │   │   └── analyze_my_usage.sh
-│   │
-│   └── chart-generators/         # Mermaid chart generation
-│       ├── chart_system_health.py
-│       ├── chart_cluster_topology.py
-│       ├── chart_resource_map.py
-│       ├── chart_pending_analysis.py
-│       └── chart_job_lifecycle.py
 │
 ├── evaluation/                   # Testing & Evaluation
 │   ├── evaluate_agent.py         # ★ 45-test automated evaluation suite

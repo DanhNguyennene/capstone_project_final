@@ -1,0 +1,83 @@
+{
+  "timestamp": "20260504_224547",
+  "scenario": "all",
+  "metrics": {
+    "n_tests": 1,
+    "BAR": 0.0,
+    "SVR": 0.0,
+    "CSR": 1.0,
+    "bad_test_case_rate": 0.0,
+    "pass_rate": 0.0,
+    "avg_tool_recall": 0.0,
+    "avg_routing_match": 1.0,
+    "avg_hitl_match": 1.0,
+    "avg_keyword_score": 0.0,
+    "avg_state_match": 1.0,
+    "avg_judge_score": 0.0,
+    "avg_overall": 0.0,
+    "avg_latency_s": 18.92
+  },
+  "pass_k": {},
+  "weights": {
+    "tool_recall": 0.3,
+    "routing_match": 0.25,
+    "hitl_match": 0.25,
+    "keyword_score": 0.1,
+    "state_match": 0.1
+  },
+  "results": [
+    {
+      "test_id": "account_bal200_126",
+      "scenario": "healthy",
+      "category": "account",
+      "prompt": "Use HITL if this accounting request changes state: Show all accounts on the cluster",
+      "gt_tools": [
+        "sacctmgr_list",
+        "lookup_slurm_docs"
+      ],
+      "gt_handoff": false,
+      "gt_hitl": false,
+      "gt_keywords": [
+        "account"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Error code: 400 - {'error': {'message': 'registry.ollama.ai/library/slurm-agent-ft:latest does not support tools', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 1.0,
+      "hitl_match": 1.0,
+      "keyword_score": 0.0,
+      "state_match": 1.0,
+      "judge_score": 0.0,
+      "judge_reason": "",
+      "judge_ran": false,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 18.92,
+      "is_variant": true,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Error code: 400 - {'error': {'message': 'registry.ollama.ai/library/slurm-agent-ft:latest does not support tools', 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "sacctmgr_show",
+        "lookup_slurm_docs"
+      ],
+      "gt_tool_aliases": {
+        "sacctmgr_show": [
+          "sacctmgr_show",
+          "sacctmgr_list"
+        ],
+        "lookup_slurm_docs": [
+          "lookup_slurm_docs"
+        ]
+      },
+      "gt_tools_accepted": [
+        "sacctmgr_show / sacctmgr_list",
+        "lookup_slurm_docs"
+      ]
+    }
+  ]
+}

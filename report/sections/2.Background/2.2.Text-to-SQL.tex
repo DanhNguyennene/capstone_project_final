@@ -1,52 +1,44 @@
-\section{Text-to-SQL Concept}
+\section{Natural Language to Structured Operations}
 \label{sec:text-to-sql}
 
-Text-to-SQL is the task of translating natural language questions into executable SQL queries over a given database schema. In recent years, it has become a representative benchmark for grounded semantic parsing because the output is formally structured, directly executable, and easy to verify by execution results \cite{zhong2017seq2sql, yu2018spider}.
+Text-to-SQL is the task of translating natural language questions into executable SQL queries over a given database schema. Although the Slurm Agent does not expose SQL to users, Text-to-SQL provides a useful analogy for this project: both problems convert informal language into constrained, executable operations over a structured environment. In Text-to-SQL, the structured environment is a database schema; in the Slurm Agent, it is the MCP tool schema, the Slurm command surface, the current cluster state, and the safety policy attached to each action. The same underlying principles appear in this thesis as structured grounding against explicit tool schemas, constrained action generation, execution-time validation, and human-in-the-loop confirmation for operations that may affect cluster state.
+
+This analogy helps clarify why a Slurm assistant cannot be evaluated only as a chatbot. The system must map user intent to the correct operation, ground that operation in available tools, verify that the operation is safe for the current state, and produce a response that is consistent with actual execution results.
 
 \subsection{Problem Formulation}
 
-Given a user question $q$ and schema context $S$ (tables, columns, and relations), the model predicts an SQL query $y$:
+Given a user question $q$ and structured context $S$, a grounded semantic parser predicts an executable operation $y$:
 
 \begin{equation}
 \hat{y} = \arg\max_y P(y \mid q, S)
 \end{equation}
 
-Unlike free-form text generation, valid output must satisfy SQL grammar and schema constraints. Therefore, many systems combine language understanding with structural constraints during decoding.
+Unlike free-form text generation, valid output must satisfy structural constraints. In a database setting, those constraints include SQL grammar and schema validity. In this project, they include tool availability, tool parameters, cluster state, handoff policy, and human-in-the-loop requirements.
 
-\subsection{Typical Text-to-SQL Pipeline}
+\subsection{Typical Grounded Operation Pipeline}
 
-A practical Text-to-SQL pipeline usually contains four steps:
+A practical natural-language-to-operation pipeline usually contains four steps:
 
 \begin{itemize}
-    \item \textbf{Schema linking}: map question mentions (e.g., ``running jobs'', ``gpu partition'') to schema elements.
-    \item \textbf{Intent and operator inference}: determine filters, aggregations, joins, ordering, and grouping.
-    \item \textbf{Constrained decoding}: generate SQL under grammar/schema constraints.
-    \item \textbf{Execution validation}: run query and check whether output is plausible and non-empty when expected.
+    \item \textbf{Schema linking}: map question mentions such as ``running jobs'', ``GPU partition'', ``QoS limit'', or ``pending reason'' to available Slurm tools and fields.
+    \item \textbf{Intent and operator inference}: determine whether the user wants monitoring, diagnosis, documentation, submission, job control, or administrative action.
+    \item \textbf{Constrained operation selection}: select tools under tool-schema, state, and safety constraints.
+    \item \textbf{Execution validation}: run the tool or queue a pending action, then check whether observed behavior matches the expected state and response evidence.
 \end{itemize}
 
-Modern approaches improve this process with relation-aware schema encoding and stronger schema-question alignment \cite{wang2020ratsql}.
+Modern structured-operation systems improve reliability by making the schema explicit, narrowing allowed actions, and validating outputs against execution evidence \cite{wang2020ratsql}. These ideas are reused in the Slurm Agent through tool-schema grounding, routing constraints, and confirmation boundaries rather than through SQL generation.
+
+
 
 \subsection{Core Challenges}
 
-Text-to-SQL remains difficult due to:
+Grounded operation generation remains difficult due to:
 
 \begin{itemize}
     \item \textbf{Ambiguity}: natural language can under-specify filters or aggregation intent.
-    \item \textbf{Schema scale}: large schemas increase linking and join complexity.
-    \item \textbf{Compositional queries}: nested logic and multi-table reasoning are error-prone.
-    \item \textbf{Execution risk}: syntactically valid SQL may still be semantically wrong.
+    \item \textbf{Schema scale}: broad tool surfaces increase linking and tool-selection complexity.
+    \item \textbf{Compositional requests}: multi-step logic, conditional actions, and mixed read/write workflows are error-prone.
+    \item \textbf{Execution risk}: a syntactically valid operation may still be unsafe or semantically wrong for the current cluster state.
 \end{itemize}
 
-For this reason, evaluation usually combines exact-match metrics with execution-based correctness.
-
-\subsection{Relevance to This Project}
-
-Although the Slurm Agent does not directly generate SQL for end users, Text-to-SQL provides an important conceptual analogue: \textbf{mapping natural language into constrained, executable system operations}. The same principles are reused here:
-
-\begin{itemize}
-    \item structured grounding against an explicit tool/schema interface,
-    \item constrained action generation,
-    \item execution-time validation and safety checks.
-\end{itemize}
-
-In this thesis, these ideas appear as tool-schema grounding, routing constraints, and human-in-the-loop confirmation for dangerous operations.
+For this reason, evaluation should combine operation-level metrics with execution-based correctness. This motivates the tool recall, routing, HITL, keyword, and state-transition metrics used later in the thesis.

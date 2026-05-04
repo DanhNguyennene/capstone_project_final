@@ -171,14 +171,14 @@ flowchart LR
 
 ## 5. Confirmation/Safety Module
 
-**Concept**: Safety guardrails for dangerous operations
+**Concept**: Confirmation controls for dangerous operations
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
 flowchart TB
-    Request([Dangerous Action<br/>e.g. Cancel Job]) --> Guard{Guarded<br/>Wrapper}
+    Request([Dangerous Action<br/>e.g. Cancel Job]) --> Confirm{Confirmation<br/>Workflow}
     
-    Guard -->|Queue| DB[(SQLite DB<br/>Pending Actions)]
+    Confirm -->|Queue| DB[(SQLite DB<br/>Pending Actions)]
     DB -->|Ask| User{User<br/>Confirms?}
     
     User -->|Yes| Execute[Execute via MCP]
@@ -187,11 +187,11 @@ flowchart TB
     Execute -->|Success| Result1([✅ Completed])
     Cancel --> Result2([❌ Cancelled])
     
-    Guard -.Safe Tool.-> Direct[Execute<br/>Immediately]
+    Confirm -.Read-only Tool.-> Direct[Execute<br/>Immediately]
     Direct --> Result3([✅ Success])
     
     style Request fill:#3b82f6,stroke:#2563eb,stroke-width:3px,color:#fff
-    style Guard fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#fff
+    style Confirm fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#fff
     style DB fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
     style Execute fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:#fff
     style Cancel fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
@@ -201,7 +201,7 @@ flowchart TB
 ```
 
 **Key Components**:
-- Guarded wrapper intercepts dangerous operations
+- Queued-action workflow captures dangerous operations
 - SQLite persistent queue
 - User confirmation flow
 - Safe tools bypass confirmation
@@ -266,7 +266,7 @@ flowchart TB
 
 ## 7. Agent Tool Access & Safety Model
 
-**Concept**: Role-based tool access with safety guardrails
+**Concept**: Role-based tool access with confirmation controls
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'fontSize':'14px'}}}%%
@@ -402,7 +402,7 @@ flowchart TB
 
 All 7 modules work together to provide:
 - **Stateful conversational AI** for HPC cluster management
-- **Safety guardrails** for dangerous operations
+- **Confirmation workflow** for dangerous operations
 - **Role-based tool access** with least-privilege principle
 - **Pre-built analysis and visualization** tools
 - **Persistent session state** across requests

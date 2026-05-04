@@ -1,0 +1,63 @@
+\section{Module Specifications}
+\label{sec:module-specifications}
+
+This section specifies the operational workflow of each functional module. Each module is described by its role, processing stages, and interaction contracts.
+
+\subsection{Observer Module}
+
+The Observer is the primary entry point for all requests and handles read-only operations. It follows a ReAct loop: (1)~classify user intent, (2)~select and invoke read-only MCP tools, (3)~chain additional tool calls if evidence is insufficient, (4)~synthesize a grounded response. If a state-changing operation is detected, the Observer produces a structured handoff containing the classified intent, gathered evidence, and target identifiers, then transfers control to the Operator.
+
+The Observer accesses 40+ read-only tools spanning queue inspection (\texttt{squeue}), node status (\texttt{sinfo}), job history (\texttt{sacct}), scheduler diagnostics (\texttt{sdiag}, \texttt{sprio}), resource statistics (\texttt{sstat}, \texttt{sreport}), configuration display (\texttt{scontrol\_show}), documentation (\texttt{lookup\_slurm\_docs}), and web search.
+
+\subsection{Operator Module}
+
+The Operator manages all state-changing operations. It is activated exclusively through Observer handoffs and enforces a Human-in-the-Loop (HITL) confirmation protocol before any destructive action.
+
+\textbf{Workflow}: (1)~Receive handoff with classified intent and targets. (2)~Optionally verify current state with a discovery read. (3)~Present the planned action to the user via a pending action event. (4)~Block until explicit user confirmation or cancellation. (5)~Execute the tool call upon confirmation. (6)~Perform post-execution verification and return results.
+
+\textbf{Tool Classification}: Tools are dynamically classified at startup into three categories---\emph{analysis} (read-only, no confirmation needed), \emph{safe} (information retrieval), and \emph{dangerous} (state-modifying, always requires HITL). Any tool whose name or description implies state modification is classified as dangerous.
+
+\subsection{MCP Tool Layer}
+
+The MCP server provides 67 typed tools organized into functional groups. Table~\ref{tab:mcp-tool-groups} shows the distribution across operational categories. The grouping reflects Slurm's own command families: read-only monitoring tools dominate (suitable for the Observer), while job control, node management, and accounting tools require Operator-level confirmation before execution.
+
+\begin{table}[H]
+    \centering
+    \caption{MCP Tool Groups}
+    \label{tab:mcp-tool-groups}
+    \small
+    \begin{tabular}{|l|c|l|}
+        \hline
+        \textbf{Group} & \textbf{Count} & \textbf{Examples} \\
+        \hline
+        Queue/Monitoring & 10 & \texttt{squeue}, \texttt{sinfo}, \texttt{sacct}, \texttt{sdiag} \\
+        Job Control & 8 & \texttt{sbatch}, \texttt{scancel}, \texttt{scontrol\_hold} \\
+        Node Management & 6 & \texttt{scontrol\_node}, power up/down \\
+        Reservations & 4 & create/delete/update reservation \\
+        Accounting & 8 & \texttt{sacctmgr} show/add/modify/delete \\
+        Cluster Admin & 5 & reconfigure, shutdown \\
+        Documentation \& Web & 3 & \texttt{lookup\_slurm\_docs}, \texttt{web\_search} \\
+        Other (triggers, charts, mock) & 23 & triggers, chart generators, test utilities \\
+        \hline
+        \textbf{Total} & \textbf{67} & \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Dual Execution Mode}: The server supports \emph{real mode} (translates tool calls to Slurm CLI commands) and \emph{mock mode} (operates on mutable in-memory state with five predefined scenarios). Mock mode enables deterministic evaluation from known starting states.
+
+\textbf{Parameter Validation}: Before execution, the MCP layer validates job IDs, node names, partition names, and scans batch scripts for dangerous patterns, providing a safety layer independent of LLM reasoning quality.
+
+\subsection{Documentation Retrieval}
+
+A local corpus of ~130 pages of official Slurm documentation enables grounded answers without relying on LLM parametric memory. The \texttt{lookup\_slurm\_docs} tool performs keyword-based lookup against an indexed corpus. When local docs are insufficient, the agent falls back to \texttt{web\_search} and \texttt{fetch\_web\_content} for external sources.
+
+\subsection{Evaluation Pipeline}
+
+Each benchmark test case specifies: a natural-language request, source cluster state, target state, expected tools, routing decision, and HITL requirement. Scoring uses five weighted dimensions:
+
+\begin{equation}
+    \text{Overall} = 0.30 \cdot \text{ToolRecall} + 0.25 \cdot \text{Routing} + 0.25 \cdot \text{HITL} + 0.10 \cdot \text{Keywords} + 0.10 \cdot \text{State}
+\end{equation}
+
+A case passes when overall $\geq 0.80$. Aggregate metrics include pass rate, behavioral agreement rate, and safety violation rate. An optional LLM-as-judge provides supplementary 1--5 quality scores without affecting pass/fail determination.

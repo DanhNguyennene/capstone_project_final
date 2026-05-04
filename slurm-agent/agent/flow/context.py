@@ -5,7 +5,6 @@ Session & context primitives for the Slurm agent.
 - PendingActionsStore   — SQLite-backed queue for dangerous actions awaiting confirmation
 - SlurmContext          — per-run context injected via RunContextWrapper
 """
-import copy
 import json
 import logging
 import re
@@ -35,12 +34,6 @@ class ChartFilteredSession:
     @property
     def session_settings(self):
         return getattr(self._session, 'session_settings', None)
-
-    @staticmethod
-    def _strip_charts(text: str) -> str:
-        if not text:
-            return text
-        return re.sub(r"```mermaid\n.*?```", "", text, flags=re.DOTALL).strip()
 
     @staticmethod
     def _sanitize_tool_arguments(args: str) -> str:
@@ -89,17 +82,6 @@ class ChartFilteredSession:
                 item = {**item, "arguments": cleaned_args}
             return item
 
-        if hasattr(item, "content"):
-            if isinstance(item.content, str):
-                cleaned = ChartFilteredSession._strip_charts(item.content)
-                if hasattr(item, "_replace"):
-                    return item._replace(content=cleaned)
-                try:
-                    new = copy.copy(item)
-                    new.content = cleaned
-                    return new
-                except Exception:
-                    pass
         return item
 
     async def get_items(self, limit=None):
@@ -233,7 +215,6 @@ class SlurmContext:
     """Per-run context passed through RunContextWrapper.context."""
 
     session_id: str = "default"
-    chart_artifacts: List[str] = field(default_factory=list)
     operator_actions_taken: int = 0  # count of dangerous tools executed this run
     operator_required_tool: str = ""  # optional per-handoff required action tool
     operator_action_request: str = ""  # latest structured action request from Observer handoff
@@ -277,11 +258,6 @@ class SlurmContext:
         self.operator_no_targets_found = False
         self.operator_blocked_reason = ""
         self.operator_last_discovery_output = ""
-
-    # ── chart artifacts ──────────────────────────────────────────────────────
-    def add_chart_artifact(self, mermaid_code: str):
-        self.chart_artifacts.append(mermaid_code)
-        logger.debug(f"Chart stored ({len(mermaid_code)} chars), total={len(self.chart_artifacts)}")
 
     # ── pending actions ──────────────────────────────────────────────────────
     def get_pending_actions(self) -> List[Dict[str, Any]]:

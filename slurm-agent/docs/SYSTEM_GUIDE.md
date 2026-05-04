@@ -38,7 +38,6 @@ FastAPI backend  ─────────────────────
 | Read queue, nodes, history | `squeue`, `sinfo`, `sacct`, `scontrol_show` |
 | Scheduler diagnostics | `sdiag`, `sprio`, `sstat` |
 | Analyse / diagnose jobs | `diagnose_job`, `run_analysis` (9 script types) |
-| Generate Mermaid charts | `generate_chart` (6 types) |
 | Look up workflow guides | `lookup_skill` (17 `.md` guides, loaded lazily) |
 | Manage accounts / QoS | `sacctmgr_show`, `sreport` |
 | Web search | `web_search` |
@@ -123,22 +122,10 @@ The `RunState` object is serialised and stored between HTTP requests so the appr
 
 | Tool | What it does |
 |---|---|
-| `generate_chart` | Render a Mermaid diagram from live cluster data (6 types below) |
 | `lookup_skill` | Load a workflow guide by name (lazy — only fetched when needed) |
 | `run_analysis` | Run one of 9 Python analysis scripts and return structured results |
 | `transfer_to_operator` | Observer → Operator handoff |
 | `transfer_to_observer` | Operator → Observer handoff (auto-called after first action) |
-
-#### Chart types (`generate_chart`)
-
-| Type | Shows |
-|---|---|
-| `gantt` | Job timeline by user/partition |
-| `resource_map` | Node CPU/GPU/memory allocation heatmap |
-| `job_flow` | Dependency graph for a job or job array |
-| `partition_status` | Node counts per partition, coloured by state |
-| `topology` | Physical network topology of nodes |
-| `pending_analysis` | Why pending jobs are waiting (pie/bar) |
 
 #### Analysis script IDs (`run_analysis`)
 

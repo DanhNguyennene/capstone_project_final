@@ -1,56 +1,57 @@
 \section{Summary}
 \label{sec:summary}
 
-This project developed and evaluated a stateful Slurm Agent that enables natural-language interaction for HPC cluster monitoring and control. The final system combines a FastAPI backend, OpenAI Agents SDK orchestration, an MCP-based tool layer, and a React + Vite frontend with integrated chat and evaluation modes.
+This project developed and evaluated a stateful Slurm Agent that enables natural-language interaction for broad Slurm monitoring, diagnosis, documentation assistance, and human-approved control. The main contribution is the Slurm-specific agent architecture and evaluation method: typed command grounding through MCP tools, read/write separation with confirmation, local documentation retrieval, a 3,135-case manually constructed synthetic benchmark dataset, and architecture-aware evaluation.
 
 \subsection{Research Contributions}
 
 This work contributes the following practical outcomes:
 
-\textbf{1. Scenario-Grid Evaluation for Agentic Slurm Workflows.} The project introduces a dataset-driven evaluation design (455 curated cases plus a separate 40-case paraphrase split) that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, and response quality.
+\textbf{1. Broad Slurm Intent Surface.} The project defines and implements natural-language coverage across monitoring, diagnosis, submission, job control, accounting, resource limits, QoS, reservations, scheduler health, configuration inspection, documentation support, and safety edge cases.
 
-\textbf{2. Stateful MCP-Centered Integration.} Slurm interactions are exposed through MCP tools and exercised in deterministic mock scenarios with per-test reset, enabling reproducible behavioral testing.
+\textbf{2. Safety-Centered Observer/Operator Workflow.} The system separates read-only observation from state-changing operation through structured handoffs, pending-action persistence, human confirmation, dynamic tool filtering, and session-scoped cleanup.
 
-\textbf{3. Multi-Agent Reasoning and Safety Flow.} Observer/operator delegation and confirmation workflows are integrated into a single runtime, including explicit pending-action management.
+\textbf{3. Grounded Slurm Knowledge and Tool Execution.} Live cluster facts are retrieved through typed MCP tools, while command syntax, reason-code interpretation, state meanings, and reference-style explanations are supported by local official Slurm documentation retrieval with web search as fallback.
 
-\textbf{4. Structured Streaming Interface.} The backend emits structured SSE deltas (reasoning, tool output, content, pending actions, chart artifacts), allowing richer frontend rendering and traceability.
+\textbf{4. Balanced 3,135-Case Slurm Benchmark Dataset.} The project contributes an active curated benchmark with 3,135 cases across eleven balanced categories. The dataset covers ordinary and advanced Slurm workflows, includes expected tool and routing behavior, and preserves source/target state information for stateful scoring.
 
-\textbf{5. Integrated Evaluation UI.} Evaluation is available as a first-class frontend mode, reducing friction between implementation changes and benchmark validation.
+\textbf{5. Scenario-Grid Evaluation System.} The project implements a dataset-driven evaluation stack that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, response quality, optional LLM-as-judge scoring, parallel worker execution, and persistent result artifacts.
 
 \subsection{Achievement Against Project Goals}
 
-\textbf{Goal 1 (Natural language access to Slurm):} Achieved for read-oriented and account-oriented workflows, with strong category-level performance.
+\textbf{Goal 1 (Natural language access to Slurm):} Achieved across broad read, diagnose, account, documentation, and confirmed action workflows.
 
-\textbf{Goal 2 (Multi-agent orchestration):} Achieved. Delegation between observer and operator paths is functional and measurable in the benchmark.
+\textbf{Goal 2 (Observer/Operator control flow):} Achieved. Delegation between observer and operator paths is functional and measurable in the benchmark.
 
-\textbf{Goal 3 (MCP standardization):} Achieved. Tool interfaces are separated from agent reasoning and can be extended independently.
+\textbf{Goal 3 (Risk-aware MCP tool integration):} Achieved. Tool interfaces are separated from agent reasoning, exposed through the MCP layer, and governed by agent-side risk classification.
 
-\textbf{Goal 4 (Safety for dangerous operations):} Partially achieved. HITL flow is implemented and active, but benchmark safety metrics indicate additional hardening is needed.
+\textbf{Goal 4 (Curated Slurm benchmark dataset):} Achieved as an artifact. The active dataset contains 3,135 cases, with eleven categories balanced at 285 cases each.
 
-\textbf{Goal 5 (Realtime UX and web interface):} Achieved with structured streaming in the React frontend and integrated evaluation controls.
+\subsection{Benchmark Artifact Outcomes}
 
-\subsection{Key Quantitative Outcomes}
+The main quantitative outcome of the evaluation work is the manually constructed synthetic benchmark and its trace-oriented evaluation path. Development-stage runs were used to validate the dataset-building process and scorer behavior, but they are not reported here as the final model-quality result.
 
 \begin{table}[H]
     \centering
-    \caption{Final Snapshot Highlights}
+    \caption{Benchmark Artifact Highlights}
     \label{tab:summary-highlights}
     \begin{tabular}{|l|c|}
         \hline
         \textbf{Metric} & \textbf{Value} \\
         \hline
-        Dataset size & 455 curated tests \\
-        Pass rate ($\geq 0.80$) & 93.6\% (426/455) \\
-        Average overall score & 0.936 \\
-        BAR & 0.908 \\
-        SVR & 0.161 \\
-        CSR & 0.934 \\
-        Average latency & 22.59s \\
+        Curated synthetic benchmark size & 3,135 cases \\
+        Balanced categories & 11 \\
+        Cases per category & 285 \\
+        Mock cluster scenarios & 5 \\
+        Separate paraphrase split & 40 cases \\
+        Architecture-level scoring dimensions & 6 \\
         \hline
     \end{tabular}
 \end{table}
 
-These results show strong capability on the curated benchmark and acceptable cross-scenario stability. They do not by themselves prove unrestricted robustness to arbitrary Slurm requests; that question is addressed separately through the held-out paraphrase split and future live-cluster validation.
+These artifact outcomes support reproducible evaluation of Slurm-agent behavior, but they do not by themselves prove unrestricted robustness to arbitrary Slurm requests. That question requires separate held-out paraphrase testing and live-cluster validation.
+
+
 
 \subsection{Main Findings}
 
@@ -58,7 +59,7 @@ These results show strong capability on the curated benchmark and acceptable cro
 
 \textbf{Deterministic state reset improves evaluation quality.} Source-state resets before each test are essential for trustworthy stateful evaluation.
 
-\textbf{Frontend-integrated evaluation improves iteration speed.} Embedding the evaluation workflow in the main UI shortens the feedback loop for feature changes.
+\textbf{Trace-based evaluation improves debugging.} Recording observed tools, routing decisions, HITL behavior, and state outcomes makes failed cases diagnosable instead of reducing them to a single score.
 
 \textbf{Safety remains a hard problem.} Even with confirmation mechanisms, mismatch rates in safety-related categories show that stronger guarantees are still required before production use.
 
@@ -70,12 +71,12 @@ The complete source code is publicly available:
     \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
 \end{center}
 
-The repository contains the backend, MCP server, React frontend, evaluation framework, dataset artifacts, and reproducible result snapshots.
+The repository contains the agent backend, MCP server, lightweight interface layer, evaluation framework, dataset artifacts, and reproducible evaluation outputs.
 
-\subsection{TODO for Final Thesis Freeze}
+\subsection{Remaining Evaluation Work}
 
 \begin{itemize}
-    \item Freeze one final 455-case curated benchmark snapshot under the pinned local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-oss:20b judge) and update all chapter references to that single run.
+    \item Run the current 3,135-case curated benchmark under the pinned local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-oss:20b judge) and report the exact artifact identifier.
     \item Run the 40-case held-out paraphrase split and report it separately from the curated benchmark.
     \item Add one concise reliability paragraph interpreting pass\textasciicircum{}k once repeat-run data is finalized.
 \end{itemize}

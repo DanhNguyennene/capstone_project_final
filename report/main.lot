@@ -1,22 +1,21 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{19}{table.caption.17}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.18}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.19}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.20}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{30}{table.caption.29}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Supported LLM Providers}}{32}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{31}{table.caption.23}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Predefined Analysis Scripts}}{33}{table.caption.27}%
-\contentsline {table}{\numberline {5.3}{\ignorespaces Predefined Chart Visualizations}}{34}{table.caption.29}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{36}{table.caption.38}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{44}{table.caption.46}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Mock Data Scenarios}}{45}{table.caption.48}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Current Curated Dataset Distribution (455 Cases)}}{46}{table.caption.49}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Evaluation Run Configuration (Latest Snapshot)}}{50}{table.caption.55}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Overall Metrics (455-Case Curated Benchmark)}}{51}{table.caption.56}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Average Component Scores}}{51}{table.caption.57}%
-\contentsline {table}{\numberline {6.7}{\ignorespaces Category-Level Results (455-Case Curated Benchmark)}}{52}{table.caption.58}%
-\contentsline {table}{\numberline {6.8}{\ignorespaces Scenario-Level Robustness}}{52}{table.caption.59}%
-\contentsline {table}{\numberline {6.9}{\ignorespaces Error Analysis Across Failed Curated-Benchmark Cases}}{53}{table.caption.60}%
-\contentsline {table}{\numberline {6.10}{\ignorespaces Separate Generalization Split Reporting}}{54}{table.caption.61}%
-\contentsline {table}{\numberline {6.11}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{55}{table.caption.62}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{39}{table.caption.40}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{40}{table.caption.41}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{43}{table.caption.46}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{44}{table.caption.47}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Aggregate Evaluation Metrics (3,135 Cases)}}{45}{table.caption.49}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Model Stack}}{48}{table.caption.56}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Final Snapshot Highlights}}{58}{table.caption.63}%
+\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{51}{table.caption.57}%

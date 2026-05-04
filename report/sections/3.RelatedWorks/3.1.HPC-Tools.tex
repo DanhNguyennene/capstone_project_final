@@ -49,6 +49,34 @@ Science gateways and web portals have been developed to provide more accessible 
 
 These portal solutions improve accessibility but do not address the fundamental challenge of translating user intent into appropriate cluster operations. Users must still possess knowledge of resource requirements, partition configurations, and job specifications.
 
+\subsection{LLM-Based HPC Systems}
+
+Recent work has begun integrating large language models with HPC infrastructure, though with different goals than the present system.
+
+\textbf{Chat~AI}~\cite{doosthosseini2024chatai} deploys open-source LLMs as a web service backed by Slurm-scheduled GPUs at GWDG. Their architecture uses SSH ForceCommand as a circuit breaker between a cloud-facing frontend and the HPC backend. The system treats Slurm as an \emph{execution substrate} for serving LLMs but does not use LLMs to \emph{manage} the cluster itself.
+
+\textbf{LangChain-Parsl}~\cite{langchainparsl2025} connects a LangChain-based LLM agent to HPC workflows via the Parsl parallel programming library. The agent can submit and manage computational tasks on HPC clusters through an interactive conversational interface. Unlike our system, it relies on Parsl's abstraction layer rather than native Slurm commands and does not implement a human-in-the-loop confirmation protocol for destructive operations.
+
+\textbf{AI Computing Broker}~\cite{fujitsu2025acb} is Fujitsu's industry solution that complements existing schedulers by optimizing GPU resource allocation across multiple clusters for AI workloads. It operates at the resource-brokering layer rather than the user-facing management layer.
+
+These systems motivate but do not solve the problem addressed by the Slurm Agent: providing a natural-language interface that can both \emph{observe} cluster state and \emph{operate} on it with safety guarantees. Table~\ref{tab:llm-hpc-comparison} summarizes the key differences.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparison of LLM-Based HPC Systems}
+    \label{tab:llm-hpc-comparison}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{System} & \textbf{NL Mgmt} & \textbf{Tool Calls} & \textbf{HITL Safety} & \textbf{Slurm-Native} \\
+        \hline
+        Chat AI & No & No & N/A & Yes \\
+        LangChain-Parsl & Yes & Yes & No & No (Parsl) \\
+        Fujitsu ACB & No & No & N/A & Partial \\
+        \textbf{Slurm Agent} & Yes & Yes & Yes & Yes \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Limitations of Existing Approaches}
 
 Analysis of existing HPC management tools reveals common limitations that motivate the development of intelligent agent-based interfaces:

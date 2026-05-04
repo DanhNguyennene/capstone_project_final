@@ -1,88 +1,71 @@
 \section{Model Context Protocol}
 \label{sec:mcp}
 
-The Model Context Protocol (MCP) is an open protocol developed by Anthropic that standardizes the connection between Large Language Models and external data sources, tools, and services \cite{anthropic2024mcp, mcpspec2024}. MCP provides a unified interface for exposing functionality to AI agents, enabling modular and reusable integrations that can be shared across different applications. This section examines the protocol architecture, communication patterns, and implementation considerations.
+The Model Context Protocol (MCP) is an open protocol for connecting AI applications to external tools, resources, and reusable prompts \cite{anthropic2024mcp, mcpspec2024}. It provides a standard boundary between a language model application and the systems it needs to inspect or operate. In this thesis, MCP is important because it allows Slurm operations to be exposed as typed tools instead of free-form shell commands.
 
 \subsection{Protocol Overview}
 
-MCP addresses a fundamental challenge in building AI agents: the need to connect language models to diverse external systems while maintaining security, modularity, and ease of development. Prior to MCP, each integration required custom implementation, leading to fragmented ecosystems and duplicated effort.
+MCP addresses a common integration problem in AI applications. Without a shared protocol, each application must implement its own custom connection to every database, API, command-line tool, or document source. This makes integrations difficult to reuse and makes behavior harder to inspect.
 
-The protocol defines a client-server architecture where:
-\begin{itemize}
-    \item \textbf{MCP Hosts} are applications that embed AI capabilities and initiate connections to servers
-    \item \textbf{MCP Clients} are protocol implementations within hosts that maintain server connections
-    \item \textbf{MCP Servers} are lightweight programs that expose specific capabilities through the protocol
-\end{itemize}
+MCP uses a client-server model. A server declares the capabilities it provides, and a client connects those capabilities to an AI host application. Communication is based on JSON-RPC 2.0, which gives the protocol a structured request-response format that can be implemented across different programming languages.
 
-% Placeholder: MCP architecture diagram
 \begin{figure}[H]
     \centering
-    % \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram showing MCP Host, Client, and Server relationships with communication flows]}}}
-    \includegraphics[width=0.7\textwidth]{images/mcp_architecture.png}
-    \caption{Model Context Protocol Architecture}
+    \includegraphics[width=0.8\textwidth]{images/mcp_architecture.png}
+    \caption{Model Context Protocol Architecture~\cite{hou2025mcp}}
     \label{fig:mcp-architecture}
 \end{figure}
 
-MCP servers can expose three types of capabilities:
+The protocol does not define the internal logic of a tool. Instead, it defines how the tool is described, discovered, invoked, and returned to the host application. This makes MCP suitable for wrapping existing systems such as Slurm command-line utilities.
 
-\textbf{Resources} provide data that can be loaded into the model's context. Resources are identified by URIs and can represent files, database records, API responses, or any other data the model might need to reference. Resources support subscriptions for change notifications.
+\subsection{Core Components}
 
-\textbf{Tools} represent executable functions that the model can invoke to perform actions. Each tool has a defined name, description, and parameter schema that the model uses to determine when and how to call the tool. Tools are the primary mechanism for enabling agent actions.
+MCP architecture contains three main roles:
 
-\textbf{Prompts} are reusable templates that encapsulate specific interaction patterns. Servers can expose prompts that provide structured ways to interact with their capabilities, helping users leverage complex functionality effectively.
+\begin{itemize}
+    \item \textbf{MCP Hosts}: applications that users interact with directly, such as chat interfaces, IDE extensions, or desktop assistants. The host manages the user interface and coordinates the model's access to external capabilities.
+    \item \textbf{MCP Clients}: protocol clients that maintain connections between the host and one or more servers. They perform capability discovery, forward requests, and receive server responses.
+    \item \textbf{MCP Servers}: domain-specific services that expose capabilities. In this project, a Slurm MCP server exposes selected scheduler operations as named tools with defined input schemas.
+\end{itemize}
 
-\subsection{Transport Mechanisms}
+This separation improves reuse. The same Slurm-oriented server can be connected to different host applications, and the host does not need to know the implementation details of each Slurm command.
 
-MCP supports multiple transport mechanisms for client-server communication, allowing flexibility in deployment scenarios:
+\subsection{Capabilities}
 
-\textbf{Standard I/O (stdio)} is the primary transport for local servers. The host spawns the server as a subprocess and communicates through standard input/output streams. This approach provides process isolation and is well-suited for command-line tools and local integrations.
+MCP servers can expose three categories of capability:
 
-\textbf{HTTP with Server-Sent Events (SSE)} enables remote server deployment. The client connects to the server over HTTP, with the server streaming responses using SSE. This transport supports network-based architectures and allows servers to be deployed as services.
+\begin{itemize}
+    \item \textbf{Resources}: readable data sources such as files, documents, logs, or generated status information.
+    \item \textbf{Tools}: executable operations with names, descriptions, and input schemas.
+    \item \textbf{Prompts}: reusable prompt templates for domain-specific workflows.
+\end{itemize}
 
-The protocol uses JSON-RPC 2.0 as the message format, providing a standardized structure for requests, responses, and notifications. Messages include method names, parameters, and result data according to the JSON-RPC specification.
+For Slurm Agent, tools are the main capability. They allow operations such as listing jobs, inspecting nodes, reading accounting data, or preparing a state-changing request to be represented as explicit function calls. Resources and prompts can support the interaction by providing documentation or task-specific guidance, but operational access is primarily controlled through tools.
 
 \subsection{Tool Definition and Invocation}
 
-Tools are defined using JSON Schema to specify their parameter structure. A tool definition includes:
-\begin{itemize}
-    \item A unique name identifying the tool
-    \item A description explaining the tool's purpose and usage
-    \item An input schema defining required and optional parameters
-\end{itemize}
+MCP tools are described with metadata and JSON Schema input definitions. A tool declaration normally includes a tool name, a natural-language description, and a schema that specifies accepted parameters. When the model selects a tool, the client sends a \texttt{tools/call} request with the tool name and arguments. The server validates the input, performs the underlying operation, and returns a structured result or error.
 
-When a client connects, it queries available tools using the \texttt{tools/list} method. The server responds with the complete set of tool definitions, which the client provides to the language model as part of the function calling context.
+This pattern is useful for Slurm because it avoids asking the model to construct arbitrary shell commands. Instead of generating a raw \texttt{squeue} or \texttt{scontrol} string, the model can call a specific tool such as a job-listing operation with typed filters. The server is then responsible for translating validated parameters into the appropriate Slurm command and formatting the result.
 
-Tool invocation follows this sequence:
-\begin{enumerate}
-    \item The language model determines that a tool call is needed and generates the call with arguments
-    \item The client application receives the tool call request
-    \item The client invokes the tool on the MCP server using the \texttt{tools/call} method
-    \item The server executes the tool logic and returns results
-    \item The client passes results back to the language model for incorporation
-\end{enumerate}
+Typed tool invocation supports the safety model used in this thesis. Read-only tools can be made available for observation, while tools that may affect cluster state can be separated into a different interaction mode and require explicit user confirmation before execution.
 
-\subsection{Implementation Patterns}
+\subsection{Transport and Deployment}
 
-Implementing an MCP server involves creating handlers for protocol methods and defining the capabilities to expose. Common implementation patterns include:
+MCP can run over local or network transports. Local servers are commonly launched as subprocesses and communicate through standard input and output. Network deployments use HTTP-based transport so that a server can be hosted separately from the user-facing application.
 
-\textbf{Wrapper servers} expose existing command-line tools or APIs through MCP. The server translates MCP tool calls into appropriate system commands or API requests, returning formatted results. This pattern enables rapid integration of existing functionality.
-
-\textbf{Aggregator servers} combine multiple underlying services into a coherent capability set. The server manages connections to backend systems and presents a unified interface to the AI agent.
-
-\textbf{Stateful servers} maintain context across tool invocations. While individual tool calls are stateless in the protocol, servers can maintain internal state for complex multi-step workflows.
-
-Error handling in MCP follows standard patterns: servers return structured error responses with error codes and messages. Clients should handle both transport-level failures and application-level errors gracefully.
+The transport mechanism affects deployment, scaling, and process management, but it does not change the logical tool interface. A Slurm tool has the same schema and meaning whether the MCP server is launched locally during development or exposed through a network service in an integrated application.
 
 \subsection{Security Considerations}
 
-MCP implementations must address several security concerns:
+MCP provides structure, but it does not automatically make tool use safe. Security must be enforced by the server and the host application. Important concerns include:
 
-\textbf{Input validation}: All tool parameters must be validated before execution to prevent injection attacks or malformed inputs.
+\begin{itemize}
+    \item \textbf{Access control}: only expose operations that the current user or deployment is allowed to perform.
+    \item \textbf{Input validation}: reject missing, malformed, or out-of-policy arguments before command execution.
+    \item \textbf{Output control}: avoid exposing sensitive user, job, or accounting information unnecessarily.
+    \item \textbf{Auditability}: log tool invocations and results for debugging and accountability.
+    \item \textbf{User confirmation}: require explicit approval before actions that modify cluster state.
+\end{itemize}
 
-\textbf{Capability restriction}: Servers should expose only the minimum necessary functionality and implement appropriate access controls.
-
-\textbf{Output sanitization}: Results returned to the language model should be sanitized to prevent information leakage or injection of malicious content.
-
-\textbf{Transport security}: Remote deployments should use TLS encryption to protect data in transit.
-
-The protocol itself does not mandate specific security mechanisms, leaving implementation decisions to developers based on their deployment context and requirements.
+These concerns are especially important for HPC systems because a single operation can affect shared resources, queued jobs, and other users. Therefore, this project uses MCP as the structured integration layer, while confirmation flow and mode separation provide additional control over state-changing Slurm operations.

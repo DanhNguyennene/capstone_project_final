@@ -1,127 +1,103 @@
 \section{System Architecture}
 \label{sec:architecture}
 
-This section presents the overall architecture of the Slurm Agent system, describing the major components, their interactions, and the rationale behind architectural decisions. The architecture follows a layered design that separates user interface, agent logic, and system integration concerns.
+This section presents the overall architecture of the Slurm Agent system, describing the major components, their interactions, and the rationale behind architectural decisions. The design uses common web and agent frameworks, but the architectural contribution is the Slurm-specific control plane built on top of them: broad Slurm tool coverage, read/write separation with confirmation, local documentation grounding, and state-resettable evaluation.
 
 \subsection{Architecture Overview}
 
-The Slurm Agent system consists of four main layers:
+The Slurm Agent is organized as a four-layer stack. At the top, a thin \textbf{Interface Layer} accepts natural-language requests and relays confirmation decisions without embedding any domain logic. Below it, the \textbf{Agent Layer} houses the Observer/Operator multi-agent backend that performs ReAct reasoning, retrieves documentation, and enforces safety routing—the Observer handles read-only inspection and decides when to hand off to the Operator for state-changing operations. The \textbf{Protocol Layer} exposes each Slurm operation as a typed MCP tool with parameter validation, isolating the agent from raw command-line construction. At the bottom, the \textbf{Infrastructure Layer} provides the actual execution targets—either a live Slurm cluster or a mock scenario engine—alongside the local documentation corpus and external services.
 
-\begin{enumerate}
-    \item \textbf{Presentation Layer}: Web-based frontend for user interaction
-    \item \textbf{Agent Layer}: Multi-agent backend handling reasoning and orchestration
-    \item \textbf{Protocol Layer}: MCP server providing standardized tool interfaces
-    \item \textbf{Infrastructure Layer}: Slurm cluster and external services
-\end{enumerate}
+This separation ensures that the boundary between reading cluster state and mutating it is an explicit architectural seam rather than an implicit convention. Read-only inspection flows entirely within the Observer path, while any state-changing operation must cross into the Operator path and pass through a confirmation gate before reaching the MCP tool layer.
 
-% Placeholder: System architecture diagram
+% TODO: Replace with actual diagram
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated system architecture diagram with presentation, agent, protocol, and infrastructure layers plus data/control flow.]}}}
+    \includegraphics[width=\textwidth]{images/agent_system_architect.drawio.png}
     \caption{Slurm Agent System Architecture}
     \label{fig:system-architecture}
 \end{figure}
 
-\subsection{Component Descriptions}
 
-\subsubsection{Presentation Layer}
+\subsection{Design Rationale}
 
-The Presentation Layer provides the user-facing interface for interacting with the Slurm Agent. This layer is responsible for:
+The main design decision is to treat Slurm interaction as a controlled operation surface rather than as open-ended command generation. A general chatbot can explain commands, but a cluster assistant must also decide when to inspect live state, when to consult documentation, when to ask for clarification, and when to refuse or delay execution until a user confirms intent. The architecture therefore combines three forms of grounding:
 
 \begin{itemize}
-    \item Rendering a conversational chat interface with message history
-    \item Capturing user queries in natural language
-    \item Displaying streaming responses in real-time
-    \item Rendering formatted content including markdown, code blocks, and inline visualizations
-    \item Managing confirmation workflows for dangerous operations
-    \item Preserving session state across interactions
+    \item \textbf{Operational grounding}: current cluster facts come from Slurm tools exposed through MCP.
+    \item \textbf{Documentation grounding}: command syntax, reason-code meanings, and policy-like explanations come from local Slurm documentation retrieval.
+    \item \textbf{Evaluation grounding}: behavior is tested against resettable source states and expected target states instead of relying only on subjective response quality.
 \end{itemize}
 
-The interface follows a conversational paradigm where users type queries and receive responses in a familiar messaging format. This design abstracts the complexity of Slurm commands behind natural language interaction.
+The architecture is also designed to support incomplete or ambiguous user requests. When the user says a phrase such as ``cancel that job'', the system must determine whether a specific job is already known from context. If the target is unclear, the safe behavior is to ask for clarification. If the target is clear but the action changes cluster state, the safe behavior is to create a pending action and require confirmation. This is why session state and pending-action persistence are architectural components rather than UI conveniences.
+
+\subsection{Component Descriptions}
+
+\subsubsection{Interface Layer}
+
+The Interface Layer is intentionally thin. It provides an entry point for manual prompts, automated evaluation prompts, and explicit confirmation decisions. This layer is responsible for:
+
+\begin{itemize}
+    \item forwarding natural-language requests to the agent backend,
+    \item presenting final responses and selected status events,
+    \item relaying confirm/cancel decisions for pending actions,
+    \item exposing traces needed for debugging and evaluation.
+\end{itemize}
+
+The interface is therefore support infrastructure, not the central contribution. Agent behavior is defined by the backend control flow and can be exercised either manually or through the automated evaluator.
 
 \subsubsection{Agent Layer}
 
 The Agent Layer implements the core reasoning and orchestration logic using a multi-agent architecture. The system employs a hierarchical structure with specialized agents:
 
 \begin{itemize}
-    \item \textbf{Main ReAct Agent}: The primary orchestrator that implements the Think $\rightarrow$ Act $\rightarrow$ Observe reasoning loop. This agent maintains conversation context, interprets user intent, and delegates to specialized sub-agents based on the nature of the request.
+    \item \textbf{Main ReAct Agent}: The primary orchestrator that implements the Think $\rightarrow$ Act $\rightarrow$ Observe reasoning loop. This agent maintains conversation context, interprets user intent, and delegates to specialized sub-agents based on the nature and risk of the request.
     
-    \item \textbf{Analysis Sub-Agent}: Handles read-only information gathering operations including cluster status queries, job queue inspection, resource monitoring, and documentation search. This agent can chain multiple tool calls to gather comprehensive information.
+    \item \textbf{Observer}: Handles read-only information gathering operations including cluster status queries, job queue inspection, resource monitoring, accounting and resource-limit inspection, reservation checks, scheduler diagnostics, and documentation retrieval. This agent can chain multiple tool calls to gather comprehensive information.
     
-    \item \textbf{Action Sub-Agent}: Manages operations that modify cluster state, such as job submission, cancellation, and configuration changes. This agent enforces safety controls and confirmation requirements for dangerous operations.
+    \item \textbf{Operator}: Manages operations that modify cluster state, such as job submission, cancellation, hold, release, requeue, and selected updates. This agent receives structured handoffs and enforces safety controls and confirmation requirements for dangerous operations.
 \end{itemize}
 
-The Main Agent also has direct access to auxiliary tools including chart generation for data visualization, which calls the Protocol Layer to render cluster metrics and statistics as visual charts.
+The Observer can inspect queue state, node state, accounting records, reservations, fair-share, priority, scheduler diagnostics, and documentation. The Operator handles submission, cancellation, hold, release, requeue, update, reservation changes, node changes, and administrative actions. This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy.
 
-Key architectural features of the Agent Layer include:
-\begin{itemize}
-    \item \textbf{Session Persistence}: Conversation history is maintained across interactions, enabling contextual follow-up queries
-    \item \textbf{Confirmation Workflow}: Dangerous operations are queued pending explicit user confirmation before execution
-    \item \textbf{Token Optimization}: Visualization artifacts are filtered from conversation history to reduce token consumption
-    \item \textbf{Streaming Output}: Responses are streamed incrementally to provide immediate user feedback
-\end{itemize}
+% TODO: Replace with actual diagram
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2.5cm}\textbf{Observer/Operator Handoff Flow}\\[0.5em]\small Request $\rightarrow$ Intent Classification $\rightarrow$ Observer (read-only) or Operator (write + HITL confirm)\vspace{2.5cm}}}
+    \caption{Observer/Operator Routing and Confirmation Flow}
+    \label{fig:observer-operator-flow}
+\end{figure}
 
 \subsubsection{Protocol Layer}
 
-The Protocol Layer implements the Model Context Protocol (MCP) to provide a standardized interface between the Agent Layer and the underlying Slurm infrastructure. This layer:
+The MCP Protocol Layer wraps each Slurm command as a typed tool with parameter validation, operational semantics preservation, safe subprocess execution, and structured output formatting. It decouples agent logic from Slurm implementation details and provides a security boundary for command execution.
 
-\begin{itemize}
-    \item \textbf{Exposes Slurm Operations as Tools}: Each Slurm command is wrapped as a discrete tool with defined parameters and return types
-    \item \textbf{Validates Parameters}: Input validation prevents malformed or dangerous command construction
-    \item \textbf{Executes Commands Safely}: Commands are executed with appropriate isolation and error handling
-    \item \textbf{Formats Output}: Raw command output is processed into structured formats suitable for agent consumption
-\end{itemize}
+\subsubsection{Evaluation Layer}
 
-The MCP abstraction provides several benefits:
-\begin{itemize}
-    \item Decouples agent logic from Slurm-specific implementation details
-    \item Enables tool discovery and introspection by the agent
-    \item Supports extension with new tools without modifying the agent core
-    \item Provides a security boundary for command execution
-\end{itemize}
+The evaluation layer verifies agent behavior by controlling mock-state reset, sending prompts to the live backend, recording stream events, and comparing observed tools/handoffs/HITL against ground truth.
 
 \subsubsection{Infrastructure Layer}
 
-The Infrastructure Layer comprises the external systems that the agent interacts with:
-
-\begin{itemize}
-    \item \textbf{Large Language Model}: Provides the reasoning capabilities for natural language understanding, intent interpretation, and response generation (either local or cloud API)
-    \item \textbf{Slurm Cluster}: The target HPC infrastructure being managed, accessed through standard Slurm commands
-    \item \textbf{Web Search Service}: Enables retrieval of documentation and troubleshooting information from external sources
-    \item \textbf{Context Database}: SQLite database for storing session state and pending confirmation actions
-\end{itemize}
+External systems: LLM provider (local Ollama or cloud API), Slurm cluster (real or mock), local documentation corpus, web search service, and SQLite context database.
 
 \subsection{Communication Patterns}
 
-The architecture employs several communication patterns:
-
-\textbf{Request-Response}: Standard requests for initiating conversations and submitting queries.
-
-\textbf{Streaming}: Unidirectional streaming from backend to frontend for real-time response delivery. The backend sends a continuous stream of events that the frontend processes incrementally.
-
-\textbf{Tool Invocation}: Structured communication between the Agent Layer and Protocol Layer for tool discovery and execution.
+Key patterns: (1)~request-response for queries, (2)~structured event stream for status/tool/trace output, (3)~tool invocation via MCP, (4)~confirmation interruption for dangerous operations, (5)~trace reporting for evaluation scoring.
 
 
 \subsection{Data Flow}
 
-A typical query flows through the system layers as follows:
-\begin{enumerate}
-    \item User submits natural language query through the Presentation Layer
-    \item Agent Layer receives query and begins Think-Act-Observe reasoning
-    \item Agent delegates to appropriate sub-agent based on query type
-    \item Sub-agent invokes tools via Protocol Layer to gather data or perform actions
-    \item Results propagate back through the layers
-    \item Agent synthesizes response and streams to user
-\end{enumerate}
+A typical query flows: (1)~user submits request, (2)~Agent Layer begins ReAct reasoning, (3)~delegates to Observer or Operator, (4)~sub-agent invokes MCP tools, (5)~results propagate back, (6)~agent synthesizes response with trace events. For dangerous operations, an additional confirmation step interrupts the flow before execution.
 
-For dangerous operations, an additional confirmation step interrupts the flow: the pending action is stored and presented to the user, and execution proceeds only after explicit confirmation.
+% TODO: Replace with actual diagram
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2.5cm}\textbf{Request Lifecycle Sequence Diagram}\\[0.5em]\small User $\rightarrow$ API $\rightarrow$ ReAct Agent $\rightarrow$ MCP Server $\rightarrow$ Slurm/Mock $\rightarrow$ Response Stream\vspace{2.5cm}}}
+    \caption{Request Lifecycle Data Flow}
+    \label{fig:data-flow}
+\end{figure}
+
+
 
 \subsection{Deployment Architecture}
 
-The system components can be deployed in various configurations:
-
-\textbf{Local Development}: All components run on a single machine with local Slurm installation or connection to a remote cluster.
-
-\textbf{Distributed Deployment}: Frontend, backend, and MCP server run on separate hosts, with the MCP server deployed on a Slurm management node.
-
-The modular architecture supports flexible deployment topologies based on infrastructure requirements and security considerations.
+The system supports local development (all components on one machine) and distributed deployment (interface, backend, and MCP server on separate hosts, with MCP on a Slurm management node).

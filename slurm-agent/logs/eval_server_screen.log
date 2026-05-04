@@ -24239,3 +24239,226 @@ INFO:     77.68.99.77:48198 - "GET /login HTTP/1.1" 404 Not Found
 INFO:     204.76.203.206:54838 - "GET / HTTP/1.1" 200 OK
 INFO:     5.61.209.107:39724 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
 INFO:     176.65.139.177:42332 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:50550 - "GET / HTTP/1.1" 200 OK
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [30247]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:37364 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     204.76.203.206:58290 - "GET / HTTP/1.1" 200 OK
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [32964]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:54138 - "GET /api/runtime-config HTTP/1.1" 200 OK
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;31m[eval-server][0m Missing deps. Install: pip install fastapi uvicorn
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [37492]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:44948 - "GET /api/runtime-config HTTP/1.1" 200 OK
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [44807]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:60426 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     71.6.232.27:37292 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:48912 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:59416 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34738 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34738 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34738 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34750 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34750 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34756 - "GET /api/terminal/history?test_id=acct_list_healthy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34750 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48650 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48650 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     165.154.135.185:49114 - "GET / HTTP/1.1" 200 OK
+INFO:     165.154.135.185:49120 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     165.154.135.185:39746 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     176.65.139.177:39606 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53518 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53518 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53518 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36694 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36694 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36710 - "GET /api/terminal/history?test_id=acct_list_healthy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36694 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46368 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46368 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     204.76.203.206:45240 - "GET / HTTP/1.1" 200 OK
+INFO:     64.62.156.10:65498 - "GET / HTTP/1.1" 200 OK
+INFO:     64.62.156.23:62061 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     64.62.156.16:34553 - "GET /?format=json HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     64.62.156.10:2224 - "GET /geoserver/web/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34592 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     176.65.139.177:15656 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57766 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57766 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57766 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57782 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     5.61.209.107:51988 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:54310 - "GET / HTTP/1.1" 200 OK
+INFO:     103.252.119.186:61211 - "DESCRIBE / HTTP/1.0" 405 Method Not Allowed
+INFO:     103.252.119.186:56987 - "DESCRIBE /Streaming/Channels/101 HTTP/1.0" 404 Not Found
+INFO:     103.252.119.186:53997 - "DESCRIBE /Streaming/Channels/102 HTTP/1.0" 404 Not Found
+INFO:     103.252.119.186:56665 - "DESCRIBE /Streaming/Channels/1 HTTP/1.0" 404 Not Found
+INFO:     103.252.119.186:61804 - "DESCRIBE /cam/realmonitor?channel=1&subtype=0 HTTP/1.0" 404 Not Found
+INFO:     5.61.209.107:40918 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:39972 - "GET / HTTP/1.1" 200 OK
+INFO:     204.76.203.206:60986 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:3042 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     13.63.62.42:45274 - "GET / HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+INFO:     204.76.203.206:57426 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.139.177:34392 - "GET /login HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     204.76.203.206:50072 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:14760 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.195.115:14894 - "GET / HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.195.115:14958 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.195.115:10734 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     113.169.207.21:51567 - "GET / HTTP/1.1" 200 OK
+INFO:     8.219.128.56:27866 - "GET / HTTP/1.1" 200 OK
+INFO:     8.219.128.56:27876 - "GET / HTTP/1.1" 200 OK
+INFO:     204.76.203.206:47398 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.139.177:17746 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     176.65.139.177:54552 - "GET /login HTTP/1.1" 404 Not Found
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [137162]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:60338 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59076 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59076 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59076 - "GET /api/results HTTP/1.1" 200 OK
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:59078 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:59078 - "POST /api/load-default-dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59932 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59946 - "GET /api/terminal/history?test_id=acct_list_healthy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59952 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59946 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59952 - "GET /api/dataset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59946 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50322 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59952 - "GET /api/results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50324 - "GET /api/terminal/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50324 - "GET /api/terminal/history HTTP/1.1" 200 OK
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [142563]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:57850 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     5.61.209.107:16670 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:37142 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.139.177:61540 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     45.139.122.80:52402 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+[0;32m[eval-server][0m Loaded local secrets from: /mnt/e/workspace/uni/capstone_project/slurm-agent/../.env
+[0;34m[eval-server][0m Starting eval server at http://0.0.0.0:8080
+INFO:     Started server process [150410]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+
+  Evaluation UI: http://localhost:8080
+
+[startup] Restored 3135 results, 0 terminal entries from eval_latest_snapshot.json
+INFO:     127.0.0.1:45916 - "GET /api/runtime-config HTTP/1.1" 200 OK
+INFO:     5.187.35.26:40100 - "GET /../../../../../../etc/passwd HTTP/1.1" 404 Not Found
+INFO:     176.65.139.177:37576 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:57186 - "GET / HTTP/1.1" 200 OK
+INFO:     103.232.120.49:58232 - "GET / HTTP/1.1" 200 OK
+INFO:     45.139.122.80:35318 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     5.61.209.107:57758 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     209.38.240.138:53926 - "GET /login HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     3.88.9.47:25480 - "GET / HTTP/1.1" 200 OK
+INFO:     204.76.203.206:45746 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.139.177:26912 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     5.61.209.107:43258 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     165.154.163.59:55096 - "GET / HTTP/1.1" 200 OK
+INFO:     165.154.163.59:48046 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     165.154.163.59:34822 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:40494 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:13064 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     176.65.139.177:9292 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     45.139.122.80:60278 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     108.165.95.7:36048 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:48240 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.149.35:2858 - "GET / HTTP/1.1" 200 OK
+INFO:     176.65.139.156:37794 - "GET / HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     5.61.209.107:52032 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:41744 - "GET / HTTP/1.1" 200 OK
+INFO:     34.53.66.246:40374 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:17950 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:58692 - "GET / HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+INFO:     185.132.53.158:40728 - "GET /login HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:45150 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:57766 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     47.254.243.215:54960 - "GET / HTTP/1.1" 200 OK
+INFO:     47.254.243.215:54972 - "GET / HTTP/1.1" 200 OK
+INFO:     47.88.94.125:22932 - "GET / HTTP/1.1" 200 OK
+INFO:     47.251.89.134:20730 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     194.50.16.253:8484 - "GET /cgi/conf.bin HTTP/1.1" 404 Not Found
+INFO:     204.76.203.206:42362 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:38176 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     95.214.53.42:48152 - "GET / HTTP/1.1" 200 OK
+INFO:     204.76.203.206:43744 - "GET / HTTP/1.1" 200 OK
+INFO:     5.61.209.107:38522 - "GET /SDK/webLanguage HTTP/1.1" 404 Not Found
+INFO:     45.205.1.43:32834 - "POST / HTTP/1.1" 405 Method Not Allowed
+INFO:     45.205.1.43:60066 - "POST /_next HTTP/1.1" 404 Not Found
+INFO:     45.205.1.43:60078 - "POST /api HTTP/1.1" 404 Not Found
+INFO:     45.205.1.43:60086 - "POST /_next/server HTTP/1.1" 404 Not Found
+INFO:     45.205.1.43:60102 - "POST /app HTTP/1.1" 404 Not Found
+INFO:     45.205.1.43:60114 - "POST /api/route HTTP/1.1" 404 Not Found

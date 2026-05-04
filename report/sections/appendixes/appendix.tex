@@ -1,135 +1,113 @@
 \chapter{Evaluation Artifact Appendix}
 \label{appendix:test-cases}
 
-This appendix summarizes the current evaluation artifact set for the scenario-grid benchmark. The active curated dataset contains 455 tests across 9 categories and 5 scenarios. A separate 40-case paraphrase/generalization split is stored as a distinct artifact and must not be merged into the curated benchmark score. Instead of embedding all per-test rows inline in this chapter, the report documents consolidated tables and points to machine-readable JSON/TeX outputs used for reproducibility.
+This appendix summarizes the evaluation artifacts used by the scenario-grid benchmark. The active curated dataset is \texttt{slurm-agent/evaluation/dataset.json} and contains 3,135 manually constructed synthetic cases across eleven balanced categories. A separate 40-case paraphrase/generalization split is stored as a distinct artifact and must not be merged into the curated benchmark score.
 
-\section{Snapshot Metadata}
+\section{Active Dataset Metadata}
 
 \begin{table}[H]
 \centering
-\caption{Latest Evaluation Snapshot Metadata}
-\label{tab:appendix-snapshot-meta}
+\caption{Active Curated Benchmark Metadata}
+\label{tab:appendix-active-dataset-meta}
 \begin{tabular}{|l|l|}
 \hline
 \textbf{Field} & \textbf{Value} \\
 \hline
-Artifact file & \texttt{eval\_all\_20260430\_212014.json} \\
-Timestamp & \texttt{20260430\_212014} \\
-Scenario scope & all \\
-Dataset ID & \texttt{b2d24cde01d0} \\
-Total tests & 455 \\
-Passed / Failed & 426 / 29 \\
-Pass threshold & $\geq 0.80$ with keyword gate \\
+Dataset file & \texttt{slurm-agent/evaluation/dataset.json} \\
+Dataset type & Manually constructed synthetic benchmark \\
+Total cases & 3,135 \\
+Categories & 11 \\
+Cases per category & 285 \\
+Mock scenarios & healthy, failed, pending, mixed, debug\_needed \\
+Evaluation path & Live agent API with MCP tools and mock-state reset \\
 \hline
 \end{tabular}
 \end{table}
 
-\section{Category Pass/Fail Counts}
+\section{Category Distribution}
 
 \begin{table}[H]
 \centering
-\caption{Pass/Fail by Category}
-\label{tab:appendix-category-counts}
-\begin{tabular}{|l|c|c|c|c|}
+\caption{Active Benchmark Category Distribution}
+\label{tab:appendix-category-distribution}
+\begin{tabular}{|l|c|p{7cm}|}
 \hline
-\textbf{Category} & \textbf{N} & \textbf{Passed} & \textbf{Failed} & \textbf{Pass\%} \\
+\textbf{Category} & \textbf{Cases} & \textbf{Primary Coverage} \\
 \hline
-read & 156 & 154 & 2 & 98.7\% \\
-diagnose & 39 & 36 & 3 & 92.3\% \\
-action & 60 & 50 & 10 & 83.3\% \\
-bulk & 23 & 23 & 0 & 100.0\% \\
-safety & 45 & 45 & 0 & 100.0\% \\
-submission & 35 & 27 & 8 & 77.1\% \\
-multi\_step & 22 & 22 & 0 & 100.0\% \\
-account & 25 & 23 & 2 & 92.0\% \\
-edge & 50 & 46 & 4 & 92.0\% \\
+account & 285 & accounting, associations, QoS, fair-share, and usage inspection \\
+action & 285 & controlled state-changing job and node operations \\
+bulk & 285 & scoped multi-target operations with confirmation behavior \\
+diagnose & 285 & failed, pending, inefficient, and policy-constrained jobs \\
+docs & 285 & command syntax, reason codes, state meanings, and reference explanations \\
+domain & 285 & broader Slurm reasoning that combines state, policy, and documentation \\
+edge & 285 & invalid, ambiguous, conflicting, or unsafe requests \\
+multi\_step & 285 & read-before-act and conditional workflows \\
+read & 285 & queue, node, partition, job, reservation, license, and topology inspection \\
+safety & 285 & destructive, administrative, or policy-sensitive prompts \\
+submission & 285 & batch, array, dependency, GPU/GRES, reservation, and interactive submissions \\
 \hline
-\textbf{Total} & \textbf{455} & \textbf{426} & \textbf{29} & \textbf{93.6\%} \\
+\textbf{Total} & \textbf{3,135} & \textbf{Balanced scenario-grid benchmark} \\
 \hline
 \end{tabular}
 \end{table}
 
-\section{Scenario Pass/Fail Counts}
+\section{Dataset Construction Checks}
 
 \begin{table}[H]
 \centering
-\caption{Pass/Fail by Scenario}
-\label{tab:appendix-scenario-counts}
-\begin{tabular}{|l|c|c|c|c|}
+\caption{Construction and Scorability Checks}
+\label{tab:appendix-construction-checks}
+\begin{tabular}{|p{4cm}|p{8cm}|}
 \hline
-\textbf{Scenario} & \textbf{N} & \textbf{Passed} & \textbf{Failed} & \textbf{Pass\%} \\
+\textbf{Check} & \textbf{Purpose} \\
 \hline
-healthy & 87 & 82 & 5 & 94.3\% \\
-failed & 87 & 84 & 3 & 96.6\% \\
-pending & 87 & 79 & 8 & 90.8\% \\
-mixed & 97 & 91 & 6 & 93.8\% \\
-debug\_needed & 97 & 90 & 7 & 92.8\% \\
-\hline
-\textbf{Total} & \textbf{455} & \textbf{426} & \textbf{29} & \textbf{93.6\%} \\
+Schema completeness & Confirm that each case contains input text, source state, target state, and ground-truth expectations. \\
+Category balance & Keep all eleven workflow categories at the same 285-case ceiling. \\
+Mock-state compatibility & Ensure that stateful cases refer to jobs, nodes, accounts, and partitions present in the selected scenario. \\
+Tool-label consistency & Match expected tools to implemented MCP capabilities. \\
+Routing-label consistency & Distinguish Observer-only cases from Operator handoff cases. \\
+HITL-label consistency & Require confirmation for destructive, administrative, or ambiguous state-changing requests. \\
+Documentation grounding & Include cases that require local Slurm documentation retrieval rather than model memory alone. \\
 \hline
 \end{tabular}
 \end{table}
 
-\section{Representative Low-Scoring Cases}
-
-Table~\ref{tab:appendix-low-cases} lists representative low-scoring cases from the latest snapshot. These are useful for debugging structural failure patterns.
+\section{Generalization Split}
 
 \begin{table}[H]
 \centering
-\caption{Representative Low-Scoring Cases}
-\label{tab:appendix-low-cases}
-\small
-\begin{tabular}{|p{4.6cm}|l|l|c|c|c|c|c|}
+\caption{Separate Paraphrase Split Metadata}
+\label{tab:appendix-generalization-split}
+\begin{tabular}{|l|l|}
 \hline
-\textbf{Test ID} & \textbf{Category} & \textbf{Scenario} & \textbf{Overall} & \textbf{Tool} & \textbf{Route} & \textbf{HITL} & \textbf{State} \\
+\textbf{Field} & \textbf{Value} \\
 \hline
-sub\_gpu\_failed & submission & failed & 0.05 & 0.00 & 0.00 & 0.00 & 0.00 \\
-sub\_gpu\_mixed & submission & mixed & 0.05 & 0.00 & 0.00 & 0.00 & 0.00 \\
-sub\_gpu\_debug\_needed & submission & debug\_needed & 0.05 & 0.00 & 0.00 & 0.00 & 0.00 \\
-sub\_gpu\_pending & submission & pending & 0.10 & 0.00 & 0.00 & 0.00 & 0.00 \\
-action\_update\_1001\_healthy & action & healthy & 0.20 & 0.00 & 1.00 & 0.00 & 0.00 \\
-action\_update\_5008\_debug\_needed & action & debug\_needed & 0.20 & 0.00 & 1.00 & 0.00 & 0.00 \\
-\hline
-\end{tabular}
-\end{table}
-
-\section{Representative High-Scoring Cases}
-
-\begin{table}[H]
-\centering
-\caption{Representative High-Scoring Cases}
-\label{tab:appendix-high-cases}
-\small
-\begin{tabular}{|p{5.2cm}|l|l|c|}
-\hline
-\textbf{Test ID} & \textbf{Category} & \textbf{Scenario} & \textbf{Overall} \\
-\hline
-edge\_guidance\_debug\_needed\_v1 & edge & debug\_needed & 1.00 \\
-edge\_guidance\_debug\_needed\_v2 & edge & debug\_needed & 1.00 \\
-sreport\_cluster\_debug\_needed\_v2 & read & debug\_needed & 1.00 \\
-read\_licenses\_debug\_needed\_v1 & read & debug\_needed & 1.00 \\
-read\_reservations\_debug\_needed\_v1 & read & debug\_needed & 1.00 \\
-read\_reservations\_debug\_needed\_v2 & read & debug\_needed & 1.00 \\
+Dataset file & \texttt{slurm-agent/evaluation/generalization\_dataset.json} \\
+Total cases & 40 \\
+Purpose & Held-out prompt wording robustness probe \\
+Relationship to curated benchmark & Reuses benchmark state and labels with rewritten user prompts \\
+Reporting rule & Report separately from the curated benchmark score \\
 \hline
 \end{tabular}
 \end{table}
 
 \section{Artifact Locations}
 
-The full per-test outputs are stored in:
+The relevant machine-readable artifacts are stored in:
 
 \begin{itemize}
-    \item \texttt{slurm-agent/evaluation/results/eval\_all\_20260430\_212014.json}
+    \item \texttt{slurm-agent/evaluation/dataset.json}
     \item \texttt{slurm-agent/evaluation/generalization\_dataset.json}
+    \item \texttt{slurm-agent/evaluation/results/}
 \end{itemize}
 
-The curated benchmark artifact contains all 455 rows with per-test metrics and traces. The generalization artifact contains 40 compact paraphrase cases that resolve against \texttt{dataset.json} at evaluation time.
+The active dataset artifact contains all 3,135 curated test definitions. The generalization artifact contains compact paraphrase cases that resolve against \texttt{dataset.json} at evaluation time. The results directory is the output location for benchmark run artifacts generated by the evaluator.
 
-\section{TODO for Final Appendix Freeze}
+\section{Evaluation Output Checklist}
 
 \begin{itemize}
-    \item Auto-generate and include a complete longtable for all 455 curated tests directly from the final frozen snapshot.
-    \item Add the final 40-case paraphrase/generalization result table after the split has been run.
-    \item Add per-test judge reason excerpts for the lowest 15 failed cases.
-    \item Add pass\textasciicircum{}k appendix table (k=1,3,5) from repeated runs with identical configuration.
+    \item Export aggregate pass/fail and component-score tables for the active curated benchmark.
+    \item Report the held-out paraphrase split separately from the curated benchmark.
+    \item Include low-scoring case excerpts only from the same run artifact being reported.
+    \item Add pass\textasciicircum{}k appendix tables from repeated runs with identical configuration.
 \end{itemize}

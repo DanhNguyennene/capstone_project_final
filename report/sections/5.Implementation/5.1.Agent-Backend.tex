@@ -1,112 +1,72 @@
 \section{Agent Backend Implementation}
 \label{sec:agent-backend}
 
-This section documents the current backend implementation used in the updated project baseline (April 2026). The backend is responsible for: (i) maintaining session-aware multi-agent execution, (ii) exposing an OpenAI-compatible chat API for the frontend, and (iii) enforcing safety and confirmation policies for state-changing Slurm operations.
+The backend maintains session-aware multi-agent execution, exposes an OpenAI-compatible chat API, and enforces confirmation workflows for state-changing operations.
 
 \subsection{Technology Stack}
-
-The backend is implemented in Python and organized around asynchronous services:
 
 \begin{itemize}
     \item \textbf{FastAPI + Uvicorn}: API layer for chat, health, and session endpoints
     \item \textbf{OpenAI Agents SDK}: multi-agent orchestration and tool-driven execution
-    \item \textbf{aiohttp/httpx}: asynchronous streaming and external HTTP calls
-    \item \textbf{SQLiteSession}: persistent per-session context and chat history
     \item \textbf{MCP over SSE}: tool discovery and execution against the Slurm MCP server
+    \item \textbf{SQLiteSession}: persistent per-session context and chat history
 \end{itemize}
 
-Model routing is configurable at runtime (local Ollama and optional remote providers), while the default deployment currently uses local Ollama.
+Model routing supports local Ollama (default) and optional remote providers.
 
-\subsection{Runtime Agent Topology}
+\subsection{Agent Topology}
 
-The operational agent topology is a main orchestrator with two specialized sub-agent tools:
+The main orchestrator (Observer) manages two specialized sub-agents:
 
 \begin{itemize}
-    \item \texttt{analyze\_cluster}: read-only cluster inspection and diagnostics
-    \item \texttt{manage\_jobs}: state-changing operations (cancel, hold, release, submit, update)
+    \item \texttt{analyze\_cluster}: read-only inspection and diagnostics
+    \item \texttt{manage\_jobs}: state-changing operations (cancel, hold, release, submit)
 \end{itemize}
 
-In addition, the main agent directly exposes utility tools:
-\texttt{generate\_chart}, \texttt{confirm\_action}, \texttt{cancel\_action}, and \texttt{check\_pending\_actions}.
-
-This design keeps user-facing reasoning centralized while restricting high-risk execution to explicit action pathways.
+Additional utility tools: \texttt{generate\_chart}, \texttt{lookup\_slurm\_docs}, \texttt{lookup\_skill}, \texttt{confirm\_action}, \texttt{cancel\_action}, and \texttt{check\_pending\_actions}.
 
 \subsection{Safety and Confirmation Pipeline}
 
-Dangerous operations are guarded through a queued-action workflow:
+Dangerous operations follow a queued-action workflow: (1)~the request is transformed into a pending action (not executed), (2)~the user sees the action and must explicitly confirm, (3)~execution occurs only via \texttt{confirm\_action}. This two-step control reduces accidental cluster mutations.
+
+\subsection{Hybrid RAG Documentation Retrieval}
+\label{sec:impl-rag}
+
+The agent includes a local retrieval tool (\texttt{lookup\_slurm\_docs}) that provides Retrieval-Augmented Generation over the official Slurm documentation corpus. The pipeline operates without an external vector database---all indexing is in-memory.
+
+\subsubsection{Corpus Preparation}
+
+A crawl script fetches all HTML pages from \texttt{slurm.schedmd.com}, converts them to Markdown with YAML frontmatter (source URL, title, fetch timestamp), and stores them in a local corpus directory. At the time of writing the corpus contains 273~documents covering commands, configuration, accounting, scheduling, and troubleshooting.
+
+\subsubsection{Chunking Strategy}
+
+Each document is split at heading boundaries (\texttt{\#}, \texttt{\#\#}, \texttt{\#\#\#}). Chunks smaller than 80~characters are discarded; chunks exceeding 1{,}400~characters are further split at paragraph boundaries. This produces 2{,}276 chunks with an average length of approximately 600~characters, balancing retrieval granularity against context window cost.
+
+\subsubsection{Dual Retrieval}
+
+At query time, the tool runs two parallel scoring passes:
 
 \begin{enumerate}
-    \item A dangerous request is transformed into a pending action (not executed immediately).
-    \item The user is shown the pending action and must explicitly confirm or cancel.
-    \item Execution occurs only through \texttt{confirm\_action}; cancellation is handled by \texttt{cancel\_action}.
+    \item \textbf{Lexical scoring}: token-overlap BM25-style matching between the normalized query and chunk content, with bonuses for phrase matches and path/title matches.
+    \item \textbf{Semantic scoring}: the query is encoded using the all-MiniLM-L6-v2 sentence-transformer model~\cite{reimers2019sentence} (384-dimensional embeddings, running on GPU). Cosine similarity against pre-computed chunk embeddings identifies semantically related passages.
 \end{enumerate}
 
-This creates a two-step control path for destructive commands and reduces accidental cluster mutations.
+\subsubsection{Reciprocal Rank Fusion}
 
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated confirmation workflow for dangerous operations (request parsing, pending action creation, user confirm/cancel, guarded execution).]}}}
-    \caption{Confirmation Flow for Dangerous Operations}
-    \label{fig:confirmation-flow}
-\end{figure}
+The two ranked lists are fused using RRF with $k=60$~\cite{cormack2009reciprocal}. The top-5 results are returned as context snippets (each capped at 950~characters), yielding approximately 1{,}200~tokens per tool call---a small fraction of the model's context window.
+
+\subsubsection{Pre-computed Embeddings}
+
+To avoid a GPU-intensive embedding pass at server startup, a build script (\texttt{build\_embeddings.py}) pre-computes all 2{,}276 chunk embeddings and saves them as a compressed NumPy archive (\texttt{embeddings.npz}, 3.2~MB). At runtime the agent loads this file in under 100~ms. If the corpus is updated and the embedding count diverges, the system falls back to runtime embedding.
+
+\subsubsection{Design Rationale}
+
+This hybrid approach addresses a practical limitation observed during evaluation: purely lexical retrieval fails on paraphrased queries (e.g., ``how to chain jobs'' does not lexically match ``dependency afterok''), while purely semantic retrieval can miss exact command-syntax matches. RRF combines both strengths without requiring score calibration. The tool is invoked lazily---only when the agent encounters a documentation question---so it adds zero tokens to non-documentation conversations.
+
+\subsection{Streaming Protocol}
+
+Responses use OpenAI-style SSE with typed delta fields: \texttt{status\_update}, \texttt{tool\_output}, \texttt{reasoning\_content}, \texttt{content}, \texttt{chart\_artifact}, \texttt{todo\_update}, and \texttt{pending\_actions}. Chart artifacts are filtered from future LLM context to prevent token pollution.
 
 \subsection{Session Management}
 
-The API maps each chat ID to a persistent agent session, enabling stateful multi-turn behavior. Session state includes:
-
-\begin{itemize}
-    \item conversation memory,
-    \item pending actions,
-    \item chart artifact context,
-    \item model/tool runtime configuration.
-\end{itemize}
-
-Session cleanup and explicit clear endpoints are provided to avoid stale context and to support evaluation reproducibility.
-
-\subsection{Streaming Protocol (Current Format)}
-
-Streaming responses use OpenAI-style SSE chunks with structured delta fields. Unlike earlier marker-based approaches, the current stream sends typed fields directly:
-
-\begin{itemize}
-    \item \texttt{status\_update}: tool progress and handoff status
-    \item \texttt{tool\_output}: raw tool output fragments
-    \item \texttt{reasoning\_content} / \texttt{reasoning}: model thinking tokens
-    \item \texttt{content}: final user-visible answer tokens
-    \item \texttt{chart\_artifact}: Mermaid payloads for rendering
-    \item \texttt{todo\_update}: task-plan updates
-    \item \texttt{pending\_actions}: queued actions awaiting user confirmation
-\end{itemize}
-
-This explicit schema simplifies downstream parsing in both chat UI and evaluation pipelines.
-
-\subsection{Chart Artifact Isolation}
-
-Chart rendering uses Mermaid artifacts generated as tool outputs and streamed separately from natural-language reasoning. To prevent context pollution, chart artifacts are filtered out of future LLM context windows via session wrappers. This preserves token budget and avoids recursive visual-text contamination.
-
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated chart-artifact isolation flow (tool output extraction, artifact channeling, context filtering, frontend rendering).]}}}
-    \caption{Chart Artifact Isolation in the Backend Pipeline}
-    \label{fig:chart-artifact-flow}
-\end{figure}
-
-\subsection{Evaluation-Oriented Backend Hooks}
-
-The backend now exposes behavior that supports architecture-level evaluation:
-
-\begin{itemize}
-    \item deterministic session IDs for replayable traces,
-    \item detailed status/tool streaming for trace extraction,
-    \item compatibility with state-reset workflows in mock MCP mode,
-    \item explicit HITL event visibility for safety scoring.
-\end{itemize}
-
-These hooks are consumed by the Scenario-Grid evaluation stack described in Chapter~\ref{sec:testing-approach}.
-
-\subsection{TODO for Final Thesis Freeze}
-
-\begin{itemize}
-    \item Export one final frozen prompt snapshot (main/analysis/action) into appendix for reproducibility.
-    \item Add a compact "tool guardrail matrix" extracted from runtime configuration.
-    \item Add sequence diagram for the exact SSE delta event flow (status/tool\_output/reasoning/content).
-\end{itemize}
+Each chat ID maps to a persistent session (conversation memory, pending actions, chart context, runtime config). Evaluation runs use deterministic isolated session IDs for reproducibility. Context budget is managed by separating large artifacts from model input.

@@ -170,7 +170,11 @@ body {
   padding: 12px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  max-height: 40vh;
+  overflow-y: auto;
 }
+.sidebar-footer::-webkit-scrollbar { width: 3px; }
+.sidebar-footer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .sidebar-eval-mode .sidebar-footer {
   flex: 1 1 auto;
   min-height: 0;
@@ -664,6 +668,43 @@ body {
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Tool output terminal block (inside steps) ──────────────────── */
+.step-tool-output {
+  margin: 2px 0 4px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.step-tool-output-pre {
+  margin: 0;
+  padding: 8px 10px;
+  background: #f6f8fa;
+  color: #1f2328;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+  border: 1px solid #d1d9e0;
+  border-radius: 4px;
+}
+.step-tool-output-toggle {
+  display: block;
+  width: 100%;
+  padding: 3px 10px;
+  background: #eef1f5;
+  border: none;
+  border-top: 1px solid #d1d9e0;
+  color: var(--accent);
+  font-size: 10px;
+  font-family: monospace;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 0 0 4px 4px;
+}
+.step-tool-output-toggle:hover {
+  background: #e2e6eb;
 }
 
 /* ── Todo list (agent task plan) ─────────────────────────────────── */

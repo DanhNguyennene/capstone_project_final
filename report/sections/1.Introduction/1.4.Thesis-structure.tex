@@ -1,19 +1,21 @@
-\section{Thesis Structure}
+\section{Project Structure}
 \label{sec:thesis-structure}
 
-This thesis is organized into seven chapters, each addressing specific aspects of the research and development of the Slurm Agent system. The structure is designed to provide a logical progression from theoretical foundations through implementation details to experimental evaluation.
+The report is divided into seven chapters, with a brief overview of each chapter as follows:
 
-\textbf{Chapter 1: Introduction.} This chapter presents the motivation for developing an LLM-based agent for Slurm cluster management. It establishes the scope and goals of the project, identifies key challenges encountered during development, and outlines the solutions adopted to address them.
+\begin{itemize}
+	\item \textbf{Chapter 1 - Introduction:} This chapter introduces the project topic, explains the motivation for a natural-language Slurm assistant, defines the scope and objectives, discusses the main challenges, and outlines the adopted solutions.
 
-\textbf{Chapter 2: Theoretical Background.} This chapter provides the foundational knowledge necessary to understand the research. It covers Slurm workload management, including architecture and key concepts; Large Language Models and their capabilities; and the Model Context Protocol for tool integration. These concepts form the technical basis upon which the solution is built.
+	\item \textbf{Chapter 2 - Theoretical Background:} This chapter presents the foundational knowledge required for the project, including Slurm workload management, Large Language Models, agent architectures, and the Model Context Protocol.
 
-\textbf{Chapter 3: Related Tools and Works.} This chapter surveys existing solutions and related research in the domains of HPC management interfaces, LLM-based agent frameworks, and MCP implementations. It analyzes the strengths and limitations of current approaches, positioning the contribution of this research within the broader landscape.
+	\item \textbf{Chapter 3 - Related Tools and Works:} This chapter reviews existing HPC management interfaces, LLM agent frameworks, and MCP-based tool integrations, then positions the project relative to those works.
 
-\textbf{Chapter 4: Proposed Approaches.} This chapter presents the design of the Slurm Agent system. It begins with an introduction to the application concept, followed by detailed requirements analysis. The chapter describes the overall system architecture and the multi-agent design that enables specialized handling of different task types.
+	\item \textbf{Chapter 4 - Proposed Approaches:} This chapter analyzes and designs the Slurm Agent system, including requirements, system architecture, component responsibilities, and the Observer/Operator workflow.
 
-\textbf{Chapter 5: Implementation.} This chapter details the implementation of each system component. It covers the MCP server development for exposing Slurm functionality, the agent backend implementation using the OpenAI Agents SDK, and the frontend development including the SSE-based real-time update mechanism and visualization rendering.
+	\item \textbf{Chapter 5 - Implementation:} This chapter describes the implementation of the main system components: the MCP Slurm tool server, the agent backend, the frontend interface, and supporting evaluation infrastructure.
 
-\textbf{Chapter 6: Experiments.} This chapter describes the testing methodology and presents experimental results. It covers the testing approaches employed, the test environment configuration, and evaluation of the system's capabilities across various usage scenarios.
+	\item \textbf{Chapter 6 - Experiments:} This chapter presents the testing approach, benchmark design, evaluation criteria, and experimental results of the Slurm Agent system.
 
-\textbf{Chapter 7: Conclusion.} This chapter summarizes the research contributions and findings. It discusses limitations of the current implementation and identifies opportunities for future work and potential extensions of the system.
+	\item \textbf{Chapter 7 - Conclusion:} This chapter summarizes the project outcomes, discusses limitations, and outlines future development directions.
+\end{itemize}
 

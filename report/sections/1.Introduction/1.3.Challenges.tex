@@ -1,42 +1,38 @@
 \section{Challenges and Solutions}
 \label{sec:challenges}
 
-The development of an LLM-based agent for Slurm cluster management presents several technical and architectural challenges. This section identifies these challenges and outlines the approaches adopted to address them.
+\noindent\textbf{Reliability and Accuracy}
 
-\subsection{Challenge 1: Bridging Natural Language to System Commands}
+\textbf{Challenge:} Ensuring reliability and accuracy in a natural-language Slurm agent is difficult because Slurm commands depend on exact syntax, object identifiers, flags, partitions, accounts, and current scheduler state. A generated answer may sound plausible while still selecting the wrong tool, referring to the wrong job, misunderstanding a pending reason, or confusing documentation knowledge with live cluster facts.
 
-\textbf{Challenge Description:} Slurm operations require precise command syntax with specific parameters and flags. Natural language queries are inherently ambiguous and may not provide all necessary information for command execution. The system must accurately interpret user intent and request clarification when required, while avoiding incorrect command execution that could impact cluster operations.
+\textbf{Solutions:} The system grounds user requests in typed MCP tools instead of free-form shell generation. The agent uses a ReAct-style execution pattern \cite{yao2022react}, but the important project-specific layer is the Slurm grounding around it: live state is retrieved through Slurm tools, command and state explanations are supported by local official-documentation retrieval, and under-specified requests can trigger clarification rather than forced execution.
 
-\textbf{Solution Approach:} We employ a ReAct (Reasoning and Acting) architecture \cite{yao2022react} where the main agent follows a Think $\rightarrow$ Act $\rightarrow$ Observe loop. The MCP server exposes Slurm commands as tools with well-defined Pydantic parameter schemas, enabling the LLM to understand required and optional parameters. The agent reasons about each query before acting, and can engage in multi-turn dialogue using SQLite-backed conversation history to gather missing information from users.
+\noindent\textbf{Safety in Cluster Operations}
 
-\subsection{Challenge 2: Managing Complex Multi-Step Operations}
+\textbf{Challenge:} Slurm is a shared operational environment. Read-only inspection is low risk, but cancelling jobs, holding jobs, changing node state, modifying reservations, or updating accounting state can interrupt users and affect shared resources. These actions cannot be handled like ordinary chatbot responses.
 
-\textbf{Challenge Description:} Many cluster management tasks require multiple sequential operations with dependencies between steps. For example, analyzing job performance may require first retrieving job information, then querying accounting data, and finally generating a visualization. Managing these workflows while maintaining coherent conversation context presents significant complexity.
+\textbf{Solutions:} The system separates read-only observation from state-changing operation through an Observer/Operator workflow. The Observer handles inspection, diagnosis, accounting/resource-limit queries, reservation checks, documentation retrieval, and web-search fallback. The Operator handles state-changing work through structured handoffs and a pending-action workflow that requires explicit user confirmation before execution. Dynamic tool filtering keeps sub-agents within their intended responsibility boundaries, and MCP parameter validation prevents arbitrary shell-command construction.
 
-\textbf{Solution Approach:} We implement a multi-agent architecture where the main ReAct agent orchestrates specialized sub-agents invoked as tools. An Analysis Sub-Agent handles read-only queries (cluster status, job information, web search), while an Action Sub-Agent manages job operations. Sub-agents return results to the main agent, which maintains overall context and coordinates execution. A ChartFilteredSession wrapper strips Mermaid chart code from conversation history before sending to the LLM, reducing token consumption since visualization code is verbose but not needed for reasoning.
+\noindent\textbf{Data Construction for Evaluation}
 
-% Placeholder: Multi-agent handoff diagram
-% \begin{figure}[H]
-%     \centering
-%     \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram showing multi-agent handoff mechanism and workflow coordination]}}}
-%     \caption{Multi-Agent Handoff Architecture}
-%     \label{fig:agent-handoff}
-% \end{figure}
+\textbf{Challenge:} Evaluating an agentic Slurm assistant requires more than a small list of example prompts, but there is no ready-made public dataset that covers the exact Slurm workflows and tool behavior needed for this project. The benchmark data therefore has to be manually designed as synthetic scenarios. It must cover read-only monitoring, diagnosis, submission, job control, accounting, documentation questions, multi-step workflows, and edge cases, while remaining scorable through clear expectations for tools, routing, confirmation, response evidence, and state changes where applicable.
 
-\subsection{Challenge 3: Real-Time Response Delivery}
+\textbf{Solutions:} The project manually constructs a synthetic 3,135-case scenario-grid benchmark across eleven balanced categories. Each case specifies expected tool behavior, routing behavior, confirmation policy, keywords, and source-to-target state behavior where applicable. The dataset is validated against supported tools and mock Slurm state so that benchmark failures can be interpreted as agent behavior rather than inconsistent ground truth.
 
-\textbf{Challenge Description:} LLM inference and Slurm command execution can introduce noticeable latency, potentially leading to poor user experience. Users may perceive the system as unresponsive during processing, particularly for complex queries that require multiple tool invocations or lengthy computations.
+\noindent\textbf{Diversity of Slurm Workflows}
 
-\textbf{Solution Approach:} We implement Server-Sent Events (SSE) with structured delta fields so the frontend can render partial results incrementally. The stream separates status updates, tool output, reasoning text, final content, chart artifacts, and pending-action metadata. This design powers the primary React frontend and remains compatible with optional middleware/OpenWebUI deployment paths.
+\textbf{Challenge:} Slurm administration spans many domains, including jobs, nodes, partitions, accounting, QoS, fair-share, reservations, configuration, scheduler health, job arrays, dependencies, licenses, reports, topology, and selected administrative actions. A narrow prototype using only \texttt{squeue} and \texttt{scancel} would not represent the operational breadth expected from an HPC assistant.
 
-\subsection{Challenge 4: Secure Tool Execution}
+\textbf{Solutions:} The MCP tool layer exposes a broad Slurm operation surface, and the benchmark mirrors that breadth across balanced categories. Live or mock MCP command results remain the source of truth for cluster-state questions, while local Slurm documentation retrieval supports reference-heavy questions. This keeps live operational facts separate from documentation knowledge and reduces dependence on model memory alone.
 
-\textbf{Challenge Description:} The system must execute Slurm commands on behalf of users, raising concerns about command injection, unauthorized operations, and potential system impact. Improper handling could allow malicious queries to execute harmful commands on the cluster.
+\noindent\textbf{State and Context Isolation}
 
-\textbf{Solution Approach:} The system implements a layered security model. First, tools are categorized into safe read-only operations (squeue, sinfo, sacct) and dangerous write operations (scancel, sbatch, scontrol updates). Safe tools execute immediately, while dangerous tools are queued in a persistent Pending Actions Store requiring explicit user confirmation. The MCP server uses parameterized tool interfaces with Pydantic validation that prevent arbitrary command injection. Dynamic tool filters ensure sub-agents can only access their permitted tool sets.
+\textbf{Challenge:} Conversation state is useful for real users, but it can contaminate automated evaluation if previous test cases leak into later cases. Follow-up prompts need session memory, yet benchmark cases must start from clean context and known source state. Large artifacts or verbose traces can also pollute future model context if stored as ordinary conversation text.
 
-\subsection{Challenge 5: Visualization Generation and Delivery}
+\textbf{Solutions:} The backend maintains session-scoped conversation state and pending actions for interactive use, while evaluation runs use deterministic isolated sessions. Mock Slurm scenarios can be reset before each case, and parallel evaluation workers use separate session identifiers and worker-specific MCP endpoints. Chart artifacts and large generated payloads are separated from ordinary model context to reduce unnecessary token usage.
 
-\textbf{Challenge Description:} Generating and delivering data visualizations within a conversational interface presents unique challenges. The system must determine appropriate chart types based on data characteristics, generate visualizations dynamically, and deliver them through the SSE response stream in a format consumable by the web frontend.
+\noindent\textbf{Traceable Agent Evaluation}
 
-\textbf{Solution Approach:} A dedicated chart generation tool handles visualization using Mermaid diagram syntax. The main agent calls the \texttt{generate\_chart} tool via the MCP server, which returns Mermaid code for chart types including pie charts, bar charts, and flowcharts. Chart artifacts are stored in a context object during the run and transmitted through the SSE stream as Mermaid code blocks. The frontend renders these using a Mermaid renderer, providing inline visualization within the conversation. Critically, a ChartFilteredSession wrapper makes the agent ``blind'' to chart artifacts---Mermaid blocks are stripped from conversation history before LLM inference, significantly reducing token consumption since chart code can be hundreds of tokens that provide no reasoning value.
+\textbf{Challenge:} Text-only evaluation is insufficient for a tool-using agent. A response can explain the correct operation while still using the wrong tool path, skipping a required handoff, failing to request confirmation, or producing the wrong state transition in the simulator.
+
+\textbf{Solutions:} The evaluator sends prompts through the live backend, records tool and routing traces, applies confirmation logic, and checks structural metrics such as tool recall, routing match, HITL behavior, keyword coverage, and state matching. This makes failures inspectable and repeatable, allowing the project to measure architecture-level behavior rather than relying only on final response fluency.

@@ -32,7 +32,6 @@ from .instructions import (
 )
 from .model import (
     DEFAULT_MODEL,
-    SPECIALIST_MODEL,
     OLLAMA_BASE_URL,
     GITHUB_TOKEN,
     COPILOT_BASE_URL,
@@ -58,7 +57,6 @@ from .skills import (
 )
 # SlurmGuard admission is disabled by request.
 # from .slurm_guard import SlurmGuard, normalize_target_scope, looks_like_job_id
-from .todo import TodoTracker
 from .tool_discovery import ToolCatalog, discover_tools
 from .tools import (
     make_guarded_dangerous_tools,
@@ -97,7 +95,6 @@ def looks_like_job_id(value: str) -> bool:
 class _StreamState:
     """Tracks state across a single stream event iteration."""
     content_streamed: bool = False
-    charts_emitted: int = 0
     hitl_tool_outputs: List[str] = field(default_factory=list)
     _is_first_agent_event: bool = True
 
@@ -175,20 +172,10 @@ class SlurmAgentSystem:
         self.llm_provider = normalize_provider(llm_provider or LLM_PROVIDER)
         self.main_provider = self.llm_provider
         self.llm_model = (llm_model or reasoning_model or DEFAULT_MODEL).strip()
-        self.openai_api_key = openai_api_key or OPENAI_API_KEY
         self.specialist_provider = normalize_provider(specialist_provider or self.llm_provider)
+        self.specialist_model = (specialist_model or self.llm_model).strip()
+        self.openai_api_key = openai_api_key or OPENAI_API_KEY
         self.openai_parallel = bool(openai_parallel and self.llm_provider == "openai")
-        if self.specialist_provider == "openai":
-            default_specialist = OPENAI_MODEL
-        elif self.specialist_provider == "copilot":
-            default_specialist = COPILOT_MODEL
-        elif self.specialist_provider == "github-models":
-            default_specialist = GITHUB_MODELS_MODEL
-        elif self.specialist_provider == "azure-openai":
-            default_specialist = AZURE_OPENAI_MODEL
-        else:
-            default_specialist = SPECIALIST_MODEL
-        self.specialist_model = (specialist_model or default_specialist).strip()
 
         self._reasoning_model = resolve_model(
             self.llm_model,
@@ -214,15 +201,6 @@ class SlurmAgentSystem:
         self.operator_agent  = None   # direct retry target
         self._catalog: Optional[ToolCatalog] = None
         self._ready          = False
-
-        # Session-scoped task plan
-        self._todo = TodoTracker(
-            llm_provider=self.llm_provider,
-            main_model=self.llm_model,
-            specialist_provider=self.specialist_provider,
-            specialist_model=self.specialist_model,
-            openai_api_key=self.openai_api_key,
-        )
 
         # HITL: store RunState + interruptions between requests for approval flow
         self._pending_approvals: Dict[str, dict] = {}
@@ -751,7 +729,6 @@ class SlurmAgentSystem:
         result,
         state: _StreamState,
         *,
-        todo: TodoTracker,
         ctx: "SlurmContext",
         approval_data: dict | None = None,
         hitl_approved_tools: List[str] | None = None,
@@ -788,11 +765,6 @@ class SlurmAgentSystem:
                     elif event_data_type == "response.output_text.delta":
                         r = getattr(event_data, "delta", None)
                         if r:
-                            if not state.content_streamed:
-                                todo.on_response_start()
-                                snap = todo.get_snapshot()
-                                if snap:
-                                    yield {"type": "todo", "items": snap}
                             yield {"type": "final_answer", "message": r}
                             state.content_streamed = True
                 except Exception:
@@ -813,10 +785,6 @@ class SlurmAgentSystem:
                     args = {}
                 if name:
                     yield {"type": "status", "message": format_tool_call(name, args)}
-                    todo.on_tool_start(name)
-                    snap = todo.get_snapshot()
-                    if snap:
-                        yield {"type": "todo", "items": snap}
 
             elif item.type == "tool_call_output_item":
                 _completed_name = ""
@@ -831,10 +799,6 @@ class SlurmAgentSystem:
                                 break
                 except Exception:
                     pass
-                todo.on_tool_complete(_completed_name or "")
-                snap = todo.get_snapshot()
-                if snap:
-                    yield {"type": "todo", "items": snap}
 
                 out = _extract_tool_output_text(item.output)
                 summary = brief_output_summary(out)
@@ -849,11 +813,6 @@ class SlurmAgentSystem:
                     urls = re.findall(r"URL:\s*(https?://[^\s\n'\"]+)", out)
                     if urls:
                         yield {"type": "web_results", "urls": urls[:5]}
-                # Emit chart artifacts immediately
-                while len(ctx.chart_artifacts) > state.charts_emitted:
-                    chart = ctx.chart_artifacts[state.charts_emitted]
-                    state.charts_emitted += 1
-                    yield {"type": "chart", "mermaid": chart}
 
             elif item.type == "message_output_item":
                 if not state.content_streamed:
@@ -863,10 +822,6 @@ class SlurmAgentSystem:
                         if clean.strip():
                             yield {"type": "final_answer", "message": clean}
                 state.content_streamed = False  # reset for next turn
-                while len(ctx.chart_artifacts) > state.charts_emitted:
-                    chart = ctx.chart_artifacts[state.charts_emitted]
-                    state.charts_emitted += 1
-                    yield {"type": "chart", "mermaid": chart}
 
     # ── Streaming run ─────────────────────────────────────────────────────────
 
@@ -881,9 +836,6 @@ class SlurmAgentSystem:
             ctx     = self._new_context()
             ctx.original_user_message = user_message
 
-            # Session-scoped tracker (kept for explicit /todo commands only)
-            todo = self._todo
-
             # Track HITL-approved tools for fallback display
             hitl_approved_tools: List[str] = []
             augmented_message = user_message
@@ -894,9 +846,6 @@ class SlurmAgentSystem:
 
                 # ── HITL resume: if a previous run paused for approval, resume it ──
                 approval_data = self._pending_approvals.pop(self.session_id, None)
-
-                if approval_data and "todo_items" in approval_data:
-                    todo.restore(approval_data["todo_items"])
 
                 if approval_data:
                     run_state     = approval_data["state"]
@@ -955,14 +904,6 @@ class SlurmAgentSystem:
                     ctx = run_state._context.context if run_state._context else ctx
                 else:
                     augmented_message = user_message
-                    todo.reset()
-                    if await todo.generate_plan(user_message):
-                        snap = todo.get_snapshot()
-                        if snap:
-                            yield {"type": "todo", "items": snap}
-                        plan_context = todo.format_for_llm()
-                        if plan_context:
-                            augmented_message = f"{plan_context}\n\nUser request:\n{user_message}"
 
                     result = Runner.run_streamed(
                         starting_agent=self.main_agent,
@@ -978,7 +919,7 @@ class SlurmAgentSystem:
                 try:
                     async for ev in self._emit_stream_events(
                         result, state,
-                        todo=todo, ctx=ctx,
+                        ctx=ctx,
                         approval_data=approval_data,
                         hitl_approved_tools=hitl_approved_tools,
                         augmented_message=augmented_message,
@@ -1217,12 +1158,6 @@ class SlurmAgentSystem:
                 raise RuntimeError("MCP servers are not initialized")
             async with self._mcp_observer, self._mcp_operator:
                 runner_input = user_message
-                todo = self._todo
-                todo.reset()
-                if await todo.generate_plan(user_message):
-                    plan_context = todo.format_for_llm()
-                    if plan_context:
-                        runner_input = f"{plan_context}\n\nUser request:\n{user_message}"
 
                 result = await Runner.run(
                     starting_agent=self.main_agent,
@@ -1232,7 +1167,6 @@ class SlurmAgentSystem:
                     max_turns=100,
                 )
                 final = str(result.final_output)
-                charts = [_wrap_mermaid(c) for c in ctx.chart_artifacts]
 
                 pending = []
                 if result.interruptions:
@@ -1257,7 +1191,7 @@ class SlurmAgentSystem:
                     except Exception as e:
                         logger.warning(f"Session compaction failed: {e}")
 
-                return {"success": True, "message": final, "charts": charts, "pending_actions": pending}
+                return {"success": True, "message": final, "pending_actions": pending}
 
         except Exception as exc:
             logger.error(f"Run error: {exc}", exc_info=True)
@@ -1409,5 +1343,4 @@ def _strip_hallucinated_calls(text: str) -> str:
     return text.strip()
 
 
-def _wrap_mermaid(code: str) -> str:
-    return f"\n\n```mermaid\n{code}\n```"
+

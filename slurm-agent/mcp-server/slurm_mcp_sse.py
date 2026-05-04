@@ -1425,6 +1425,63 @@ def _strip_html_text(raw_html: str) -> str:
     return text.strip()
 
 
+def _duckduckgo_html_search(query: str, limit: int = 5) -> list[tuple[str, str]]:
+    """Scrape DuckDuckGo HTML search for real web results."""
+    import urllib.parse
+    import urllib.request
+
+    q = urllib.parse.quote_plus(query)
+    url = f"https://html.duckduckgo.com/html/?q={q}"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read(200_000).decode("utf-8", errors="replace")
+    except Exception:
+        return []
+
+    # Parse result links: <a class="result__a" href="...">title</a>
+    # and snippets: <a class="result__snippet" ...>text</a>
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    # Find all result blocks
+    link_pattern = re.compile(
+        r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+        re.DOTALL,
+    )
+    snippet_pattern = re.compile(
+        r'<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+        re.DOTALL,
+    )
+
+    links = link_pattern.findall(body)
+    snippets = snippet_pattern.findall(body)
+
+    for i, (href, title_html) in enumerate(links):
+        if len(results) >= limit:
+            break
+        # Decode DDG redirect URL
+        if "uddg=" in href:
+            m = re.search(r"uddg=([^&]+)", href)
+            if m:
+                href = urllib.parse.unquote(m.group(1))
+        elif href.startswith("//"):
+            href = "https:" + href
+
+        if not href.startswith("http") or href in seen:
+            continue
+        seen.add(href)
+
+        title = _strip_html_text(title_html).strip()
+        snippet = _strip_html_text(snippets[i]).strip() if i < len(snippets) else ""
+        text = f"{title} — {snippet}" if snippet else title
+        results.append((text, href))
+
+    return results
+
+
 def _collect_duckduckgo_results(payload: dict[str, Any]) -> list[tuple[str, str]]:
     """Collect (text, url) pairs from DuckDuckGo instant-answer payload."""
     items: list[tuple[str, str]] = []
@@ -1531,17 +1588,27 @@ def web_search(query: str, search_type: str = "general", max_results: int = 5) -
         elif mode == "error":
             scoped_query = f"slurm {raw_query} error"
 
-        q = urllib.parse.quote_plus(scoped_query)
-        url = f"https://api.duckduckgo.com/?q={q}&format=json&no_html=1&skip_disambig=1"
-        req = urllib.request.Request(url, headers={"User-Agent": "slurm-agent/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read())
-
         try:
             limit = int(max_results)
         except Exception:
             limit = 5
         limit = max(1, min(limit, 10))
+
+        # Primary: DuckDuckGo HTML search (returns real web results)
+        hits = _duckduckgo_html_search(scoped_query, limit)
+
+        # Fallback: Instant Answer API (for factual/wiki queries)
+        abstract_text = ""
+        abstract_url = ""
+        if not hits:
+            q = urllib.parse.quote_plus(scoped_query)
+            api_url = f"https://api.duckduckgo.com/?q={q}&format=json&no_html=1&skip_disambig=1"
+            req = urllib.request.Request(api_url, headers={"User-Agent": "slurm-agent/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            abstract_text = str(data.get("AbstractText") or "").strip()
+            abstract_url = str(data.get("AbstractURL") or "").strip()
+            hits = _collect_duckduckgo_results(data)
 
         lines = [
             "[WEB_SEARCH]:",
@@ -1549,15 +1616,12 @@ def web_search(query: str, search_type: str = "general", max_results: int = 5) -
             f"Search type: {mode}",
         ]
 
-        abstract_text = str(data.get("AbstractText") or "").strip()
-        abstract_url = str(data.get("AbstractURL") or "").strip()
         if abstract_text:
             lines.append("Top summary:")
             lines.append(abstract_text)
             if abstract_url:
                 lines.append(f"URL: {abstract_url}")
 
-        hits = _collect_duckduckgo_results(data)
         if hits:
             lines.append("Results:")
             for idx, (text, link) in enumerate(hits[:limit], start=1):

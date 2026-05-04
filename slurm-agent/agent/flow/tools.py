@@ -2,13 +2,13 @@
 FunctionTool factories for the Slurm agent.
 
 All tools that are NOT delivered directly via MCP (dangerous-action wrappers
-with HITL approval, skill lookup, todo tracker) are built here as FunctionTool
-objects.
+with HITL approval, skill lookup) are built here as FunctionTool objects.
 Each factory is a plain function — easy to test, easy to replace.
 """
 import json
 import logging
 import re
+from pathlib import Path
 from typing import Any, List
 
 from mcp import ClientSession
@@ -18,7 +18,6 @@ from agents.tool import FunctionTool
 from agents.tool_context import ToolContext
 
 from .context import SlurmContext
-from .todo import TodoTracker
 from .guardrails import (
     TOOL_INPUT_GUARDRAILS,
     guard_redact_secrets,
@@ -501,8 +500,63 @@ def make_skill_lookup_tool(skills: dict[str, str]) -> FunctionTool:
 # ── Slurm documentation retrieval (local RAG) ────────────────────────────────
 
 def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
-    """Create a small lexical retriever over the local Slurm documentation corpus."""
+    """Hybrid lexical + semantic retriever over the local Slurm documentation corpus."""
     import re
+
+    import numpy as np
+
+    # --- Lazy-load sentence-transformers embedding model (GPU if available) ---
+    _embedder = None
+    _chunk_embeddings: np.ndarray | None = None
+
+    # Try to load pre-computed embeddings from .npz (built by build_embeddings.py)
+    _precomputed_npz = Path(__file__).parent.parent / "skills" / "slurm_knowledge" / "embeddings.npz"
+
+    def _get_embedder():
+        nonlocal _embedder
+        if _embedder is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+
+                _embedder = SentenceTransformer(
+                    "sentence-transformers/all-MiniLM-L6-v2",
+                    device="cuda",
+                )
+                logger.info("Loaded semantic embedding model (all-MiniLM-L6-v2) on CUDA")
+            except Exception as e:
+                logger.warning(f"Semantic embeddings unavailable, falling back to lexical: {e}")
+        return _embedder
+
+    def _get_chunk_embeddings(texts: list[str]) -> np.ndarray | None:
+        nonlocal _chunk_embeddings
+        if _chunk_embeddings is not None:
+            return _chunk_embeddings
+
+        # Prefer pre-computed .npz file (instant load, no GPU needed at startup)
+        if _precomputed_npz.exists():
+            try:
+                data = np.load(_precomputed_npz, allow_pickle=False)
+                _chunk_embeddings = data["embeddings"]
+                # Verify dimension match (npz may be stale if corpus changed)
+                if _chunk_embeddings.shape[0] == len(texts):
+                    logger.info(f"Loaded pre-computed embeddings from {_precomputed_npz.name}")
+                    return _chunk_embeddings
+                else:
+                    logger.warning(
+                        f"Pre-computed embeddings stale ({_chunk_embeddings.shape[0]} vs {len(texts)} chunks). Re-embedding."
+                    )
+                    _chunk_embeddings = None
+            except Exception as e:
+                logger.warning(f"Failed to load pre-computed embeddings: {e}")
+
+        # Fallback: compute at runtime
+        embedder = _get_embedder()
+        if embedder is None:
+            return None
+        logger.info(f"Embedding {len(texts)} doc chunks (one-time)...")
+        _chunk_embeddings = embedder.encode(texts, batch_size=128, show_progress_bar=False, normalize_embeddings=True)
+        logger.info("Doc chunk embeddings ready.")
+        return _chunk_embeddings
 
     def _normalize(raw: str) -> str:
         txt = (raw or "").lower()
@@ -576,6 +630,9 @@ def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
                 "page_norm": page_norm,
             })
 
+    # Pre-build text list for embedding (aligned with pages list)
+    _chunk_texts = [f"{p['title']}: {p['chunk'][:512]}" for p in pages]
+
     async def _invoke(ctx: ToolContext[SlurmContext], args_json: str) -> str:
         if not pages:
             return "No local Slurm documentation corpus is loaded."
@@ -591,10 +648,11 @@ def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
         if not query_tokens:
             return "Query is too short to search local Slurm docs."
 
-        scored: list[tuple[int, dict]] = []
+        # --- Lexical scoring ---
+        lexical_scores: list[float] = []
         phrase = f" {query_norm} "
         for page in pages:
-            score = 0
+            score = 0.0
             norm = f" {page['norm']} "
             page_norm = f" {page['page_norm']} "
             if phrase in norm:
@@ -607,16 +665,45 @@ def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
                     score += min(18, norm.count(token_pattern) * 3)
                 if token in page["path"].lower():
                     score += 20
-            if score > 0:
-                scored.append((score, page))
+            lexical_scores.append(score)
 
-        scored.sort(key=lambda item: (-item[0], item[1]["path"], item[1]["title"]))
+        # --- Semantic scoring ---
+        semantic_scores: list[float] = [0.0] * len(pages)
+        chunk_embs = _get_chunk_embeddings(_chunk_texts)
+        if chunk_embs is not None:
+            embedder = _get_embedder()
+            if embedder is not None:
+                query_emb = embedder.encode([query], normalize_embeddings=True)
+                cosine_sims = (chunk_embs @ query_emb.T).flatten()
+                # Scale cosine similarity (0-1) to match lexical range (~0-200)
+                semantic_scores = (cosine_sims * 200).tolist()
+
+        # --- Reciprocal Rank Fusion ---
+        k = 60  # RRF constant
+        # Rank by lexical
+        lexical_ranked = sorted(range(len(pages)), key=lambda i: -lexical_scores[i])
+        # Rank by semantic
+        semantic_ranked = sorted(range(len(pages)), key=lambda i: -semantic_scores[i])
+
+        rrf_scores: list[float] = [0.0] * len(pages)
+        for rank, idx in enumerate(lexical_ranked):
+            if lexical_scores[idx] > 0:
+                rrf_scores[idx] += 1.0 / (k + rank + 1)
+        for rank, idx in enumerate(semantic_ranked):
+            if semantic_scores[idx] > 20:  # Only count if similarity > 0.1
+                rrf_scores[idx] += 1.0 / (k + rank + 1)
+
+        # Filter to pages with any signal
+        scored = [(rrf_scores[i], i) for i in range(len(pages)) if rrf_scores[i] > 0]
+        scored.sort(key=lambda item: (-item[0], pages[item[1]]["path"]))
+
         if not scored:
             return f'No local Slurm documentation snippets matched "{query}". Try web_search with site:slurm.schedmd.com.'
 
         seen = set()
         results = []
-        for score, page in scored:
+        for rrf_score, idx in scored:
+            page = pages[idx]
             key = (page["path"], page["chunk"][:100])
             if key in seen:
                 continue
@@ -624,20 +711,19 @@ def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
             snippet = page["chunk"].strip()
             if len(snippet) > 950:
                 snippet = snippet[:950].rstrip() + "..."
-            results.append((score, page, snippet))
+            results.append((rrf_score, page, snippet))
             if len(results) >= limit:
                 break
 
         lines = [
-            f'Local Slurm docs results for "{query}" ({len(results)}/{len(scored)} snippets).',
+            f'Local Slurm docs results for "{query}" ({len(results)}/{len(scored)} snippets, hybrid retrieval).',
             "Use these snippets as documentation context; verify live cluster state with Slurm tools.",
         ]
-        for index, (score, page, snippet) in enumerate(results, 1):
+        for index, (rrf_score, page, snippet) in enumerate(results, 1):
             lines.append(
                 f"\n[{index}] {page['title']}\n"
                 f"Source: {page['source']}\n"
                 f"Path: {page['path']}\n"
-                f"Score: {score}\n"
                 f"Snippet:\n{snippet}"
             )
         return "\n".join(lines)
@@ -664,81 +750,6 @@ def make_slurm_docs_lookup_tool(docs: dict[str, str]) -> FunctionTool:
                 },
             },
             "required": ["query"],
-            "additionalProperties": False,
-        },
-        on_invoke_tool=_invoke,
-        timeout_seconds=5.0,
-        timeout_behavior="error_as_result",
-    )
-
-
-# ── Task tracker tool (explicit LLM-driven todo management) ──────────────────
-
-def make_manage_todos_tool(todo: TodoTracker) -> FunctionTool:
-    """
-    FunctionTool that lets agents explicitly manage their task plan —
-    identical in schema to Copilot's manage_todo_list.
-
-    The agent passes the COMPLETE todo list every call (create/update/delete
-    all happen by replacing the list).  Schemas: each item must have:
-      id     — sequential int (1-based)
-      title  — 3-7 word action label
-      status — "not-started" | "in-progress" | "completed"
-
-    The tool calls TodoTracker.set_from_tool() which streams the new state
-    to the frontend automatically on the next get_snapshot() call.
-    """
-
-    async def _invoke(ctx, args_json: str) -> str:
-        args = _parse_tool_args(args_json)
-
-        todo_list = args.get("todoList", [])
-        if not isinstance(todo_list, list):
-            return "Error: todoList must be an array."
-
-        todo.set_from_tool(todo_list)
-        count = len(todo.items)
-        in_prog = sum(1 for i in todo.items if i["status"] == "in-progress")
-        done = sum(1 for i in todo.items if i["status"] == "completed")
-        return f"Todo updated: {count} items ({done} completed, {in_prog} in-progress)."
-
-    return FunctionTool(
-        name="manage_todos",
-        description=(
-            "Manage the task plan for this conversation. "
-            "Pass the COMPLETE updated todoList every call — this replaces the current list. "
-            "Use for multi-step tasks: create the plan upfront, then mark items as you work. "
-            "Skip for single-step operations."
-        ),
-        params_json_schema={
-            "type": "object",
-            "properties": {
-                "todoList": {
-                    "type": "array",
-                    "description": "Complete array of all todo items (create + existing).",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": "integer",
-                                "description": "Sequential id starting from 1.",
-                            },
-                            "title": {
-                                "type": "string",
-                                "description": "Concise 3-7 word action label.",
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["not-started", "in-progress", "completed"],
-                                "description": "not-started | in-progress (max 1) | completed.",
-                            },
-                        },
-                        "required": ["id", "title", "status"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            "required": ["todoList"],
             "additionalProperties": False,
         },
         on_invoke_tool=_invoke,

@@ -1,0 +1,61 @@
+---
+config:
+  look: neo
+  theme: base
+  themeVariables:
+    primaryColor: "#e8f1ff"
+    primaryBorderColor: "#2563eb"
+    secondaryColor: "#f0fdf4"
+    secondaryBorderColor: "#16a34a"
+    tertiaryColor: "#fff7ed"
+    tertiaryBorderColor: "#ea580c"
+---
+flowchart LR
+    Request["Natural-language<br/>Slurm request"] --> Main["Main ReAct agent<br/>intent and risk routing"]
+
+    Main --> Decision{"Routing decision<br/>LLM + policy checks"}
+
+    Decision -- "Reference or troubleshooting" --> Docs["Local Slurm<br/>documentation"]
+    Docs --> Web{"Covered locally?"}
+    Web -- "No" --> Search["Web-search fallback"]
+    Web -- "Yes" --> Evidence["Grounded evidence"]
+    Search --> Evidence
+
+    Decision -- "Read-only state" --> Observer["Observer path"]
+    Observer --> ReadTools["MCP read tools<br/>squeue, sinfo, sacct,<br/>scontrol show"]
+    ReadTools --> SlurmState["Slurm or mock<br/>cluster state"]
+    SlurmState --> Evidence
+
+    Decision -- "State-changing" --> Operator["Operator path"]
+    Operator --> Pending["Pending action"]
+    Pending --> Confirm{"User confirms?"}
+    Confirm -- "No" --> Cancel["Cancel action"]
+    Confirm -- "Yes" --> WriteTools["MCP action tools<br/>sbatch, scancel,<br/>hold, release, update"]
+    WriteTools --> SlurmState
+
+    Evidence --> Answer["Grounded response"]
+    Cancel --> Answer
+
+    Main --> Trace["Runtime trace"]
+    Observer --> Trace
+    Operator --> Trace
+    ReadTools --> Trace
+    WriteTools --> Trace
+    Pending --> Trace
+    Answer --> Trace
+
+    Trace --> Eval["Scenario-grid evaluator<br/>tool, routing, HITL,<br/>state, response scoring"]
+    Dataset["Manual synthetic<br/>benchmark cases"] --> Eval
+    Eval --> Result["Result artifact"]
+
+    classDef input fill:#e8f1ff,stroke:#2563eb,stroke-width:2px,color:#111827
+    classDef agent fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#111827
+    classDef tool fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#111827
+    classDef safety fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#111827
+    classDef eval fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px,color:#111827
+
+    class Request,Dataset input
+    class Main,Decision,Observer,Operator,Answer agent
+    class Docs,Search,ReadTools,WriteTools,SlurmState,Evidence tool
+    class Pending,Confirm,Cancel safety
+    class Trace,Eval,Result eval

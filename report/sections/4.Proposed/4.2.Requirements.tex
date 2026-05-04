@@ -1,96 +1,99 @@
 \section{Requirements Overview}
 \label{sec:requirements}
 
-This section presents the functional and non-functional requirements that guide the design and implementation of the Slurm Agent system. Requirements are derived from the project goals and the needs of target users identified in the previous section.
+This section defines the functional and non-functional requirements that guide system design. Requirements are derived from the project goals stated in Section~\ref{sec:app-introduction} and the operational needs of HPC administrators and researchers.
 
 \subsection{Functional Requirements}
 
-Functional requirements define the specific capabilities the system must provide:
-
-\textbf{FR1: Natural Language Understanding.} The system shall interpret user queries expressed in natural language and determine appropriate actions. This includes handling variations in phrasing, implicit context, and ambiguous requests through clarification dialogue.
-
-\textbf{FR2: Slurm Query Execution.} The system shall execute Slurm queries to retrieve cluster information, including:
-\begin{itemize}
-    \item Partition information (names, states, resource limits)
-    \item Node status (availability, resources, current allocations)
-    \item Job queue status (pending and running jobs)
-    \item Job details (parameters, resources, timing information)
-    \item Accounting data (historical job information)
-\end{itemize}
-
-\textbf{FR3: Job Management Operations.} The system shall support job management actions including:
-\begin{itemize}
-    \item Job submission via batch scripts
-    \item Job cancellation for running or pending jobs
-    \item Job control operations (hold, release, modify priority)
-    \item Retrieving detailed job information and output files
-\end{itemize}
-
-\textbf{FR4: Data Visualization.} The system shall generate visualizations for cluster data, including:
-\begin{itemize}
-    \item Node resource utilization charts
-    \item Job distribution by partition
-    \item Historical usage trends
-    \item Queue statistics
-\end{itemize}
-
-\textbf{FR5: Web Search Integration.} The system shall search web resources to assist with troubleshooting and documentation lookup, enabling access to current information beyond the system's training data.
-
-\textbf{FR6: Real-Time Response Streaming.} The system shall stream responses in real-time, providing incremental updates as the agent processes queries and generates results.
-
-\textbf{FR7: Markdown Response Formatting.} The system shall format responses using markdown, enabling rich text display including tables, code blocks, and inline formatting.
-
-\textbf{FR8: Multi-Turn Conversation.} The system shall maintain conversation context across multiple turns, enabling follow-up questions and contextual references.
-
-\textbf{FR9: Confirmation for Dangerous Operations.} The system shall require explicit user confirmation before executing operations that modify cluster state, such as job cancellation or configuration changes. Pending actions shall be stored persistently until confirmed or cancelled.
+\begin{table}[H]
+    \centering
+    \caption{Functional Requirements}
+    \label{tab:functional-requirements}
+    \small
+    \begin{tabular}{|l|p{10.5cm}|}
+        \hline
+        \textbf{ID} & \textbf{Requirement} \\
+        \hline
+        FR1 & The system shall interpret natural-language Slurm queries, including variations in phrasing and implicit context, and map them to appropriate typed tool calls. \\
+        \hline
+        FR2 & The system shall retrieve live cluster state (queues, nodes, partitions, accounting, reservations, scheduler diagnostics) via read-only Slurm tools and present results grounded in tool output. \\
+        \hline
+        FR3 & The system shall execute state-changing operations (submit, cancel, hold, release, requeue, node control, account management) only after explicit user confirmation. \\
+        \hline
+        FR4 & The system shall retrieve relevant Slurm documentation from a local corpus using hybrid retrieval (lexical + semantic), with web search as a fallback when the local corpus does not cover the topic. \\
+        \hline
+        FR5 & The system shall maintain multi-turn conversation context, enabling follow-up questions and contextual references within a session. \\
+        \hline
+        FR6 & The system shall provide real-time feedback during execution through structured status events, making tool selections and intermediate results visible to the user. \\
+        \hline
+        FR7 & The system shall support deterministic evaluation against mock cluster states, producing behavioral traces that can be compared to expected tool selections, routing decisions, and state transitions. \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsection{Non-Functional Requirements}
 
-Non-functional requirements define quality attributes and constraints:
+\begin{table}[H]
+    \centering
+    \caption{Non-Functional Requirements}
+    \label{tab:nonfunctional-requirements}
+    \small
+    \begin{tabular}{|l|p{10.5cm}|}
+        \hline
+        \textbf{ID} & \textbf{Requirement} \\
+        \hline
+        NFR1 & \textbf{Safety}: The system shall never execute cluster-mutating commands without explicit confirmation. The confirmation mechanism shall be enforced at the tool layer, independent of LLM behavior. \\
+        \hline
+        NFR2 & \textbf{Accuracy}: Responses shall be grounded in tool output. The system shall not fabricate cluster state, job IDs, node names, or resource figures. \\
+        \hline
+        NFR3 & \textbf{Latency}: Simple read-only queries shall complete within interactive response times. Long-running workflows shall emit incremental status events. \\
+        \hline
+        NFR4 & \textbf{Extensibility}: New Slurm tools shall be addable via the MCP server without modifying the agent core. Tool schemas are discovered at runtime. \\
+        \hline
+        NFR5 & \textbf{Context Efficiency}: The system shall avoid unnecessary growth of LLM context by lazy-loading documentation, capping retrieval output size, and separating large artifacts from conversational memory. \\
+        \hline
+        NFR6 & \textbf{Reproducibility}: Evaluation runs shall be deterministic given the same mock state, model, and test case. Provider and model shall be configurable per session. \\
+        \hline
+    \end{tabular}
+\end{table}
 
-\textbf{NFR1: Response Latency.} The system should begin streaming responses within 2 seconds of query submission. Complete responses for simple queries should typically complete within 10 seconds.
+\subsection{Requirements Traceability}
 
-\textbf{NFR2: Accuracy.} Slurm command outputs should be accurately retrieved and presented. The agent should not fabricate cluster information.
+Table~\ref{tab:requirements-traceability} maps each requirement to the project goals defined in Section~\ref{sec:app-introduction}.
 
-\textbf{NFR3: Safety.} The system shall not execute commands that could harm cluster operations. Dangerous operations shall be intercepted by a confirmation mechanism requiring explicit user approval before execution.
-
-\textbf{NFR4: Usability.} The web interface shall be intuitive and usable without specialized training. Users should be able to begin productive interaction immediately.
-
-\textbf{NFR5: Extensibility.} The MCP server architecture shall support addition of new tools without modifying the agent core. Visualization capabilities shall be extensible through modular chart definitions.
-
-\textbf{NFR6: Maintainability.} Code shall be organized in modular components with clear separation of concerns. The multi-agent architecture shall isolate different functional domains.
-
-% Requirements traceability matrix
 \begin{table}[H]
     \centering
     \caption{Requirements Traceability to Project Goals}
     \label{tab:requirements-traceability}
     \small
-    \begin{tabular}{|l|c|c|c|c|c|c|}
+    \begin{tabular}{|l|c|c|c|c|}
         \hline
-        \textbf{Requirement} & \textbf{G1} & \textbf{G2} & \textbf{G3} & \textbf{G4} & \textbf{G5} & \textbf{G6} \\
-        & \textit{NL} & \textit{Multi-} & \textit{MCP} & \textit{Visual-} & \textit{Stream-} & \textit{Web} \\
-        & \textit{Interface} & \textit{Agent} & \textit{Tools} & \textit{ization} & \textit{ing} & \textit{UI} \\
+        \textbf{Requirement} & \textbf{G1} & \textbf{G2} & \textbf{G3} & \textbf{G4} \\
+        & \textit{NL Slurm} & \textit{Control} & \textit{MCP} & \textit{Dataset} \\
+        & \textit{Access} & \textit{Flow} & \textit{Tools} & \textit{Eval} \\
         \hline
-        FR1: NL Understanding & \checkmark & & & & & \\
-        FR2: Query Execution & \checkmark & & \checkmark & & & \\
-        FR3: Job Management & \checkmark & \checkmark & \checkmark & & & \\
-        FR4: Visualization & & & \checkmark & \checkmark & & \\
-        FR5: Web Search & & \checkmark & \checkmark & & & \\
-        FR6: Streaming & & & & & \checkmark & \checkmark \\
-        FR7: Formatting & & & & & & \checkmark \\
-        FR8: Multi-Turn & & & & & & \checkmark \\
-        FR9: Confirmation & & \checkmark & & & & \checkmark \\
+        FR1: Intent Interpretation & \checkmark & & & \\
+        FR2: Cluster State Retrieval & \checkmark & & \checkmark & \\
+        FR3: Confirmed State Changes & \checkmark & \checkmark & \checkmark & \\
+        FR4: Documentation Retrieval & \checkmark & & \checkmark & \\
+        FR5: Multi-Turn Conversation & \checkmark & \checkmark & & \\
+        FR6: Real-Time Feedback & & \checkmark & & \checkmark \\
+        FR7: Deterministic Evaluation & & & \checkmark & \checkmark \\
+        \hline
+        NFR1: Safety & & \checkmark & & \checkmark \\
+        NFR2: Accuracy & \checkmark & & & \checkmark \\
+        NFR3: Latency & \checkmark & & & \\
+        NFR4: Extensibility & & & \checkmark & \\
+        NFR5: Context Efficiency & & \checkmark & & \\
+        NFR6: Reproducibility & & & & \checkmark \\
         \hline
     \end{tabular}
 \end{table}
 
 \subsection{Constraints}
 
-The following constraints bound the system implementation:
+\textbf{Technology}: Python backend, MCP-based tool layer, local Ollama models for reproducibility with optional remote providers for development and comparison.
 
-\textbf{Technology constraints}: The system uses the OpenAI API for LLM capabilities, requiring API access and incurring usage costs. The MCP server is implemented in Python using the official SDK.
+\textbf{Environment}: Evaluation uses mock Slurm states exposed by the MCP server. Real deployment assumes standard Slurm command availability and site permissions.
 
-\textbf{Environment constraints}: Testing is conducted on a single-node Slurm cluster configuration. The system assumes standard Slurm command availability.
-
-\textbf{Scope constraints}: The current implementation focuses on read operations and visualization. Administrative write operations are limited to prevent accidental cluster impact.
+\textbf{Scope}: The system targets broad Slurm assistance (monitoring, diagnosis, submission, job control, accounting, documentation). High-risk operations are gated by explicit confirmation rather than unrestricted automation.

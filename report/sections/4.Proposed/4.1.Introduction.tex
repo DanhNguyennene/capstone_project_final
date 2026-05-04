@@ -1,69 +1,41 @@
-\section{Application Introduction}
+\section{Proposed Slurm Agent Overview}
 \label{sec:app-introduction}
 
-The Slurm Agent is an intelligent conversational interface designed to democratize access to High-Performance Computing cluster management. By combining Large Language Models with the Model Context Protocol, the system enables users to interact with Slurm workload managers through natural language queries, eliminating the need to memorize complex command syntax and reducing the cognitive overhead associated with HPC operations.
+The proposed system is a stateful Slurm Agent for translating natural-language operational requests into grounded scheduler interactions. Its purpose is to study how an LLM-based agent can interpret Slurm intent, choose typed tools, separate read-only inspection from state-changing operations, and produce traces that can be evaluated against expected behavior. The user-facing interface is only an entry point; the main design object is the agent control flow and the evaluation method around it.
 
-\subsection{Application Concept}
+\subsection{System Objective}
 
-The fundamental concept behind the Slurm Agent is to create an intermediary layer between users and the Slurm cluster that understands natural language, reasons about appropriate actions, and presents results in accessible formats. Users express their needs conversationally—such as ``What jobs are running on the GPU partition?'' or ``Show me a chart of my job history''—and the agent translates these queries into appropriate Slurm commands, executes them, and presents formatted results.
+The system sits between a natural-language request and the Slurm command surface. A request such as ``why is my job pending?'', ``show failed jobs for this account'', or ``cancel job 12345'' is not executed as a free-form shell command. Instead, the agent maps the request onto a constrained set of MCP tools, retrieves current or simulated cluster state, and decides whether the task is observational, diagnostic, documentation-oriented, or state-changing.
 
-The system implements a \textbf{ReAct (Reasoning and Acting)} architecture pattern, where the main agent follows a Think $\rightarrow$ Act $\rightarrow$ Observe loop to process user requests. This enables self-correction on failures and iterative refinement of responses based on tool execution results.
+This objective creates three design requirements. First, the agent must ground claims in Slurm evidence rather than model memory alone. Second, commands that modify cluster state must pass through an explicit confirmation path. Third, the runtime must expose enough trace information to evaluate tool choice, routing, confirmation behavior, and state-transition consistency.
 
-% Placeholder: Application concept diagram
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.85\textwidth}{\centering \textit{[Placeholder: Updated high-level concept diagram showing user, chat UI, multi-agent backend, MCP server, and Slurm cluster.]}}}
-    \caption{Slurm Agent Application Concept}
-    \label{fig:app-concept}
-\end{figure}
+\subsection{Core Agent Capabilities}
 
-The application provides several key capabilities:
+The proposed system combines the following capabilities:
 
-\textbf{Natural language query processing}: Users can ask questions about cluster state, job status, and resource availability using conversational language. The main agent interprets intent and delegates to specialized sub-agents for data gathering.
+\begin{itemize}
+    \item \textbf{Slurm intent interpretation}: map natural-language requests to monitoring, diagnosis, documentation, submission, accounting, job-control, or safety-sensitive workflows.
+    \item \textbf{Observer/Operator separation}: route read-only inspection to the Observer path and state-changing operations to the Operator path with confirmation control.
+    \item \textbf{MCP tool grounding}: expose Slurm commands as typed tools with explicit parameters instead of asking the model to generate arbitrary shell commands.
+    \item \textbf{Documentation and web-search grounding}: retrieve local official Slurm documentation for command syntax, state meanings, reason codes, and policy-like explanations, with web search as a fallback for external troubleshooting material not covered by the local corpus.
+    \item \textbf{Traceable execution}: record tool calls, handoff behavior, pending actions, response evidence, and state effects so each case can be inspected and scored.
+    \item \textbf{Dataset-driven evaluation}: run manually constructed benchmark cases against resettable mock Slurm states and compare observed behavior with expected tools, routing, HITL labels, and target-state semantics.
+\end{itemize}
 
-\textbf{Multi-agent orchestration}: A main ReAct agent orchestrates specialized sub-agents—an Analysis Sub-Agent for read-only queries (cluster status, job information, web search) and an Action Sub-Agent for job management operations (submit, cancel, hold, release).
 
-\textbf{Command execution with safety controls}: The system distinguishes between safe read-only operations and dangerous write operations. Dangerous actions (job cancellation, configuration changes) are queued and require explicit user confirmation before execution.
 
-\textbf{Data visualization}: Cluster metrics and job statistics can be visualized as charts and graphs through a dedicated chart generation tool, providing intuitive understanding of complex data.
+\subsection{Operational Flow}
 
-\textbf{Documentation assistance}: When users encounter errors or need guidance, the agent can search relevant documentation via web search integration and provide contextual help.
+A typical request follows this control path:
 
-\textbf{Real-time streaming}: Responses stream to users in real-time, providing immediate feedback during processing and maintaining a responsive user experience.
-
-\subsection{Target Users}
-
-The application serves multiple user categories with different needs:
-
-\textbf{Researchers and scientists} who use HPC resources for computational work but may lack deep system administration knowledge. These users benefit from the ability to check job status, understand resource availability, and troubleshoot issues without mastering Slurm's command-line interface.
-
-\textbf{New HPC users} face a steep learning curve when first accessing cluster resources. The Slurm Agent reduces this barrier by enabling productive interaction from the start, with the agent handling translation to system operations.
-
-\textbf{System administrators} can use the agent for rapid cluster status checks and routine operations, leveraging natural language for efficiency. The agent supplements rather than replaces direct command-line access.
-
-\textbf{Support staff} helping users with HPC-related questions can use the agent to quickly gather diagnostic information and provide guided assistance.
-
-\subsection{Interaction Model}
-
-User interaction with the Slurm Agent follows a conversational paradigm. Users type messages in a chat interface, and the agent responds with text, formatted data, or visualizations. The conversation maintains context across multiple turns through persistent session management, allowing follow-up questions and clarifications.
-
-A typical interaction flow includes:
 \begin{enumerate}
-    \item User submits a natural language query through the web interface
-    \item Main ReAct agent reasons about the query (\textit{Think} phase)
-    \item Agent determines necessary actions and invokes appropriate sub-agents (\textit{Act} phase)
-    \item Sub-agents call tools to execute Slurm commands
-    \item Tool results are observed and processed (\textit{Observe} phase)
-    \item For dangerous operations, action is queued pending user confirmation
-    \item Agent generates a natural language response with formatted results
-    \item Visualizations, if requested, are rendered inline as charts
-    \item User can continue with follow-up queries using preserved context
+    \item A user or evaluator submits a natural-language Slurm request through the runtime API.
+    \item The backend loads the session context, model configuration, MCP connection, and any pending-action state.
+    \item The main ReAct agent interprets the request and decides whether to answer from context, retrieve local documentation, use web search for external troubleshooting context, inspect cluster state, or hand off to an action path.
+    \item The Observer path performs read-only tool calls for queue, node, accounting, reservation, configuration, documentation, web-search, or diagnostic evidence.
+    \item The Operator path prepares state-changing actions such as submission, cancellation, hold, release, requeue, or selected updates, but execution is delayed until confirmation is received.
+    \item Tool outputs, handoff decisions, pending-action events, final response text, and state effects are emitted as structured trace evidence.
+    \item During evaluation, the trace is compared with benchmark ground truth for tool recall, routing match, HITL match, response evidence, and source-to-target state behavior.
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.9\textwidth}{\centering \textit{[Placeholder: Updated end-to-end interaction flowchart (user prompt, agent reasoning, tool calls, HITL confirm/cancel, streamed response).]}}}
-    \caption{Slurm Agent Flow Chart}
-    \label{fig:agent-flowchart}
-\end{figure}
-This model enables intuitive interaction while maintaining the full power of Slurm's capabilities through the underlying tool integration, with safety controls preventing accidental cluster modifications.
+This flow keeps the thesis focus on agent behavior rather than interface design. The same runtime path can support manual interaction and automated evaluation, which makes implementation choices directly testable in the scenario-grid benchmark.

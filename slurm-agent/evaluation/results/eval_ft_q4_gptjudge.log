@@ -1,0 +1,32 @@
+Filtered to 20 cases from results/sample_50_ids.json
+
+Scenario-Grid Behavioral Alignment Evaluation
+  Agent URL    : http://localhost:8000
+  Test cases   : 20
+  Scenario     : all
+  Repeat (k)   : 1
+  Auto-approve : True
+  Main LLM     : ollama / slurm-agent-ft:q4
+  Specialist   : ollama / slurm-agent-ft:q4
+  OpenAI tools : serial
+  Workers      : 4
+  Judge Workers: 2
+  LLM Judge    : ON (openai / gpt-oss:20b)
+  MCP URL      : http://localhost:3002
+  Agent        : ONLINE ✓
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+judge exception retry once (attempt=1)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+  [001/020] bulk_hold_user_alice_debug_needed                                              [39% ✗] (22.9s)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+judge exception retry once (attempt=1)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+  [002/020] bulk_bal200_087 (v)                                          [78% ✗] (23.8s)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+judge exception retry once (attempt=1)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+judge exception retry once (attempt=1)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+  [003/020] diag_memory_healthy                                              [85% ✓] (11.1s)
+judge exception: Error code: 404 - {'error': {'message': 'The model `gpt-oss:20b` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+  [004/020] diagnose_bal200_026 (v)                                          [85% ✓] (9.4s)

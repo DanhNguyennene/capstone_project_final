@@ -15,7 +15,6 @@ Provides:
   - load_skills(dirs)           — read all .md files from a list of dirs
   - load_observer_skills()      — skills/ + skills/observer/ + skills/arhive/
   - load_operator_skills()      — skills/operator/ only
-  - format_skills_for_instructions()  — build text block to inject into instructions
 """
 import logging
 from pathlib import Path
@@ -90,44 +89,3 @@ def load_slurm_docs() -> dict[str, str]:
 
     logger.info("Loaded %d local Slurm documentation pages from %s", len(docs), SLURM_KNOWLEDGE_DIR)
     return docs
-
-
-def _compress_skill(name: str, content: str) -> str:
-    """Extract a compact summary from a skill markdown file.
-
-    Pulls the 'When to use' line plus the tool names from the Steps section
-    to produce a 1-2 line reference instead of the full multi-paragraph skill.
-    """
-    import re
-
-    # Extract "When to use" trigger
-    trigger = ""
-    m = re.search(r"\*\*When to use:\*\*\s*(.+)", content)
-    if m:
-        trigger = m.group(1).strip()
-
-    # Extract tool calls mentioned in the Steps section (backtick-wrapped names)
-    tool_calls = re.findall(r"`(\w+)\([^)]*\)`", content)
-    # Deduplicate while preserving order
-    seen = set()
-    unique_tools = []
-    for t in tool_calls:
-        if t not in seen:
-            seen.add(t)
-            unique_tools.append(t)
-
-    tools_str = " → ".join(f"`{t}()`" for t in unique_tools) if unique_tools else ""
-    line = f"**{name}**: {trigger}"
-    if tools_str:
-        line += f"\n  Tools: {tools_str}"
-    return line
-
-
-def format_skills_for_instructions(skills: dict[str, str]) -> str:
-    """
-    Compatibility shim for old prompt-injection flow.
-
-    Skill guides are loaded lazily via lookup_skill, so prompts intentionally
-    do not inline skill names/content.
-    """
-    return ""
