@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Fine-tune Qwen2.5-7B-Instruct for the Slurm agent using QLoRA.
+"""Fine-tune Qwen3-27B for the Slurm agent using QLoRA.
 
-Designed for 16GB VRAM. Uses 4-bit NF4 quantization + LoRA adapters.
+Designed for A100 80GB / H100 VRAM. Uses 4-bit NF4 quantization + LoRA adapters.
 Trains on multi-turn tool-calling conversations from build_agent_sft.py output.
 
 Usage:
     python training/train_agent_qlora.py                           # full training
     python training/train_agent_qlora.py --max-steps 50 --smoke    # quick smoke test
     python training/train_agent_qlora.py --export-gguf             # train + export for Ollama
+    python training/train_agent_qlora.py --max-length 2048         # for 48GB VRAM
 """
 
 from __future__ import annotations
@@ -30,11 +31,11 @@ from transformers import (
 )
 
 
-DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+DEFAULT_BASE_MODEL = "Qwen/Qwen3-27B"
 DEFAULT_DATA = "training/out/agent_sft.jsonl"
-DEFAULT_OUTPUT = "training/out/slurm-agent-lora"
+DEFAULT_OUTPUT = "training/out/slurm-agent-27b-lora"
 
-# LoRA targets for Qwen2.5 — all linear layers
+# LoRA targets for Qwen3 — all linear layers
 TARGET_MODULES = [
     "q_proj", "k_proj", "v_proj", "o_proj",
     "gate_proj", "up_proj", "down_proj",
@@ -42,24 +43,24 @@ TARGET_MODULES = [
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="QLoRA fine-tune Qwen2.5-7B for Slurm agent")
+    p = argparse.ArgumentParser(description="QLoRA fine-tune Qwen3-27B for Slurm agent")
     p.add_argument("--base-model", default=DEFAULT_BASE_MODEL)
     p.add_argument("--data", default=DEFAULT_DATA)
     p.add_argument("--out", default=DEFAULT_OUTPUT)
-    p.add_argument("--max-length", type=int, default=1024,
-                   help="Max sequence length (1024 for 16GB VRAM)")
-    p.add_argument("--epochs", type=float, default=2.0)
+    p.add_argument("--max-length", type=int, default=4096,
+                   help="Max sequence length (4096 for 80GB VRAM, use 2048 for 48GB)")
+    p.add_argument("--epochs", type=float, default=3.0)
     p.add_argument("--max-steps", type=int, default=0,
                    help="Override epochs with fixed step count (for smoke tests)")
     p.add_argument("--batch-size", type=int, default=1)
-    p.add_argument("--grad-accum", type=int, default=8,
-                   help="Effective batch = batch_size × grad_accum = 8")
-    p.add_argument("--lr", type=float, default=2e-4)
-    p.add_argument("--lora-r", type=int, default=16,
-                   help="LoRA rank (16 for 16GB VRAM)")
-    p.add_argument("--lora-alpha", type=int, default=32)
+    p.add_argument("--grad-accum", type=int, default=16,
+                   help="Effective batch = batch_size × grad_accum = 16")
+    p.add_argument("--lr", type=float, default=1e-4)
+    p.add_argument("--lora-r", type=int, default=64,
+                   help="LoRA rank (64 for 27B model)")
+    p.add_argument("--lora-alpha", type=int, default=128)
     p.add_argument("--lora-dropout", type=float, default=0.05)
-    p.add_argument("--warmup-ratio", type=float, default=0.03)
+    p.add_argument("--warmup-ratio", type=float, default=0.05)
     p.add_argument("--no-4bit", action="store_true")
     p.add_argument("--smoke", action="store_true",
                    help="Smoke test: 50 steps, small subset")
@@ -161,7 +162,7 @@ def main():
         torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         quantization_config=quant_config,
         trust_remote_code=True,
-        attn_implementation="sdpa",
+        attn_implementation="flash_attention_2",
     )
 
     if quant_config:
@@ -184,6 +185,16 @@ def main():
     dataset = load_dataset("json", data_files=str(data_path), split="train")
     if args.sample_count and args.sample_count > 0:
         dataset = dataset.select(range(min(args.sample_count, len(dataset))))
+
+    # Filter: remove edge-case samples with no tool calls (just clarification questions)
+    # These dilute tool-calling signal. Keep only samples with ≥4 messages or tool_calls.
+    pre_filter = len(dataset)
+    dataset = dataset.filter(
+        lambda ex: len(ex["messages"]) > 3 or any(
+            m.get("tool_calls") for m in ex["messages"]
+        )
+    )
+    print(f"  Loaded: {pre_filter} → filtered to {len(dataset)} (removed {pre_filter - len(dataset)} edge-only samples)")
     print(f"  Training samples: {len(dataset)}")
 
     def tokenize(example):
