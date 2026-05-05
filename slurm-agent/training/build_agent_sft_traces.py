@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""Build SFT training data from GPT-5-mini traces + synthetic augmentation.
+"""Build SFT training data from GPT-5-mini traces (pure distillation + augmentation).
 
 Strategy:
-  1. For base train IDs (185/cat) with passing GPT-5-mini traces:
-     → Convert real agent traces to chat-format training samples
-  2. For augmented variants (swap + paraphrase) without traces:
-     → Generate synthetic training data using simulated tool outputs
+  1. Load ALL passing GPT-5-mini traces with tool_call_history
+  2. Convert real agent traces to chat-format training samples
+  3. Augment with entity swaps (users, job IDs, partitions) for generalization
 
-This ensures the model learns from REAL high-quality agent behavior (GPT-5-mini)
-while having enough volume from augmented data for generalization.
+NO synthetic data. Only real traces and augmented variants of real traces.
 
 Output: training/out/agent_sft.jsonl (chat-format JSONL for QLoRA fine-tuning)
 """
@@ -401,20 +399,98 @@ def build_synthetic_sample(row: dict) -> dict | None:
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Build agent SFT from GPT-5-mini traces + synthetic augmentation")
-    p.add_argument("--train-dataset", default="evaluation/dataset_train.json")
+    p = argparse.ArgumentParser(description="Build agent SFT from GPT-5-mini traces (pure distillation + augmentation)")
     p.add_argument("--results-dir", default="evaluation/results")
     p.add_argument("--out", default="training/out/agent_sft.jsonl")
+    p.add_argument("--augment", type=int, default=2,
+                   help="Number of augmented variants per trace (0=no augmentation)")
     p.add_argument("--seed", type=int, default=42)
     return p.parse_args()
 
 
+# ── Augmentation ──────────────────────────────────────────────────────────────
+
+SWAP_USERS = ["alice", "bob", "charlie", "dave", "eve", "frank", "grace", "henry"]
+SWAP_PARTITIONS = ["gpu", "cpu", "debug", "batch", "high-mem", "short", "long", "a100"]
+SWAP_NODES = ["gpu-node-01", "gpu-node-02", "cpu-node-01", "cpu-node-02",
+              "compute-01", "compute-02", "highmem-01", "debug-node-01"]
+
+
+def augment_messages(messages: list[dict], rng: random.Random) -> list[dict] | None:
+    """Create an augmented variant by swapping entity names in all messages."""
+    # Build swap maps
+    user_pool = list(SWAP_USERS)
+    rng.shuffle(user_pool)
+    partition_pool = list(SWAP_PARTITIONS)
+    rng.shuffle(partition_pool)
+
+    # Detect entities in the original
+    full_text = json.dumps(messages)
+    found_users = [u for u in SWAP_USERS if u in full_text.lower()]
+    found_partitions = [p for p in SWAP_PARTITIONS if p in full_text.lower()]
+
+    # Create swap mapping
+    user_map = {}
+    for i, u in enumerate(found_users):
+        target = user_pool[(i + 1) % len(user_pool)]
+        if target != u:
+            user_map[u] = target
+
+    partition_map = {}
+    for i, p in enumerate(found_partitions):
+        target = partition_pool[(i + 1) % len(partition_pool)]
+        if target != p:
+            partition_map[p] = target
+
+    # Random job ID offset
+    job_offset = rng.randint(100, 9000)
+
+    if not user_map and not partition_map:
+        return None  # nothing to swap
+
+    # Apply swaps
+    augmented = []
+    for msg in messages:
+        new_msg = dict(msg)
+        # Swap in content
+        if new_msg.get("content"):
+            text = new_msg["content"]
+            for old, new in user_map.items():
+                text = re.sub(re.escape(old), new, text, flags=re.IGNORECASE)
+            for old, new in partition_map.items():
+                text = re.sub(re.escape(old), new, text, flags=re.IGNORECASE)
+            # Swap job IDs (4-5 digit numbers)
+            text = re.sub(r'\b(\d{4,5})\b', lambda m: str(int(m.group(1)) + job_offset), text)
+            new_msg["content"] = text
+
+        # Swap in tool_calls arguments
+        if new_msg.get("tool_calls"):
+            new_tcs = []
+            for tc in new_msg["tool_calls"]:
+                new_tc = dict(tc)
+                if "function" in new_tc:
+                    func = dict(new_tc["function"])
+                    args_str = func.get("arguments", "{}")
+                    for old, new in user_map.items():
+                        args_str = re.sub(re.escape(old), new, args_str, flags=re.IGNORECASE)
+                    for old, new in partition_map.items():
+                        args_str = re.sub(re.escape(old), new, args_str, flags=re.IGNORECASE)
+                    args_str = re.sub(r'\b(\d{4,5})\b', lambda m: str(int(m.group(1)) + job_offset), args_str)
+                    func["arguments"] = args_str
+                    new_tc["function"] = func
+                new_tcs.append(new_tc)
+            new_msg["tool_calls"] = new_tcs
+
+        augmented.append(new_msg)
+
+    return augmented
+
+
 def main():
     args = parse_args()
-    random.seed(args.seed)
+    rng = random.Random(args.seed)
 
     root = ROOT
-    train_data = json.loads((root / args.train_dataset).read_text())
     results_dir = root / args.results_dir
     output_path = root / args.out
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -424,37 +500,40 @@ def main():
     passing_traces = {tid: t for tid, t in all_traces.items() if t.get("passed")}
     print(f"  Total traces: {len(all_traces)}, passing: {len(passing_traces)}")
 
-    # Build training samples
+    # Convert all passing traces to training samples
     samples = []
-    from_traces = 0
-    from_synthetic = 0
     skipped = 0
 
-    print(f"\nProcessing {len(train_data)} training cases...")
-    for row in train_data:
-        test_id = row["id"]
-
-        # Try to use real GPT-5-mini trace
-        if test_id in passing_traces:
-            messages = trace_to_messages(passing_traces[test_id])
-            if messages:
-                samples.append({
-                    "messages": messages,
-                    "metadata": {"id": test_id, "category": row["category"], "scenario": row["scenario"], "source": "gpt5mini_trace"},
-                })
-                from_traces += 1
-                continue
-
-        # Fall back to synthetic
-        sample = build_synthetic_sample(row)
-        if sample:
-            sample["metadata"] = {"id": test_id, "category": row["category"], "scenario": row["scenario"], "source": "synthetic"}
-            samples.append(sample)
-            from_synthetic += 1
+    print(f"\nConverting {len(passing_traces)} passing traces...")
+    for tid, trace in passing_traces.items():
+        messages = trace_to_messages(trace)
+        if messages and len(messages) > 3:  # must have tool calls
+            samples.append({
+                "messages": messages,
+                "metadata": {"id": tid, "source": "trace"},
+            })
         else:
             skipped += 1
 
-    random.shuffle(samples)
+    base_count = len(samples)
+    print(f"  Base samples: {base_count} (skipped {skipped} without tool calls)")
+
+    # Augment
+    augmented_count = 0
+    if args.augment > 0:
+        print(f"\nAugmenting ({args.augment}x per trace)...")
+        base_samples = list(samples)  # copy before extending
+        for s in base_samples:
+            for i in range(args.augment):
+                aug_msgs = augment_messages(s["messages"], rng)
+                if aug_msgs:
+                    samples.append({
+                        "messages": aug_msgs,
+                        "metadata": {"id": s["metadata"]["id"] + f"_aug{i}", "source": "augmented"},
+                    })
+                    augmented_count += 1
+
+    rng.shuffle(samples)
 
     # Save
     with output_path.open("w", encoding="utf-8") as f:
@@ -464,19 +543,12 @@ def main():
     print(f"\n{'='*60}")
     print(f"  Training Data Summary")
     print(f"{'='*60}")
-    print(f"  Total samples:     {len(samples)}")
-    print(f"  From GPT-5-mini:   {from_traces} ({100*from_traces/len(samples):.0f}%)")
-    print(f"  From synthetic:    {from_synthetic} ({100*from_synthetic/len(samples):.0f}%)")
-    print(f"  Skipped:           {skipped}")
-    print(f"  Output:            {output_path}")
-
-    cats = Counter(s["metadata"]["category"] for s in samples)
-    sources = Counter(s["metadata"]["source"] for s in samples)
-    print(f"\n  By category:")
-    for cat in sorted(cats):
-        trace_n = sum(1 for s in samples if s["metadata"]["category"] == cat and s["metadata"]["source"] == "gpt5mini_trace")
-        synth_n = sum(1 for s in samples if s["metadata"]["category"] == cat and s["metadata"]["source"] == "synthetic")
-        print(f"    {cat:12}: {cats[cat]:4} (trace={trace_n}, synthetic={synth_n})")
+    print(f"  Base (real traces):  {base_count}")
+    print(f"  Augmented:           {augmented_count}")
+    print(f"  Total samples:       {len(samples)}")
+    print(f"  Skipped:             {skipped}")
+    print(f"  Output:              {output_path}")
+    print(f"{'='*60}")
 
 
 if __name__ == "__main__":
