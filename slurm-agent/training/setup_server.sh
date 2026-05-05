@@ -2,9 +2,12 @@
 # Setup script for rented GPU server (A100 80GB / H100)
 # Run this first on a fresh Ubuntu/CUDA machine to install dependencies and start training.
 #
-# Usage:
+# Quick start (copy-paste on rented server):
+#   export GH_PAT="ghp_xxxx"   # your GitHub PAT
+#   git clone https://$GH_PAT@github.com/YOUR_USER/capstone_project.git
+#   cd capstone_project/slurm-agent
 #   chmod +x training/setup_server.sh
-#   ./training/setup_server.sh          # install deps + start training
+#   ./training/setup_server.sh          # install deps
 #   ./training/setup_server.sh --smoke   # quick 50-step test first
 
 set -e
@@ -32,14 +35,14 @@ pip install -r training/requirements-finetune.txt
 
 # Download model weights (will cache in ~/.cache/huggingface)
 echo ""
-echo "Pre-downloading Qwen3-27B weights..."
+echo "Pre-downloading Qwen3.6-27B weights..."
 python3 -c "
 from transformers import AutoTokenizer, AutoModelForCausalLM
 print('Downloading tokenizer...')
-AutoTokenizer.from_pretrained('Qwen/Qwen3-27B', trust_remote_code=True)
+AutoTokenizer.from_pretrained('Qwen/Qwen3.6-27B', trust_remote_code=True)
 print('Downloading model config (weights download on first train)...')
 from huggingface_hub import snapshot_download
-snapshot_download('Qwen/Qwen3-27B', ignore_patterns=['*.safetensors'])
+snapshot_download('Qwen/Qwen3.6-27B', ignore_patterns=['*.safetensors'])
 print('Done. Model weights will stream on first load.')
 "
 

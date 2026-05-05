@@ -31,7 +31,7 @@ from transformers import (
 )
 
 
-DEFAULT_BASE_MODEL = "Qwen/Qwen3-27B"
+DEFAULT_BASE_MODEL = "Qwen/Qwen3.6-27B"
 DEFAULT_DATA = "training/out/agent_sft.jsonl"
 DEFAULT_OUTPUT = "training/out/slurm-agent-27b-lora"
 
