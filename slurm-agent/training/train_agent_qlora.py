@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+"""Fine-tune Qwen2.5-7B-Instruct for the Slurm agent using QLoRA.
+
+Designed for 16GB VRAM. Uses 4-bit NF4 quantization + LoRA adapters.
+Trains on multi-turn tool-calling conversations from build_agent_sft.py output.
+
+Usage:
+    python training/train_agent_qlora.py                           # full training
+    python training/train_agent_qlora.py --max-steps 50 --smoke    # quick smoke test
+    python training/train_agent_qlora.py --export-gguf             # train + export for Ollama
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+
+import torch
+from datasets import load_dataset
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, PeftModel
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
+)
+
+
+DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+DEFAULT_DATA = "training/out/agent_sft.jsonl"
+DEFAULT_OUTPUT = "training/out/slurm-agent-lora"
+
+# LoRA targets for Qwen2.5 — all linear layers
+TARGET_MODULES = [
+    "q_proj", "k_proj", "v_proj", "o_proj",
+    "gate_proj", "up_proj", "down_proj",
+]
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="QLoRA fine-tune Qwen2.5-7B for Slurm agent")
+    p.add_argument("--base-model", default=DEFAULT_BASE_MODEL)
+    p.add_argument("--data", default=DEFAULT_DATA)
+    p.add_argument("--out", default=DEFAULT_OUTPUT)
+    p.add_argument("--max-length", type=int, default=1024,
+                   help="Max sequence length (1024 for 16GB VRAM)")
+    p.add_argument("--epochs", type=float, default=2.0)
+    p.add_argument("--max-steps", type=int, default=0,
+                   help="Override epochs with fixed step count (for smoke tests)")
+    p.add_argument("--batch-size", type=int, default=1)
+    p.add_argument("--grad-accum", type=int, default=8,
+                   help="Effective batch = batch_size × grad_accum = 8")
+    p.add_argument("--lr", type=float, default=2e-4)
+    p.add_argument("--lora-r", type=int, default=16,
+                   help="LoRA rank (16 for 16GB VRAM)")
+    p.add_argument("--lora-alpha", type=int, default=32)
+    p.add_argument("--lora-dropout", type=float, default=0.05)
+    p.add_argument("--warmup-ratio", type=float, default=0.03)
+    p.add_argument("--no-4bit", action="store_true")
+    p.add_argument("--smoke", action="store_true",
+                   help="Smoke test: 50 steps, small subset")
+    p.add_argument("--export-gguf", action="store_true",
+                   help="After training, merge adapter and export GGUF for Ollama")
+    p.add_argument("--sample-count", type=int, default=0)
+    return p.parse_args()
+
+
+def render_messages_qwen(tokenizer, messages: list[dict]) -> str:
+    """Render messages using Qwen2.5's native chat template with tool support."""
+    # Qwen2.5-Instruct has native tool_call support in its chat template.
+    # We need to handle tool_calls and tool results properly.
+    try:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+    except Exception:
+        # Fallback: manual rendering for tool messages
+        rendered_msgs = []
+        for msg in messages:
+            if msg.get("tool_calls"):
+                # Convert tool_calls to content format Qwen understands
+                tc_text = json.dumps(msg["tool_calls"], ensure_ascii=False)
+                rendered_msgs.append({
+                    "role": "assistant",
+                    "content": f"<tool_call>\n{tc_text}\n</tool_call>",
+                })
+            elif msg["role"] == "tool":
+                rendered_msgs.append({
+                    "role": "user",
+                    "content": f"<tool_response>\n{msg.get('content', '')}\n</tool_response>",
+                })
+            else:
+                rendered_msgs.append({
+                    "role": msg["role"],
+                    "content": msg.get("content") or "",
+                })
+
+        return tokenizer.apply_chat_template(
+            rendered_msgs,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+
+
+def main():
+    args = parse_args()
+
+    if args.smoke:
+        args.max_steps = args.max_steps or 50
+        args.sample_count = args.sample_count or 200
+
+    root = Path(__file__).resolve().parents[1]
+    data_path = root / args.data
+    output_dir = root / args.out
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"{'='*60}")
+    print(f"  Slurm Agent QLoRA Fine-Tuning")
+    print(f"{'='*60}")
+    print(f"  Base model:  {args.base_model}")
+    print(f"  Data:        {data_path}")
+    print(f"  Output:      {output_dir}")
+    print(f"  Max length:  {args.max_length}")
+    print(f"  Epochs:      {args.epochs}")
+    print(f"  Batch:       {args.batch_size} × {args.grad_accum} = {args.batch_size * args.grad_accum}")
+    print(f"  LoRA:        r={args.lora_r}, α={args.lora_alpha}")
+    print(f"  4-bit:       {not args.no_4bit}")
+    print(f"  CUDA:        {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"  GPU:         {torch.cuda.get_device_name(0)}")
+        print(f"  VRAM:        {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    print(f"{'='*60}\n")
+
+    # Load tokenizer
+    print("Loading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model, use_fast=True, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # Quantization config
+    quant_config = None
+    if not args.no_4bit:
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+            bnb_4bit_use_double_quant=True,
+        )
+
+    # Load model
+    print("Loading model (4-bit quantized)...")
+    model = AutoModelForCausalLM.from_pretrained(
+        args.base_model,
+        device_map="auto",
+        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+        quantization_config=quant_config,
+        trust_remote_code=True,
+        attn_implementation="sdpa",
+    )
+
+    if quant_config:
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+
+    # LoRA config
+    peft_config = LoraConfig(
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=TARGET_MODULES,
+    )
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+
+    # Load and tokenize dataset
+    print(f"\nLoading dataset from {data_path}...")
+    dataset = load_dataset("json", data_files=str(data_path), split="train")
+    if args.sample_count and args.sample_count > 0:
+        dataset = dataset.select(range(min(args.sample_count, len(dataset))))
+    print(f"  Training samples: {len(dataset)}")
+
+    def tokenize(example):
+        messages = example["messages"]
+        text = render_messages_qwen(tokenizer, messages)
+        tokenized = tokenizer(
+            text,
+            truncation=True,
+            max_length=args.max_length,
+            padding=False,
+        )
+        tokenized["labels"] = list(tokenized["input_ids"])
+        return tokenized
+
+    print("Tokenizing...")
+    tokenized_dataset = dataset.map(
+        tokenize,
+        remove_columns=dataset.column_names,
+        num_proc=4,
+    )
+
+    # Filter out samples that are too short
+    tokenized_dataset = tokenized_dataset.filter(lambda x: len(x["input_ids"]) > 10)
+    print(f"  After filtering: {len(tokenized_dataset)} samples")
+
+    # Data collator
+    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+
+    # Training args
+    training_args = TrainingArguments(
+        output_dir=str(output_dir),
+        num_train_epochs=args.epochs,
+        max_steps=args.max_steps if args.max_steps > 0 else -1,
+        per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        learning_rate=args.lr,
+        warmup_ratio=args.warmup_ratio,
+        lr_scheduler_type="cosine",
+        logging_steps=10,
+        save_steps=100,
+        save_total_limit=2,
+        bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+        fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
+        gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+        optim="paged_adamw_8bit",
+        report_to="none",
+        remove_unused_columns=False,
+        dataloader_pin_memory=True,
+        dataloader_num_workers=2,
+    )
+
+    # Train
+    print("\nStarting training...")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset,
+        data_collator=collator,
+    )
+    trainer.train()
+
+    # Save adapter
+    trainer.save_model(str(output_dir))
+    tokenizer.save_pretrained(str(output_dir))
+
+    # Save metadata
+    metadata = {
+        "base_model": args.base_model,
+        "data": str(data_path),
+        "samples": len(tokenized_dataset),
+        "adapter_dir": str(output_dir),
+        "lora_r": args.lora_r,
+        "lora_alpha": args.lora_alpha,
+        "epochs": args.epochs,
+        "max_steps": args.max_steps,
+        "max_length": args.max_length,
+    }
+    (output_dir / "training_metadata.json").write_text(json.dumps(metadata, indent=2))
+    print(f"\n✓ Saved adapter → {output_dir}")
+
+    # Optional GGUF export
+    if args.export_gguf:
+        export_gguf(args.base_model, output_dir)
+
+
+def export_gguf(base_model: str, adapter_dir: Path):
+    """Merge adapter into base model and export as GGUF for Ollama."""
+    merged_dir = adapter_dir / "merged"
+    gguf_path = adapter_dir / "slurm-agent-q4_k_m.gguf"
+
+    print(f"\nMerging adapter with base model...")
+
+    tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
+    base = AutoModelForCausalLM.from_pretrained(
+        base_model,
+        torch_dtype=torch.float16,
+        device_map="cpu",
+        trust_remote_code=True,
+    )
+    model = PeftModel.from_pretrained(base, str(adapter_dir))
+    model = model.merge_and_unload()
+
+    model.save_pretrained(str(merged_dir))
+    tokenizer.save_pretrained(str(merged_dir))
+    print(f"  Merged model → {merged_dir}")
+
+    # Create Ollama Modelfile
+    modelfile = adapter_dir / "Modelfile"
+    modelfile.write_text(f"""FROM {gguf_path}
+
+SYSTEM "You are a Slurm HPC cluster assistant. You monitor, analyze, diagnose, and execute actions on Slurm clusters using appropriate tools."
+
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER num_ctx 4096
+""")
+    print(f"  Modelfile → {modelfile}")
+    print(f"\n  To convert to GGUF, run:")
+    print(f"    python llama.cpp/convert_hf_to_gguf.py {merged_dir} --outfile {gguf_path} --outtype q4_k_m")
+    print(f"\n  Then load in Ollama:")
+    print(f"    ollama create slurm-agent-ft -f {modelfile}")
+
+
+if __name__ == "__main__":
+    main()
