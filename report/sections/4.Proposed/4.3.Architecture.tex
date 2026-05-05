@@ -60,9 +60,9 @@ The Agent Layer implements the core reasoning and orchestration logic using a mu
 The Observer can inspect queue state, node state, accounting records, reservations, fair-share, priority, scheduler diagnostics, and documentation. The Operator handles submission, cancellation, hold, release, requeue, update, reservation changes, node changes, and administrative actions. This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy.
 
 % TODO: Replace with actual diagram
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2.5cm}\textbf{Observer/Operator Handoff Flow}\\[0.5em]\small Request $\rightarrow$ Intent Classification $\rightarrow$ Observer (read-only) or Operator (write + HITL confirm)\vspace{2.5cm}}}
+    \includegraphics[width=0.75\textwidth]{images/observer_operator_flow.png}
     \caption{Observer/Operator Routing and Confirmation Flow}
     \label{fig:observer-operator-flow}
 \end{figure}

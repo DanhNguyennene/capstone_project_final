@@ -1,0 +1,31 @@
+flowchart TD
+    A[User Request] --> B{Observer:<br/>Intent Classification}
+    
+    B -->|Read-only| C[Observer executes<br/>read MCP tools]
+    C --> D[Synthesize response]
+    D --> E[Stream response to user]
+    
+    B -->|State-changing| F[Observer builds<br/>handoff payload]
+    F --> G[Handoff to Operator<br/>required_tool + targets + scope]
+    
+    G --> H{Targets resolved?}
+    H -->|No| I[Operator: discovery read<br/>to resolve targets]
+    I --> H
+    H -->|Yes| J[Create pending action<br/>needs_approval = true]
+    
+    J --> K[Stream confirmation<br/>request to user]
+    K --> L{User decision}
+    
+    L -->|Confirm| M[Execute MCP tool<br/>with resolved args]
+    M --> N[Operator returns result]
+    N --> O[Handoff back to Observer]
+    O --> E
+    
+    L -->|Cancel| P[Discard pending action]
+    P --> O
+
+    style B fill:#4a90d9,color:#fff
+    style G fill:#e8a838,color:#fff
+    style J fill:#d94a4a,color:#fff
+    style L fill:#5cb85c,color:#fff
+    style M fill:#d94a4a,color:#fff

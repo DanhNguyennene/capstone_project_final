@@ -6,16 +6,16 @@
 \contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.18}%
 \contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.19}%
 \contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.20}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{30}{table.caption.29}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{31}{table.caption.29}%
 \contentsline {table}{\numberline {4.5}{\ignorespaces Supported LLM Providers}}{32}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{36}{table.caption.38}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{37}{table.caption.38}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{39}{table.caption.40}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{40}{table.caption.41}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{43}{table.caption.46}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{44}{table.caption.47}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Aggregate Evaluation Metrics (3,135 Cases)}}{45}{table.caption.49}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Model Stack}}{48}{table.caption.56}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{40}{table.caption.40}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{41}{table.caption.41}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{44}{table.caption.46}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{45}{table.caption.47}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Aggregate Evaluation Metrics (3,135 Cases)}}{46}{table.caption.49}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Model Stack}}{49}{table.caption.56}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{51}{table.caption.57}%
+\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{52}{table.caption.57}%

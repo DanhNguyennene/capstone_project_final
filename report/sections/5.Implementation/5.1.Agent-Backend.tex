@@ -16,14 +16,16 @@ Model routing supports local Ollama (default) and optional remote providers.
 
 \subsection{Agent Topology}
 
-The main orchestrator (Observer) manages two specialized sub-agents:
+The system implements a two-agent architecture with bidirectional handoffs:
 
 \begin{itemize}
-    \item \texttt{analyze\_cluster}: read-only inspection and diagnostics
-    \item \texttt{manage\_jobs}: state-changing operations (cancel, hold, release, submit)
+    \item \textbf{Observer}: the primary orchestrator and entry point for all requests. It handles read-only inspection (queue status, node info, accounting, diagnostics), documentation retrieval, and intent classification. When a state-changing action is identified, the Observer hands off to the Operator with a structured payload specifying the required tool, targets, and action description.
+    \item \textbf{Operator}: a restricted execution agent that receives structured handoffs from the Observer. It may perform one discovery read to resolve ambiguous targets (e.g., resolving ``that job'' to a job ID), then executes the confirmed action. After completion, it hands back to the Observer.
 \end{itemize}
 
-Additional utility tools: \texttt{generate\_chart}, \texttt{lookup\_slurm\_docs}, \texttt{lookup\_skill}, \texttt{confirm\_action}, \texttt{cancel\_action}, and \texttt{check\_pending\_actions}.
+Both agents share the same underlying LLM but operate with different tool sets, system prompts, and model settings (the Observer uses \texttt{tool\_choice=auto}; the Operator uses \texttt{tool\_choice=required}). The Observer's MCP tool surface is limited to read-only Slurm commands, while the Operator receives both dangerous action tools and a subset of read tools for target resolution.
+
+Additional utility tools available to the Observer: \texttt{generate\_chart}, \texttt{lookup\_slurm\_docs}, and \texttt{lookup\_skill}. Confirmation tools (\texttt{confirm\_action}, \texttt{cancel\_action}, \texttt{check\_pending\_actions}) are implemented as guarded wrappers that enforce human approval before the underlying MCP tool executes.
 
 \subsection{Safety and Confirmation Pipeline}
 

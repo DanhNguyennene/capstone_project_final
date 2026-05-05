@@ -29,7 +29,7 @@ This work contributes the following practical outcomes:
 
 \subsection{Benchmark Artifact Outcomes}
 
-The main quantitative outcome of the evaluation work is the manually constructed synthetic benchmark and its trace-oriented evaluation path. Development-stage runs were used to validate the dataset-building process and scorer behavior, but they are not reported here as the final model-quality result.
+The main quantitative outcome of the evaluation work is the manually constructed synthetic benchmark, the trace-oriented evaluation path, and the final 3,135-case evaluation run achieving 96.1\% pass rate on the production GPT-5-mini model stack (result artifact: \texttt{eval\_all\_20260504\_001747.json}).
 
 \begin{table}[H]
     \centering
@@ -73,10 +73,10 @@ The complete source code is publicly available:
 
 The repository contains the agent backend, MCP server, lightweight interface layer, evaluation framework, dataset artifacts, and reproducible evaluation outputs.
 
-\subsection{Remaining Evaluation Work}
+\subsection{Additional Evaluation Directions}
 
 \begin{itemize}
-    \item Run the current 3,135-case curated benchmark under the pinned local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist, gpt-oss:20b judge) and report the exact artifact identifier.
+    \item Run the benchmark under a local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist) to compare on-premise performance against the cloud GPT-5-mini baseline.
     \item Run the 40-case held-out paraphrase split and report it separately from the curated benchmark.
-    \item Add one concise reliability paragraph interpreting pass\textasciicircum{}k once repeat-run data is finalized.
+    \item Add repeated-run statistics (pass$^k$ and confidence intervals) to quantify variance.
 \end{itemize}

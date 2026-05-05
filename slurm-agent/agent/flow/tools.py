@@ -109,24 +109,32 @@ def _content_text(content: list) -> str:
 
 # ── Dangerous-action queuing tools (built from discovered schemas) ────────────
 
-def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredTool]) -> List[FunctionTool]:
+def make_guarded_dangerous_tools(mcp_url: str, dangerous_tools: List[DiscoveredTool], no_hitl: bool = False) -> List[FunctionTool]:
     """
     Build FunctionTools for every dangerous MCP tool discovered at runtime.
     Each tool actually executes via MCP, gated by the SDK's needs_approval
     mechanism (Human-in-the-Loop). The Runner will pause with interruptions
     before any dangerous tool runs; the caller must approve/reject and resume.
 
+    If no_hitl=True (ablation mode), needs_approval is disabled — tools execute
+    immediately without approval pause.
+
     Schemas come from DiscoveredTool.schema (fetched live from MCP), not hardcoded.
     """
     base = mcp_url.rstrip("/")
     result = []
+    if no_hitl:
+        logger.warning("[ABLATION] NO-HITL mode — dangerous tools execute WITHOUT approval")
     # SlurmGuard admission is disabled by request.
     # slurm_guard = SlurmGuard(dangerous_tools)
 
     # Safety policy: dangerous actions always require HITL approval before execution.
     # We do not bypass approval for malformed arguments.
+    # Exception: ABLATION_NO_HITL mode disables all approval gates.
     def _make_needs_approval(schema: dict):
         _ = schema
+        if no_hitl:
+            return False
         return True
 
     for dtool in dangerous_tools:

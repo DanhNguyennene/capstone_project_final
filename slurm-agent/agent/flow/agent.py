@@ -12,6 +12,7 @@ automatically — no manual routing code required.
 """
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
@@ -66,6 +67,10 @@ from .tools import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ── Ablation mode flags (set via environment variables) ───────────────────────
+ABLATION_SINGLE_AGENT = os.environ.get("ABLATION_SINGLE_AGENT", "").strip().lower() in ("1", "true", "yes")
+ABLATION_NO_HITL = os.environ.get("ABLATION_NO_HITL", "").strip().lower() in ("1", "true", "yes")
 
 
 _DISCOVERY_SCOPES = {"broad", "dynamic", "discovery", "discover", "resolve", "resolved", "query"}
@@ -234,8 +239,10 @@ class SlurmAgentSystem:
         # so we can enforce per-handoff policies.
         self._mcp_operator = _make_mcp_server(self.mcp_url, set(), "slurm-operator-mcp")
 
-        # 5. Dangerous FunctionTools (HITL: needs_approval=True)
-        dangerous_fns = make_guarded_dangerous_tools(self.mcp_url, self._catalog.dangerous)
+        # 5. Dangerous FunctionTools (HITL: needs_approval=True unless ablation)
+        dangerous_fns = make_guarded_dangerous_tools(
+            self.mcp_url, self._catalog.dangerous, no_hitl=ABLATION_NO_HITL
+        )
         # SlurmGuard admission is disabled by request.
         # slurm_guard = SlurmGuard(self._catalog.dangerous)
         operator_read_defs = [
@@ -243,6 +250,49 @@ class SlurmAgentSystem:
             if t.name in _OPERATOR_READ_TOOLS
         ]
         operator_read_fns = make_operator_read_tools(self.mcp_url, operator_read_defs)
+
+        # ── ABLATION: Single-agent mode ───────────────────────────────────────
+        if ABLATION_SINGLE_AGENT:
+            logger.warning("[ABLATION] Single-agent mode — NO Observer/Operator split")
+            all_mcp_names = (self._catalog.analysis_names | self._catalog.safe_names) - _OBSERVER_HIDDEN_MCP_TOOLS
+            mcp_all = _make_mcp_server(self.mcp_url, all_mcp_names, "slurm-single-mcp")
+            self._mcp_observer = mcp_all
+            self._mcp_operator = _make_mcp_server(self.mcp_url, set(), "slurm-noop-mcp")
+
+            combined_instructions = (
+                "You are an HPC cluster assistant with full access to ALL Slurm tools.\n"
+                "You can both read cluster state and execute actions directly.\n"
+                "For destructive actions, verify targets before executing.\n\n"
+                + observer_instructions
+            )
+
+            all_tools = dangerous_fns + operator_read_fns
+            if slurm_docs_lookup_tool:
+                all_tools.append(slurm_docs_lookup_tool)
+            if skill_lookup_tool:
+                all_tools.append(skill_lookup_tool)
+
+            single_agent = Agent(
+                name="SlurmAgent",
+                instructions=combined_instructions,
+                model=self._reasoning_model,
+                model_settings=self._observer_model_settings.resolve(
+                    ModelSettings(tool_choice="auto")
+                ),
+                mcp_servers=[mcp_all],
+                tools=all_tools,
+                handoffs=[],
+            )
+
+            self.main_agent = single_agent
+            self.operator_agent = single_agent
+            self._ready = True
+            logger.info(
+                f"[SlurmAgentSystem] ABLATION single-agent ready — "
+                f"tools≈{len(all_mcp_names) + len(all_tools)}"
+            )
+            return
+        # ── END ABLATION ──────────────────────────────────────────────────────
 
         def _normalize_handoff_targets(required_tool: str, raw_targets: Any) -> List[str]:
             """Keep only concrete targets that match the required tool schema.
