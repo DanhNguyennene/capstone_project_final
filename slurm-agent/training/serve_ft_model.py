@@ -224,12 +224,23 @@ def _parse_tool_calls(text: str) -> tuple:
         for i, match in enumerate(matches):
             try:
                 call = json.loads(match)
+                # arguments may be a dict OR a JSON-encoded string. Normalize to JSON string.
+                raw_args = call.get("arguments", {})
+                if isinstance(raw_args, str):
+                    # Validate it's parseable JSON; if not, wrap as empty
+                    try:
+                        json.loads(raw_args)
+                        args_str = raw_args
+                    except json.JSONDecodeError:
+                        args_str = "{}"
+                else:
+                    args_str = json.dumps(raw_args)
                 tool_calls.append({
                     "id": f"call_{uuid.uuid4().hex[:8]}",
                     "type": "function",
                     "function": {
                         "name": call.get("name", ""),
-                        "arguments": json.dumps(call.get("arguments", {})),
+                        "arguments": args_str,
                     },
                 })
             except json.JSONDecodeError:
