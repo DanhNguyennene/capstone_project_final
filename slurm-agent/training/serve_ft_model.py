@@ -276,9 +276,35 @@ def _parse_tool_calls(text: str) -> tuple:
 
 
 async def _stream_response(result: dict):
-    """Convert a completed response to SSE stream format."""
+    """Convert a completed response to SSE stream format.
+
+    OpenAI streaming spec: each tool_call delta MUST carry an `index` field so
+    the client can distinguish multiple parallel tool_calls. Without it, the
+    OpenAI Python client concatenates the `arguments` strings of consecutive
+    function deltas into one corrupt blob.
+    """
     choice = result["choices"][0]
-    # Send a single chunk with the full content
+    msg = choice["message"]
+    tool_calls = msg.get("tool_calls")
+
+    # Build delta WITHOUT mutating the original message
+    delta: Dict[str, Any] = {"role": "assistant"}
+    if msg.get("content") is not None:
+        delta["content"] = msg["content"]
+    if tool_calls:
+        delta["tool_calls"] = [
+            {
+                "index": i,
+                "id": tc["id"],
+                "type": tc.get("type", "function"),
+                "function": {
+                    "name": tc["function"]["name"],
+                    "arguments": tc["function"]["arguments"],
+                },
+            }
+            for i, tc in enumerate(tool_calls)
+        ]
+
     chunk = {
         "id": result["id"],
         "object": "chat.completion.chunk",
@@ -287,7 +313,7 @@ async def _stream_response(result: dict):
         "choices": [
             {
                 "index": 0,
-                "delta": choice["message"],
+                "delta": delta,
                 "finish_reason": None,
             }
         ],
