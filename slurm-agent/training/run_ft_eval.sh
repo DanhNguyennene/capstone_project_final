@@ -69,6 +69,17 @@ trap cleanup EXIT INT TERM
 # ── 1. Ensure we're in the right place ────────────────────────────────────────
 cd "$PROJECT_DIR/slurm-agent"
 
+# ── Kill any stale processes from previous runs ──────────────────────────────
+for port in $MODEL_PORT $AGENT_PORT $MCP_PORT; do
+  fuser -k "${port}/tcp" 2>/dev/null || true
+done
+sleep 1
+
+# ── Strip runpod proxy env (forces localhost calls through nginx → 405) ─────
+unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
+export NO_PROXY="localhost,127.0.0.1,::1"
+export no_proxy="localhost,127.0.0.1,::1"
+
 # # ── 2. Setup venv + deps ─────────────────────────────────────────────────────
 # if [[ ! -d "$VENV_DIR" ]]; then
 #   info "Creating virtualenv..."
@@ -153,9 +164,6 @@ export LLM_PROVIDER="openai"
 export OPENAI_BASE_URL="http://localhost:$MODEL_PORT/v1"
 export OPENAI_API_KEY="dummy"
 export OPENAI_AGENTS_DISABLE_TRACING="1"
-# Bypass any HTTP(S)_PROXY for localhost (runpod sets these → nginx 405)
-export NO_PROXY="localhost,127.0.0.1,::1"
-export no_proxy="localhost,127.0.0.1,::1"
 export SLURM_AGENT_MODEL="slurm-agent-ft"
 export SLURM_AGENT_SPECIALIST_MODEL="slurm-agent-ft"
 export MCP_SERVER_URL="http://localhost:$MCP_PORT"
