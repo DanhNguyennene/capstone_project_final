@@ -19,9 +19,8 @@
 set -e
 
 # ── Config ────────────────────────────────────────────────────────────────────
-REPO_URL="https://github.com/DanhNguyennene/capstone_project.git"
-WORK_DIR="${WORK_DIR:-/workspace}"
-PROJECT_DIR="$WORK_DIR/capstone_project"
+WORK_DIR="${WORK_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+PROJECT_DIR="$WORK_DIR"
 VENV_DIR="$PROJECT_DIR/.venv"
 
 MODEL_PORT=8081
@@ -41,7 +40,6 @@ while [[ $# -gt 0 ]]; do
     --quick)    MODE="quick" ;;
     --filter)   EVAL_ARGS="$EVAL_ARGS --filter $2"; shift ;;
     --judge)    EVAL_ARGS="$EVAL_ARGS --judge" ;;
-    --no-clone) NO_CLONE=1 ;;
     *)          echo "Unknown arg: $1"; exit 1 ;;
   esac
   shift
@@ -66,20 +64,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# ── 1. Clone / Update Repo ───────────────────────────────────────────────────
-if [[ -z "$NO_CLONE" ]]; then
-  if [[ ! -d "$PROJECT_DIR" ]]; then
-    info "Cloning repository..."
-    cd "$WORK_DIR"
-    git lfs install
-    git clone "$REPO_URL"
-  else
-    info "Pulling latest..."
-    cd "$PROJECT_DIR"
-    git lfs pull
-    git pull --ff-only || true
-  fi
-fi
+# ── 1. Ensure we're in the right place ────────────────────────────────────────
 cd "$PROJECT_DIR/slurm-agent"
 
 # ── 2. Setup venv + deps ─────────────────────────────────────────────────────
@@ -117,7 +102,7 @@ python "$PROJECT_DIR/slurm-agent/training/serve_ft_model.py" \
   --base-model "$BASE_MODEL" \
   --adapter "$ADAPTER_PATH" \
   --port "$MODEL_PORT" \
-  > "$PROJECT_DIR/slurm-agent/evaluation/results/ft_model_server.log" 2>&1 &
+  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/ft_model_server.log" &
 MODEL_PID=$!
 
 # Wait for model to load (can take 2-3 min for 14B)
@@ -139,7 +124,7 @@ fuser -k "${MCP_PORT}/tcp" 2>/dev/null || true
 sleep 0.3
 cd "$PROJECT_DIR/slurm-agent/mcp-server"
 python slurm_mcp_sse.py --mock mixed --port "$MCP_PORT" \
-  > "$PROJECT_DIR/slurm-agent/evaluation/results/mcp_server.log" 2>&1 &
+  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/mcp_server.log" &
 MCP_PID=$!
 cd "$PROJECT_DIR/slurm-agent"
 
@@ -164,7 +149,7 @@ export AUTO_APPROVE="true"
 
 cd "$PROJECT_DIR/slurm-agent/agent"
 python main.py --port "$AGENT_PORT" \
-  > "$PROJECT_DIR/slurm-agent/evaluation/results/agent_server.log" 2>&1 &
+  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/agent_server.log" &
 AGENT_PID=$!
 cd "$PROJECT_DIR/slurm-agent"
 
