@@ -172,7 +172,13 @@ def main():
     )
 
     if quant_config:
-        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+        # Don't let prepare_model_for_kbit_training enable gradient
+        # checkpointing — it uses use_reentrant=True which disables
+        # flash-attn's fast path. We enable grad-ckpt below in
+        # TrainingArguments with use_reentrant=False instead.
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        model.enable_input_require_grads()
 
     # LoRA config
     peft_config = LoraConfig(
