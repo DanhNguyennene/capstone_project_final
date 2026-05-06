@@ -130,7 +130,7 @@ cd "$PROJECT_DIR/slurm-agent"
 
 for i in $(seq 1 16); do
   sleep 0.5
-  if curl -s -o /dev/null -w '%{http_code}' --max-time 1 "http://localhost:$MCP_PORT/sse" 2>/dev/null | grep -q "200"; then
+  if ss -tln | grep -q ":${MCP_PORT} "; then
     ok "MCP server ready at http://localhost:$MCP_PORT"
     break
   fi
