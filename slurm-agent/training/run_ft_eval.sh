@@ -106,6 +106,7 @@ if [[ $QUANTIZED -eq 1 ]]; then
 else
   info "Starting fine-tuned model server (full precision) on port $MODEL_PORT..."
 fi
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 python "$PROJECT_DIR/slurm-agent/training/serve_ft_model.py" \
   --base-model "$BASE_MODEL" \
   --adapter "$ADAPTER_PATH" \

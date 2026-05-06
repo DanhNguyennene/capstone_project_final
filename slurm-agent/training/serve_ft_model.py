@@ -15,10 +15,14 @@ Usage:
 
 import argparse
 import json
+import os
 import time
 import uuid
 import logging
 from typing import List, Dict, Any, Optional
+
+# Reduce fragmentation BEFORE importing torch
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -92,6 +96,15 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
 
+    # Force memory-efficient SDPA kernel (V100 has no flash; math kernel is O(N^2))
+    try:
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        logger.info("SDPA: forced memory-efficient kernel (flash=off, math=off)")
+    except Exception as e:
+        logger.warning(f"Could not configure SDPA backends: {e}")
+
     # Final memory check
     mem_gb = torch.cuda.memory_allocated() / 1e9
     logger.info(f"Model loaded and ready. Total GPU memory: {mem_gb:.1f} GB")
@@ -127,8 +140,14 @@ async def chat_completions(request: Request):
     )
     inputs = tokenizer(text, return_tensors="pt").to(model.device)
     input_len = inputs["input_ids"].shape[1]
+    logger.info(f"Prompt tokens: {input_len}")
 
-    with torch.no_grad():
+    # Free any cached blocks before generating to reduce fragmentation
+    torch.cuda.empty_cache()
+
+    with torch.no_grad(), torch.backends.cuda.sdp_kernel(
+        enable_flash=False, enable_math=False, enable_mem_efficient=True
+    ):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_tokens,
@@ -136,6 +155,7 @@ async def chat_completions(request: Request):
             do_sample=temperature > 0,
             top_p=0.9 if temperature > 0 else None,
             pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+            use_cache=True,
         )
 
     generated_ids = outputs[0][input_len:]
