@@ -59,6 +59,13 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
         attn_implementation=attn_impl,
     )
     if quantized:
+        try:
+            import bitsandbytes  # noqa: F401
+        except ImportError:
+            raise RuntimeError(
+                "bitsandbytes is NOT installed! Cannot run in quantized mode. "
+                "Install with: pip install bitsandbytes>=0.43.0"
+            )
         from transformers import BitsAndBytesConfig
         load_kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -68,10 +75,26 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
         )
 
     model = AutoModelForCausalLM.from_pretrained(base_model, **load_kwargs)
+
+    # Verify quantization actually applied
+    if quantized:
+        param = next(model.parameters())
+        mem_gb = torch.cuda.memory_allocated() / 1e9
+        logger.info(f"GPU memory after loading: {mem_gb:.1f} GB")
+        if mem_gb > 15.0:
+            raise RuntimeError(
+                f"Quantization FAILED — model using {mem_gb:.1f} GB (expected <12 GB for 4-bit 14B). "
+                f"Check bitsandbytes CUDA compatibility."
+            )
+        logger.info(f"4-bit quantization verified: {mem_gb:.1f} GB on GPU")
+
     logger.info(f"Loading LoRA adapter: {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
-    logger.info("Model loaded and ready.")
+
+    # Final memory check
+    mem_gb = torch.cuda.memory_allocated() / 1e9
+    logger.info(f"Model loaded and ready. Total GPU memory: {mem_gb:.1f} GB")
 
 
 # ── FastAPI App ───────────────────────────────────────────────────────────────
