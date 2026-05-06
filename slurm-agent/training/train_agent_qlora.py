@@ -25,7 +25,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
-    DataCollatorForLanguageModeling,
+    DataCollatorForSeq2Seq,
     Trainer,
     TrainingArguments,
 )
@@ -228,8 +228,15 @@ def main():
     tokenized_dataset = tokenized_dataset.filter(lambda x: len(x["input_ids"]) > 10)
     print(f"  After filtering: {len(tokenized_dataset)} samples")
 
-    # Data collator
-    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+    # Data collator: pads input_ids with pad_token_id and labels with -100
+    # so cross-entropy ignores padding. Required for batch_size > 1 with
+    # variable-length sequences.
+    collator = DataCollatorForSeq2Seq(
+        tokenizer=tokenizer,
+        padding=True,
+        label_pad_token_id=-100,
+        return_tensors="pt",
+    )
 
     # Training args
     training_args = TrainingArguments(
