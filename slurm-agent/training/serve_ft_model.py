@@ -48,13 +48,21 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
         adapter_path,  # use adapter's tokenizer (has chat template)
         trust_remote_code=True,
     )
-    # Use flash_attention_2 if available, otherwise fall back to sdpa
-    try:
-        import flash_attn  # noqa: F401
-        attn_impl = "flash_attention_2"
-    except ImportError:
-        attn_impl = "sdpa"
-        logger.info("flash-attn not installed, using sdpa attention")
+    # Attention implementation:
+    #   - flash_attention_2: Ampere+ only, doesn't work on V100 (CC 7.0)
+    #   - sdpa: fused kernels reject GQA (Qwen2.5: 40 Q heads vs 8 KV heads)
+    #   - eager: pure-PyTorch, handles GQA correctly via repeat_kv. Slower but reliable.
+    # Default to eager for safety on V100; allow override via env ATTN_IMPL.
+    attn_impl = os.environ.get("ATTN_IMPL", "").strip()
+    if not attn_impl:
+        try:
+            import flash_attn  # noqa: F401
+            attn_impl = "flash_attention_2"
+        except ImportError:
+            attn_impl = "eager"
+            logger.info("flash-attn not installed, using eager attention (GQA-safe)")
+    else:
+        logger.info(f"ATTN_IMPL override: {attn_impl}")
 
     load_kwargs = dict(
         torch_dtype=torch.bfloat16,
@@ -96,12 +104,13 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
 
-    # Force memory-efficient SDPA kernel (V100 has no flash; math kernel is O(N^2))
+    # Configure SDPA backends (only used if attn_impl=='sdpa').
+    # Mem-efficient + math both enabled; math is the GQA fallback. Flash off (V100).
     try:
         torch.backends.cuda.enable_flash_sdp(False)
-        torch.backends.cuda.enable_math_sdp(False)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
-        logger.info("SDPA: forced memory-efficient kernel (flash=off, math=off)")
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.info("SDPA: mem_efficient=on, math=on, flash=off")
     except Exception as e:
         logger.warning(f"Could not configure SDPA backends: {e}")
 
@@ -145,9 +154,7 @@ async def chat_completions(request: Request):
     # Free any cached blocks before generating to reduce fragmentation
     torch.cuda.empty_cache()
 
-    with torch.no_grad(), torch.backends.cuda.sdp_kernel(
-        enable_flash=False, enable_math=False, enable_mem_efficient=True
-    ):
+    with torch.no_grad():
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_tokens,
