@@ -24,7 +24,7 @@ PROJECT_DIR="$WORK_DIR"
 VENV_DIR="$PROJECT_DIR/.venv"
 
 MODEL_PORT=8081
-AGENT_PORT=8000
+AGENT_PORT=20000
 MCP_PORT=3002
 
 BASE_MODEL="Qwen/Qwen2.5-14B-Instruct"
@@ -148,7 +148,7 @@ export MCP_SERVER_URL="http://localhost:$MCP_PORT"
 export AUTO_APPROVE="true"
 
 cd "$PROJECT_DIR/slurm-agent/agent"
-python main.py --port "$AGENT_PORT" \
+python main.py \
   > >(tee "$PROJECT_DIR/slurm-agent/evaluation/results/agent_server.log") 2>&1 &
 AGENT_PID=$!
 cd "$PROJECT_DIR/slurm-agent"
