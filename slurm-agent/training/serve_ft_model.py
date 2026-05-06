@@ -174,6 +174,39 @@ async def chat_completions(request: Request):
     if _has_tool_call(response_text):
         tool_calls, content = _parse_tool_calls(response_text)
 
+    # Filter hallucinated tool calls: drop any tool not in the request's tools list.
+    # This protects against the FT model calling tools from a sibling agent (Observer
+    # calling Operator-only tools etc.). If everything gets filtered, fall back to text.
+    if tool_calls and tools:
+        allowed = {
+            (t.get("function") or {}).get("name")
+            for t in tools
+            if isinstance(t, dict)
+        }
+        allowed.discard(None)
+        kept, dropped = [], []
+        for tc in tool_calls:
+            name = tc.get("function", {}).get("name")
+            if name in allowed:
+                kept.append(tc)
+            else:
+                dropped.append(name)
+        if dropped:
+            logger.warning(
+                f"Dropped {len(dropped)} hallucinated tool_call(s): {dropped}. "
+                f"Allowed: {sorted(allowed)[:8]}..."
+            )
+        if kept:
+            tool_calls = kept
+        else:
+            # All tool calls were invalid. Convert to a text response so the agent
+            # can re-prompt instead of crashing on ModelBehaviorError.
+            tool_calls = None
+            content = (
+                response_text
+                or "I attempted to call a tool that is not available in my current role."
+            )
+
     completion_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
     result = {
         "id": completion_id,
