@@ -178,7 +178,7 @@ if [[ "$MODE" == "quick" ]]; then
     --main-provider openai \
     --specialist-model "slurm-agent-ft" \
     --specialist-provider openai \
-    --sample 20 \
+    --test-ids-file "$PROJECT_DIR/slurm-agent/evaluation/results/sample_50_ids.json" \
     --auto-approve \
     $EVAL_ARGS \
     2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/eval_ft_full.log"
