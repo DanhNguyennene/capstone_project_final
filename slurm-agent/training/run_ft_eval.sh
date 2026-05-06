@@ -130,7 +130,7 @@ cd "$PROJECT_DIR/slurm-agent"
 
 for i in $(seq 1 16); do
   sleep 0.5
-  if ss -tln | grep -q ":${MCP_PORT} "; then
+  if python -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',$MCP_PORT)); s.close()" 2>/dev/null; then
     ok "MCP server ready at http://localhost:$MCP_PORT"
     break
   fi
