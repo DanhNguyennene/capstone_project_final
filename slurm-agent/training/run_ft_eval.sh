@@ -67,31 +67,31 @@ trap cleanup EXIT INT TERM
 # ── 1. Ensure we're in the right place ────────────────────────────────────────
 cd "$PROJECT_DIR/slurm-agent"
 
-# ── 2. Setup venv + deps ─────────────────────────────────────────────────────
-if [[ ! -d "$VENV_DIR" ]]; then
-  info "Creating virtualenv..."
-  python3 -m venv "$VENV_DIR"
-fi
-source "$VENV_DIR/bin/activate"
+# # ── 2. Setup venv + deps ─────────────────────────────────────────────────────
+# if [[ ! -d "$VENV_DIR" ]]; then
+#   info "Creating virtualenv..."
+#   python3 -m venv "$VENV_DIR"
+# fi
+# source "$VENV_DIR/bin/activate"
 
-info "Installing dependencies..."
-pip install -q --upgrade pip
-pip install -q \
-  torch --index-url https://download.pytorch.org/whl/cu124
-pip install -q \
-  transformers>=4.46.0 \
-  peft>=0.13.0 \
-  accelerate>=0.34.0 \
-  bitsandbytes>=0.43.0 \
-  fastapi \
-  uvicorn \
-  httpx \
-  aiohttp
+# info "Installing dependencies..."
+# pip install -q --upgrade pip
+# pip install -q \
+#   torch --index-url https://download.pytorch.org/whl/cu124
+# pip install -q \
+#   transformers>=4.46.0 \
+#   peft>=0.13.0 \
+#   accelerate>=0.34.0 \
+#   bitsandbytes>=0.43.0 \
+#   fastapi \
+#   uvicorn \
+#   httpx \
+#   aiohttp
 
-# Install agent deps
-if [[ -f "$PROJECT_DIR/slurm-agent/agent/requirements.txt" ]]; then
-  pip install -q -r "$PROJECT_DIR/slurm-agent/agent/requirements.txt"
-fi
+# # Install agent deps
+# if [[ -f "$PROJECT_DIR/slurm-agent/agent/requirements.txt" ]]; then
+#   pip install -q -r "$PROJECT_DIR/slurm-agent/agent/requirements.txt"
+# fi
 
 # Try flash-attention (optional, falls back to sdpa)
 pip install -q flash-attn --no-build-isolation 2>/dev/null || warn "flash-attn not installed, using sdpa"
@@ -102,7 +102,7 @@ python "$PROJECT_DIR/slurm-agent/training/serve_ft_model.py" \
   --base-model "$BASE_MODEL" \
   --adapter "$ADAPTER_PATH" \
   --port "$MODEL_PORT" \
-  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/ft_model_server.log" &
+  > >(tee "$PROJECT_DIR/slurm-agent/evaluation/results/ft_model_server.log") 2>&1 &
 MODEL_PID=$!
 
 # Wait for model to load (can take 2-3 min for 14B)
@@ -124,13 +124,13 @@ fuser -k "${MCP_PORT}/tcp" 2>/dev/null || true
 sleep 0.3
 cd "$PROJECT_DIR/slurm-agent/mcp-server"
 python slurm_mcp_sse.py --mock mixed --port "$MCP_PORT" \
-  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/mcp_server.log" &
+  > >(tee "$PROJECT_DIR/slurm-agent/evaluation/results/mcp_server.log") 2>&1 &
 MCP_PID=$!
 cd "$PROJECT_DIR/slurm-agent"
 
 for i in $(seq 1 16); do
   sleep 0.5
-  if curl -sf "http://localhost:$MCP_PORT/sse" --max-time 1 -o /dev/null 2>/dev/null; then
+  if curl -s -o /dev/null -w '%{http_code}' --max-time 1 "http://localhost:$MCP_PORT/sse" 2>/dev/null | grep -q "200"; then
     ok "MCP server ready at http://localhost:$MCP_PORT"
     break
   fi
@@ -149,7 +149,7 @@ export AUTO_APPROVE="true"
 
 cd "$PROJECT_DIR/slurm-agent/agent"
 python main.py --port "$AGENT_PORT" \
-  2>&1 | tee "$PROJECT_DIR/slurm-agent/evaluation/results/agent_server.log" &
+  > >(tee "$PROJECT_DIR/slurm-agent/evaluation/results/agent_server.log") 2>&1 &
 AGENT_PID=$!
 cd "$PROJECT_DIR/slurm-agent"
 
