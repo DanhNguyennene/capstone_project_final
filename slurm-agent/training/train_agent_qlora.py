@@ -70,16 +70,22 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def render_messages_qwen(tokenizer, messages: list[dict]) -> str:
-    """Render messages using Qwen2.5's native chat template with tool support."""
+def render_messages_qwen(tokenizer, messages: list[dict], tools: list[dict] | None = None) -> str:
+    """Render messages using Qwen2.5's native chat template with tool support.
+
+    `tools` is the role-scoped JSON-schema tool list emitted by
+    build_agent_sft.py / build_agent_sft_traces.py. Passing it through the
+    chat template is what teaches the model the per-sample tool boundary —
+    without this the model learns that all tools are always available and
+    hallucinates cross-role calls at inference time.
+    """
     # Qwen2.5-Instruct has native tool_call support in its chat template.
     # We need to handle tool_calls and tool results properly.
     try:
-        return tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=False,
-        )
+        kwargs = dict(tokenize=False, add_generation_prompt=False)
+        if tools:
+            kwargs["tools"] = tools
+        return tokenizer.apply_chat_template(messages, **kwargs)
     except Exception:
         # Fallback: manual rendering for tool messages
         rendered_msgs = []
@@ -176,6 +182,7 @@ def main():
         bias="none",
         task_type="CAUSAL_LM",
         target_modules=TARGET_MODULES,
+        layers_to_transform=list(range(36, 48)),
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
@@ -199,7 +206,8 @@ def main():
 
     def tokenize(example):
         messages = example["messages"]
-        text = render_messages_qwen(tokenizer, messages)
+        tools = example.get("tools") or None
+        text = render_messages_qwen(tokenizer, messages, tools=tools)
         tokenized = tokenizer(
             text,
             truncation=True,
@@ -233,7 +241,7 @@ def main():
         learning_rate=args.lr,
         warmup_ratio=args.warmup_ratio,
         lr_scheduler_type="cosine",
-        logging_steps=10,
+        logging_steps=5,
         save_steps=100,
         save_total_limit=2,
         bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
@@ -241,7 +249,7 @@ def main():
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         optim="paged_adamw_8bit",
-        report_to="none",
+        report_to="wandb",
         remove_unused_columns=False,
         dataloader_pin_memory=True,
         dataloader_num_workers=2,

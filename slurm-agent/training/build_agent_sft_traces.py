@@ -24,6 +24,20 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Re-use the canonical tool schemas + role partitions defined in build_agent_sft.
+# Both builders write to training/out/agent_sft.jsonl so they MUST emit the
+# same `tools` field semantics or the trainer will see inconsistent data.
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_agent_sft import (  # noqa: E402
+    TOOL_SCHEMAS,
+    OBSERVER_TOOL_NAMES,
+    OPERATOR_TOOL_NAMES,
+    OPERATOR_SYSTEM,
+    DANGEROUS_TOOLS,
+    _role_tools,
+)
+
 # System prompts matching the actual agent
 OBSERVER_SYSTEM = """You are a Slurm HPC cluster assistant with two modes:
 - Observer (default): Read-only monitoring, analysis, diagnosis using Slurm tools.
@@ -486,6 +500,108 @@ def augment_messages(messages: list[dict], rng: random.Random) -> list[dict] | N
     return augmented
 
 
+def _split_messages_by_role(messages: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Split a multi-role conversation into per-role samples.
+
+    Detects `transfer_to_operator` calls in the trace. Anything before (and
+    including) the transfer becomes the Observer sample. Anything after — the
+    action tool calls and final response — becomes a fresh Operator sample
+    starting with the Operator system prompt and a synthesized user message
+    that carries the handoff context.
+
+    Returns a list of (role, messages) tuples. Empty messages are filtered out.
+    """
+    # Locate transfer_to_operator (first occurrence, which is what the runtime
+    # uses).
+    transfer_idx = -1
+    transfer_args: dict = {}
+    for i, m in enumerate(messages):
+        if m.get("role") == "assistant" and m.get("tool_calls"):
+            for tc in m["tool_calls"]:
+                if tc.get("function", {}).get("name") == "transfer_to_operator":
+                    transfer_idx = i
+                    try:
+                        transfer_args = json.loads(tc["function"].get("arguments") or "{}")
+                    except Exception:
+                        transfer_args = {}
+                    break
+            if transfer_idx >= 0:
+                break
+
+    if transfer_idx < 0:
+        # Pure Observer trace (no handoff).
+        return [("observer", messages)]
+
+    # Observer half: system + user + everything up to and including the
+    # transfer assistant + its tool result, then a brief acknowledgement.
+    obs = list(messages[: transfer_idx + 1])
+    # If the next message is the tool result for the transfer, include it.
+    if transfer_idx + 1 < len(messages) and messages[transfer_idx + 1].get("role") == "tool":
+        obs.append(messages[transfer_idx + 1])
+    obs.append({
+        "role": "assistant",
+        "content": "I've handed this off to the Operator for execution with confirmation.",
+    })
+
+    # Find the original user query (first user message) for context.
+    user_query = next((m["content"] for m in messages if m.get("role") == "user"), "")
+
+    # Operator half: collect all assistant tool_calls (and their results) AFTER
+    # the transfer, plus the final assistant text. Drop dangling/duplicated
+    # handoff tool messages.
+    op_tail: list[dict] = []
+    j = transfer_idx + 1
+    # Skip the transfer tool result that we already emitted to obs.
+    if j < len(messages) and messages[j].get("role") == "tool":
+        j += 1
+    while j < len(messages):
+        m = messages[j]
+        # Drop accidental cross-role tool calls (handoff back to observer
+        # mid-action) — the Operator role never emits transfer_to_operator.
+        if m.get("role") == "assistant" and m.get("tool_calls"):
+            kept = [
+                tc for tc in m["tool_calls"]
+                if tc.get("function", {}).get("name") != "transfer_to_operator"
+            ]
+            if kept:
+                op_tail.append({**m, "tool_calls": kept})
+                kept_ids = {tc["id"] for tc in kept}
+                # Include only the matching tool results.
+                k = j + 1
+                while k < len(messages) and messages[k].get("role") == "tool":
+                    if messages[k].get("tool_call_id") in kept_ids:
+                        op_tail.append(messages[k])
+                    k += 1
+                j = k
+                continue
+        else:
+            op_tail.append(m)
+        j += 1
+
+    # Did the operator actually do anything useful?
+    has_action = any(
+        m.get("role") == "assistant" and m.get("tool_calls")
+        for m in op_tail
+    )
+    if not has_action:
+        return [("observer", obs)]
+
+    op_user = (
+        f"{user_query}\n\n"
+        f"[Context from Observer]\n"
+        f"Action requested: {transfer_args.get('action_request', user_query[:80])}\n"
+        f"Required tool: {transfer_args.get('required_tool', '')}\n"
+        f"Target scope: {transfer_args.get('target_scope', 'discovery')}"
+    )
+    op = [
+        {"role": "system", "content": OPERATOR_SYSTEM},
+        {"role": "user", "content": op_user},
+        *op_tail,
+    ]
+
+    return [("observer", obs), ("operator", op)]
+
+
 def main():
     args = parse_args()
     rng = random.Random(args.seed)
@@ -507,13 +623,19 @@ def main():
     print(f"\nConverting {len(passing_traces)} passing traces...")
     for tid, trace in passing_traces.items():
         messages = trace_to_messages(trace)
-        if messages and len(messages) > 3:  # must have tool calls
-            samples.append({
-                "messages": messages,
-                "metadata": {"id": tid, "source": "trace"},
-            })
-        else:
+        if not messages or len(messages) <= 3:
             skipped += 1
+            continue
+        # Role-split: produces 1 sample (Observer-only) or 2 samples
+        # (Observer + Operator) each with its own role-scoped `tools` field.
+        for idx, (role, role_msgs) in enumerate(_split_messages_by_role(messages)):
+            if not role_msgs:
+                continue
+            samples.append({
+                "messages": role_msgs,
+                "tools": _role_tools(role),
+                "metadata": {"id": f"{tid}_{role}", "source": "trace", "role": role},
+            })
 
     base_count = len(samples)
     print(f"  Base samples: {base_count} (skipped {skipped} without tool calls)")
@@ -529,7 +651,12 @@ def main():
                 if aug_msgs:
                     samples.append({
                         "messages": aug_msgs,
-                        "metadata": {"id": s["metadata"]["id"] + f"_aug{i}", "source": "augmented"},
+                        "tools": s.get("tools", []),  # preserve role-scoped tools
+                        "metadata": {
+                            "id": s["metadata"]["id"] + f"_aug{i}",
+                            "source": "augmented",
+                            "role": s["metadata"].get("role", "observer"),
+                        },
                     })
                     augmented_count += 1
 

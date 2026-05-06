@@ -420,7 +420,63 @@ TOOL_SCHEMAS = {
             },
         },
     },
+    "transfer_to_observer": {
+        "type": "function",
+        "function": {
+            "name": "transfer_to_observer",
+            "description": "Hand back to the Observer agent after Operator action(s) complete.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "description": "Brief summary of the actions performed"},
+                },
+            },
+        },
+    },
 }
+
+
+# ── Role-scoped tool sets ─────────────────────────────────────────────────────
+# Each agent role only ever sees the tools below. Training samples MUST include
+# the matching `tools` list so the model never learns that all tools are always
+# available.
+
+OBSERVER_TOOL_NAMES: set[str] = {
+    # Read-only / analysis
+    "squeue", "sinfo", "sacct", "scontrol_show", "sacctmgr_list", "sacctmgr_show",
+    "sdiag", "sprio", "sstat", "sshare", "sreport",
+    "scontrol_license", "scontrol_reservation_show",
+    "scontrol_show_config", "scontrol_ping",
+    "sinfo_reasons", "sinfo_node",
+    "squeue_steps", "scontrol_show_step",
+    "sprio_weights",
+    # Knowledge / web
+    "lookup_slurm_docs", "web_search", "fetch_web_content", "read_file",
+    # Handoff out (Observer's only "action")
+    "transfer_to_operator",
+}
+
+OPERATOR_TOOL_NAMES: set[str] = {
+    # Dangerous / state-changing
+    "sbatch", "scancel",
+    "scontrol_hold", "scontrol_release", "scontrol_requeue", "scontrol_update",
+    "scontrol_node",
+    # Operator-side reads (verify before acting)
+    "scontrol_show", "squeue", "sinfo", "sacctmgr_list", "scontrol_reservation_show",
+    # Handoff back
+    "transfer_to_observer",
+}
+
+
+def _role_tools(role: str) -> list[dict]:
+    """Return JSON-schema tool list for a given agent role."""
+    if role == "observer":
+        names = OBSERVER_TOOL_NAMES
+    elif role == "operator":
+        names = OPERATOR_TOOL_NAMES
+    else:
+        raise ValueError(f"unknown role: {role}")
+    return [TOOL_SCHEMAS[n] for n in sorted(names) if n in TOOL_SCHEMAS]
 
 # ── Simulated tool outputs ────────────────────────────────────────────────────
 
@@ -841,12 +897,16 @@ def build_observer_sample(row: dict) -> dict[str, Any] | None:
     if not tools:
         response = _build_final_response(row, [])
         messages.append({"role": "assistant", "content": response})
-        return {"messages": messages}
+        return {"messages": messages, "tools": _role_tools("observer")}
 
-    # Tool calls
+    # Tool calls (filtered to Observer-allowed tools only)
     tool_calls = []
     for tool_name in tools:
         if tool_name not in TOOL_SCHEMAS:
+            continue
+        if tool_name not in OBSERVER_TOOL_NAMES:
+            # An observer-only sample must not call dangerous tools.
+            # (handoff cases are routed to build_handoff_sample.)
             continue
         args = _build_tool_args(tool_name, row)
         tool_calls.append({
@@ -882,11 +942,21 @@ def build_observer_sample(row: dict) -> dict[str, Any] | None:
     response = _build_final_response(row, tool_outputs)
     messages.append({"role": "assistant", "content": response})
 
-    return {"messages": messages}
+    return {"messages": messages, "tools": _role_tools("observer")}
 
 
-def build_handoff_sample(row: dict) -> dict[str, Any] | None:
-    """Build a training sample for a handoff case (Observer → Operator)."""
+def build_handoff_sample(row: dict) -> list[dict[str, Any]] | None:
+    """Build TWO training samples for a handoff case:
+      1. Observer sample: ends with `transfer_to_operator` and a brief handoff
+         note. Tools list = OBSERVER_TOOL_NAMES only (no dangerous tools).
+      2. Operator sample: fresh conversation starting with the Operator system
+         prompt + a synthesized user message containing the handoff context;
+         calls action tools and emits the final response. Tools list =
+         OPERATOR_TOOL_NAMES only.
+
+    This split is the proper fix for the model hallucinating cross-role tool
+    calls: each sample now only ever sees the tools the active agent has.
+    """
     gt = row.get("ground_truth", {})
     tools = gt.get("tools", [])
     source_state = row.get("source_state", {})
@@ -894,50 +964,75 @@ def build_handoff_sample(row: dict) -> dict[str, Any] | None:
     if not gt.get("handoff"):
         return None
 
-    messages = [{"role": "system", "content": OBSERVER_SYSTEM}]
-    messages.append({"role": "user", "content": row["input"]})
+    read_tools = [t for t in tools if t not in DANGEROUS_TOOLS and t in OBSERVER_TOOL_NAMES]
+    action_tools = [t for t in tools if t in DANGEROUS_TOOLS and t in OPERATOR_TOOL_NAMES]
 
-    # Determine which tools are read (pre-checks) vs action
-    read_tools = [t for t in tools if t not in DANGEROUS_TOOLS]
-    action_tools = [t for t in tools if t in DANGEROUS_TOOLS]
+    samples: list[dict[str, Any]] = []
 
-    # If there are read tools before handoff, call them first
+    # ── Sample 1: Observer half ───────────────────────────────────────────────
+    obs_messages = [
+        {"role": "system", "content": OBSERVER_SYSTEM},
+        {"role": "user", "content": row["input"]},
+    ]
+
+    # Optional pre-read calls
     if read_tools:
-        tool_calls = []
+        pre_calls = []
         for tool_name in read_tools:
             if tool_name not in TOOL_SCHEMAS:
                 continue
             args = _build_tool_args(tool_name, row)
-            tool_calls.append({
+            pre_calls.append({
                 "id": f"call_{tool_name}_{random.randint(1000,9999)}",
                 "type": "function",
                 "function": {"name": tool_name, "arguments": json.dumps(args)},
             })
-
-        if tool_calls:
-            messages.append({"role": "assistant", "content": None, "tool_calls": tool_calls})
-            for tc in tool_calls:
+        if pre_calls:
+            obs_messages.append({"role": "assistant", "content": None, "tool_calls": pre_calls})
+            for tc in pre_calls:
                 output = _simulate_tool_output(tc["function"]["name"], source_state, row)
-                messages.append({"role": "tool", "tool_call_id": tc["id"], "content": output})
+                obs_messages.append({"role": "tool", "tool_call_id": tc["id"], "content": output})
 
     # Transfer to operator
     transfer_args = _build_tool_args("transfer_to_operator", row)
-    transfer_call = {
-        "id": f"call_transfer_{random.randint(1000,9999)}",
-        "type": "function",
-        "function": {"name": "transfer_to_operator", "arguments": json.dumps(transfer_args)},
-    }
-    messages.append({"role": "assistant", "content": None, "tool_calls": [transfer_call]})
-    messages.append({
+    transfer_id = f"call_transfer_{random.randint(1000,9999)}"
+    obs_messages.append({
+        "role": "assistant",
+        "content": None,
+        "tool_calls": [{
+            "id": transfer_id,
+            "type": "function",
+            "function": {"name": "transfer_to_operator", "arguments": json.dumps(transfer_args)},
+        }],
+    })
+    obs_messages.append({
         "role": "tool",
-        "tool_call_id": transfer_call["id"],
+        "tool_call_id": transfer_id,
         "content": "Transferred to Operator agent.",
     })
+    obs_messages.append({
+        "role": "assistant",
+        "content": "I've handed this off to the Operator for execution with confirmation.",
+    })
 
-    # Operator executes actions
+    samples.append({"messages": obs_messages, "tools": _role_tools("observer")})
+
+    # ── Sample 2: Operator half ───────────────────────────────────────────────
     if action_tools:
-        # Switch to operator system for remaining
-        messages.append({"role": "system", "content": OPERATOR_SYSTEM})
+        # Synthesize the post-handoff user message — mirrors what the runtime
+        # input filter passes to the Operator: original request + handoff
+        # context.
+        op_user = (
+            f"{row['input']}\n\n"
+            f"[Context from Observer]\n"
+            f"Action requested: {transfer_args.get('action_request', row['input'][:80])}\n"
+            f"Required tool: {transfer_args.get('required_tool', action_tools[0])}\n"
+            f"Target scope: {transfer_args.get('target_scope', 'discovery')}"
+        )
+        op_messages: list[dict[str, Any]] = [
+            {"role": "system", "content": OPERATOR_SYSTEM},
+            {"role": "user", "content": op_user},
+        ]
 
         action_calls = []
         for tool_name in action_tools:
@@ -951,24 +1046,28 @@ def build_handoff_sample(row: dict) -> dict[str, Any] | None:
             })
 
         if action_calls:
-            messages.append({"role": "assistant", "content": None, "tool_calls": action_calls})
+            op_messages.append({"role": "assistant", "content": None, "tool_calls": action_calls})
             for tc in action_calls:
                 output = _simulate_tool_output(tc["function"]["name"], source_state, row)
-                messages.append({"role": "tool", "tool_call_id": tc["id"], "content": output})
+                op_messages.append({"role": "tool", "tool_call_id": tc["id"], "content": output})
 
-    # Final response
-    response = _build_final_response(row, [])
-    messages.append({"role": "assistant", "content": response})
+            op_messages.append({"role": "assistant", "content": _build_final_response(row, [])})
 
-    return {"messages": messages}
+            samples.append({"messages": op_messages, "tools": _role_tools("operator")})
+
+    return samples or None
 
 
-def build_sample(row: dict) -> dict[str, Any] | None:
-    """Route to appropriate builder based on handoff flag."""
+def build_sample(row: dict) -> list[dict[str, Any]] | None:
+    """Route to appropriate builder based on handoff flag.
+
+    Always returns a list (or None), since handoff cases produce TWO samples.
+    """
     gt = row.get("ground_truth", {})
     if gt.get("handoff"):
         return build_handoff_sample(row)
-    return build_observer_sample(row)
+    obs = build_observer_sample(row)
+    return [obs] if obs else None
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -985,7 +1084,7 @@ def parse_args() -> argparse.Namespace:
                         help="Test split ratio (0=no split, 0.2=80/20)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--include-tools", action="store_true",
-                        help="Include tool definitions in system message")
+                        help="DEPRECATED — tools are now emitted as a proper `tools` field per sample (role-scoped). Flag kept for CLI compat; has no effect.")
     return parser.parse_args()
 
 
@@ -1008,23 +1107,20 @@ def main() -> None:
     samples = []
     skipped = 0
     for row in data:
-        sample = build_sample(row)
-        if sample:
-            # Optionally inject tool definitions
-            if args.include_tools:
-                tools_json = json.dumps(
-                    [TOOL_SCHEMAS[t] for t in row.get("ground_truth", {}).get("tools", []) if t in TOOL_SCHEMAS],
-                    indent=1,
-                )
-                sample["messages"][0]["content"] += f"\n\nAvailable tools:\n{tools_json}"
+        built = build_sample(row)
+        if not built:
+            skipped += 1
+            continue
+        # build_sample now always returns a list (1 sample for observer-only,
+        # 2 samples for handoff: observer + operator).
+        for idx, sample in enumerate(built):
             sample["metadata"] = {
                 "id": row.get("id"),
                 "category": row.get("category"),
                 "scenario": row.get("scenario"),
+                "role": "operator" if idx == 1 else "observer",
             }
             samples.append(sample)
-        else:
-            skipped += 1
 
     random.shuffle(samples)
 
