@@ -36,10 +36,10 @@ tokenizer = None
 MODEL_NAME = "slurm-agent-ft"
 
 
-def load_model(base_model: str, adapter_path: str, device: str = "auto"):
+def load_model(base_model: str, adapter_path: str, device: str = "auto", quantized: bool = False):
     """Load base model + LoRA adapter."""
     global model, tokenizer
-    logger.info(f"Loading base model: {base_model}")
+    logger.info(f"Loading base model: {base_model} ({'4-bit quantized' if quantized else 'full precision'})")
     tokenizer = AutoTokenizer.from_pretrained(
         adapter_path,  # use adapter's tokenizer (has chat template)
         trust_remote_code=True,
@@ -52,13 +52,22 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto"):
         attn_impl = "sdpa"
         logger.info("flash-attn not installed, using sdpa attention")
 
-    model = AutoModelForCausalLM.from_pretrained(
-        base_model,
+    load_kwargs = dict(
         torch_dtype=torch.bfloat16,
         device_map=device,
         trust_remote_code=True,
         attn_implementation=attn_impl,
     )
+    if quantized:
+        from transformers import BitsAndBytesConfig
+        load_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
+
+    model = AutoModelForCausalLM.from_pretrained(base_model, **load_kwargs)
     logger.info(f"Loading LoRA adapter: {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
@@ -244,7 +253,8 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8081)
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--quantized", action="store_true", help="Load in 4-bit NF4 quantization")
     args = parser.parse_args()
 
-    load_model(args.base_model, args.adapter, args.device)
+    load_model(args.base_model, args.adapter, args.device, quantized=args.quantized)
     uvicorn.run(app, host=args.host, port=args.port)

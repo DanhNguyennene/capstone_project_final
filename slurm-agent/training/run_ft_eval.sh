@@ -33,11 +33,13 @@ ADAPTER_PATH="$PROJECT_DIR/slurm-agent/training/out/slurm-agent-14b-lora"
 # Eval config
 EVAL_ARGS=""
 MODE="full"
+QUANTIZED=0
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --quick)    MODE="quick" ;;
+    --quantized) QUANTIZED=1 ;;
     --filter)   EVAL_ARGS="$EVAL_ARGS --filter $2"; shift ;;
     --judge)    EVAL_ARGS="$EVAL_ARGS --judge" ;;
     *)          echo "Unknown arg: $1"; exit 1 ;;
@@ -97,11 +99,18 @@ cd "$PROJECT_DIR/slurm-agent"
 pip install -q flash-attn --no-build-isolation 2>/dev/null || warn "flash-attn not installed, using sdpa"
 
 # ── 3. Start FT Model Server ─────────────────────────────────────────────────
-info "Starting fine-tuned model server on port $MODEL_PORT..."
+QUANT_FLAG=""
+if [[ $QUANTIZED -eq 1 ]]; then
+  QUANT_FLAG="--quantized"
+  info "Starting fine-tuned model server (4-bit quantized) on port $MODEL_PORT..."
+else
+  info "Starting fine-tuned model server (full precision) on port $MODEL_PORT..."
+fi
 python "$PROJECT_DIR/slurm-agent/training/serve_ft_model.py" \
   --base-model "$BASE_MODEL" \
   --adapter "$ADAPTER_PATH" \
   --port "$MODEL_PORT" \
+  $QUANT_FLAG \
   > >(tee "$PROJECT_DIR/slurm-agent/evaluation/results/ft_model_server.log") 2>&1 &
 MODEL_PID=$!
 
