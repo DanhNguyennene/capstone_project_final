@@ -23,7 +23,7 @@ WORK_DIR="${WORK_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 PROJECT_DIR="$WORK_DIR"
 VENV_DIR="$PROJECT_DIR/.venv"
 
-MODEL_PORT=8081
+MODEL_PORT=18081
 AGENT_PORT=20000
 MCP_PORT=3002
 
@@ -132,12 +132,14 @@ MODEL_PID=$!
 info "Waiting for model to load (this takes 2-3 min for 14B full precision)..."
 for i in $(seq 1 120); do
   sleep 2
-  if curl -sf "http://localhost:$MODEL_PORT/v1/models" -o /dev/null 2>/dev/null; then
-    ok "FT model server ready at http://localhost:$MODEL_PORT"
+  # Verify it's OUR server, not runpod's nginx hijacking the port
+  resp=$(curl -sf "http://127.0.0.1:$MODEL_PORT/v1/models" 2>/dev/null || true)
+  if echo "$resp" | grep -q "slurm-agent-ft"; then
+    ok "FT model server ready at http://127.0.0.1:$MODEL_PORT"
     break
   fi
   if [[ $i -eq 120 ]]; then
-    die "Model server didn't start in 4 min. Check: evaluation/results/ft_model_server.log"
+    die "Model server didn't start in 4 min (or port hijacked by nginx). Check: evaluation/results/ft_model_server.log"
   fi
 done
 
