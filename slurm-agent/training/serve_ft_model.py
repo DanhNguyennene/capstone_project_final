@@ -44,12 +44,20 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto"):
         adapter_path,  # use adapter's tokenizer (has chat template)
         trust_remote_code=True,
     )
+    # Use flash_attention_2 if available, otherwise fall back to sdpa
+    try:
+        import flash_attn  # noqa: F401
+        attn_impl = "flash_attention_2"
+    except ImportError:
+        attn_impl = "sdpa"
+        logger.info("flash-attn not installed, using sdpa attention")
+
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
         torch_dtype=torch.bfloat16,
         device_map=device,
         trust_remote_code=True,
-        attn_implementation="flash_attention_2",
+        attn_implementation=attn_impl,
     )
     logger.info(f"Loading LoRA adapter: {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
