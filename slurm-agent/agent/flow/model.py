@@ -107,7 +107,11 @@ def create_openai_model(
         )
     _model = model_name or OPENAI_MODEL
     _base = base_url or OPENAI_BASE_URL
-    client = AsyncOpenAI(base_url=_base, api_key=_token)
+    # Use trust_env=False so HTTP(S)_PROXY env vars (e.g. runpod's nginx proxy)
+    # don't intercept localhost API calls.
+    import httpx as _httpx
+    _http = _httpx.AsyncClient(trust_env=False, timeout=_httpx.Timeout(600.0))
+    client = AsyncOpenAI(base_url=_base, api_key=_token, http_client=_http)
     logger.info(f"[model] OpenAI backend: {_base} model={_model}")
     return OpenAIChatCompletionsModel(model=_model, openai_client=client)
 

@@ -77,8 +77,10 @@ sleep 1
 
 # ── Strip runpod proxy env (forces localhost calls through nginx → 405) ─────
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
-export NO_PROXY="localhost,127.0.0.1,::1"
-export no_proxy="localhost,127.0.0.1,::1"
+export NO_PROXY="localhost,127.0.0.1,::1,0.0.0.0"
+export no_proxy="localhost,127.0.0.1,::1,0.0.0.0"
+info "Proxy env after cleanup:"
+env | grep -iE 'proxy' || echo "  (none)"
 
 # # ── 2. Setup venv + deps ─────────────────────────────────────────────────────
 # if [[ ! -d "$VENV_DIR" ]]; then
@@ -161,7 +163,7 @@ done
 # ── 5. Start Agent Backend (pointing at FT model) ────────────────────────────
 info "Starting agent backend on port $AGENT_PORT..."
 export LLM_PROVIDER="openai"
-export OPENAI_BASE_URL="http://localhost:$MODEL_PORT/v1"
+export OPENAI_BASE_URL="http://127.0.0.1:$MODEL_PORT/v1"
 export OPENAI_API_KEY="dummy"
 export OPENAI_AGENTS_DISABLE_TRACING="1"
 export SLURM_AGENT_MODEL="slurm-agent-ft"

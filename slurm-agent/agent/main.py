@@ -489,7 +489,9 @@ def _build_chat_client(
         token = (openai_api_key or OPENAI_API_KEY).strip()
         if not token:
             raise RuntimeError("OPENAI_API_KEY missing for OpenAI provider")
-        return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token), target_model, {}
+        import httpx as _httpx
+        _http = _httpx.AsyncClient(trust_env=False, timeout=_httpx.Timeout(600.0))
+        return AsyncOpenAI(base_url=OPENAI_BASE_URL, api_key=token, http_client=_http), target_model, {}
 
     if active_provider == "azure-openai":
         if AsyncAzureOpenAI is None:
