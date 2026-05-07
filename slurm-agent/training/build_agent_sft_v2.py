@@ -37,13 +37,96 @@ from agent.flow.instructions import _OBSERVER_BASE, _OPERATOR_BASE  # type: igno
 
 # Reuse simulator + helper functions from v1
 from training.build_agent_sft import (  # type: ignore
-    _build_tool_args,
+    _build_tool_args as _v1_build_tool_args,
     _simulate_tool_output,
     _build_final_response,
     DANGEROUS_TOOLS,
     OBSERVER_TOOL_NAMES,
     OPERATOR_TOOL_NAMES,
 )
+
+
+def _build_tool_args(tool_name: str, row: dict) -> dict:
+    """Wrap v1 with corrections so emitted args match the REAL MCP signatures.
+
+    Critical fixes:
+      - scontrol_update: real sig is (entity, id, params). v1 emits {job_id, updates}.
+      - scancel: real sig is (job_id, user). v1 may emit {partition} or {state}
+        which the tool will reject. Fall back to job_id from source_state when
+        no explicit job_id can be inferred.
+      - scontrol_node: keep (node, state, reason). v1 lower-cases state; MCP
+        accepts case-insensitive but training data should mirror inference
+        usage which lowercases.
+      - sbatch: ensure flags is present (real sig is (script, flags)).
+    """
+    user_input = row.get("input", "")
+    jobs = row.get("source_state", {}).get("jobs", {})
+    job_ids = re.findall(r"\b(\d{4,5})\b", user_input)
+
+    if tool_name == "scontrol_update":
+        jid = job_ids[0] if job_ids else (list(jobs.keys())[0] if jobs else "1001")
+        # Choose params from intent
+        if "time" in user_input.lower() or "limit" in user_input.lower():
+            params = "TimeLimit=12:00:00"
+        elif "qos" in user_input.lower():
+            params = "QOS=normal"
+        elif "partition" in user_input.lower():
+            params = "Partition=normal"
+        else:
+            params = "TimeLimit=12:00:00"
+        return {"entity": "job", "id": jid, "params": params}
+
+    if tool_name == "scancel":
+        if job_ids:
+            return {"job_id": ",".join(job_ids[:3])}
+        # Discovery scope: in operator half we run squeue first then scancel
+        # with the resolved IDs from source_state.
+        candidate_ids = []
+        for j, info in (jobs or {}).items():
+            if info.get("state") in {"RUNNING", "PENDING"}:
+                candidate_ids.append(str(j))
+            if len(candidate_ids) >= 3:
+                break
+        if candidate_ids:
+            return {"job_id": ",".join(candidate_ids)}
+        return {"job_id": "1001"}
+
+    if tool_name == "sbatch":
+        script_match = re.search(r"(\S+\.sh)", user_input)
+        flags = ""
+        ui_low = user_input.lower()
+        if "gpu" in ui_low:
+            flags = "--partition=gpu --gres=gpu:1"
+        elif "high" in ui_low and "memory" in ui_low:
+            flags = "--mem=64G"
+        return {"script": script_match.group(1) if script_match else "train.sh", "flags": flags}
+
+    # Fallback: delegate to v1 for everything else
+    return _v1_build_tool_args(tool_name, row)
+
+
+def _validate_args_against_schema(tool_name: str, args: dict, all_schemas: dict) -> bool:
+    """Return True iff `args` satisfies the schema's required fields and contains
+    only properties allowed by the schema (or schema has no `properties` defined)."""
+    schema = all_schemas.get(tool_name)
+    if not schema:
+        return False
+    params = (schema.get("parameters") or {})
+    props = params.get("properties") or {}
+    required = params.get("required") or []
+    # All required fields must be present and non-empty
+    for req in required:
+        if req not in args:
+            return False
+        v = args[req]
+        if v is None or v == "":
+            return False
+    # Reject unknown properties (would error at MCP)
+    if props:
+        for k in args.keys():
+            if k not in props:
+                return False
+    return True
 
 
 # ── Real inference-time system prompts ────────────────────────────────────────
@@ -142,6 +225,8 @@ def build_observer_sample(row: dict, all_schemas: dict) -> dict | None:
         if tname not in OBSERVER_TOOL_NAMES or tname not in all_schemas:
             continue
         args = _build_tool_args(tname, row)
+        if not _validate_args_against_schema(tname, args, all_schemas):
+            return None  # Drop sample rather than train an invalid call
         tool_calls.append({
             "id": f"call_{tname}_{random.randint(1000, 9999)}",
             "type": "function",
@@ -188,6 +273,8 @@ def build_handoff_samples(row: dict, all_schemas: dict) -> list[dict] | None:
             if tname not in all_schemas:
                 continue
             args = _build_tool_args(tname, row)
+            if not _validate_args_against_schema(tname, args, all_schemas):
+                return None
             pre_calls.append({
                 "id": f"call_{tname}_{random.randint(1000, 9999)}",
                 "type": "function",
@@ -200,6 +287,8 @@ def build_handoff_samples(row: dict, all_schemas: dict) -> list[dict] | None:
                 obs_messages.append({"role": "tool", "tool_call_id": tc["id"], "content": out})
 
     transfer_args = _build_transfer_args(row)
+    if not _validate_args_against_schema("transfer_to_operator", transfer_args, all_schemas):
+        return None
     transfer_id = f"call_transfer_{random.randint(1000, 9999)}"
     obs_messages.append({
         "role": "assistant",
@@ -258,21 +347,34 @@ def build_handoff_samples(row: dict, all_schemas: dict) -> list[dict] | None:
         # For discovery scope, Operator must first call a read tool (squeue/sinfo/
         # scontrol_show) to resolve targets, then the action tool. Mirror that.
         if target_scope == "discovery":
-            # Pick a sensible read tool based on the action
+            # Pick a sensible read tool + args based on the action.
+            # Args MUST match the real MCP signatures (squeue/sinfo).
             if required_tool in {"scancel", "scontrol_hold", "scontrol_release",
-                                  "scontrol_requeue", "scontrol_suspend", "scontrol_resume",
-                                  "scontrol_update_job"}:
+                                  "scontrol_requeue", "scontrol_suspend",
+                                  "scontrol_resume_job", "scontrol_update"}:
                 read_name = "squeue"
-                read_args = {"flags": "--me", "format": "%A %j %T %u"}
-            elif required_tool in {"scontrol_drain_node", "scontrol_resume_node",
-                                    "scontrol_update_node"}:
+                read_args = {}
+                ui_low = row.get("input", "").lower()
+                if "alice" in ui_low:
+                    read_args["user"] = "alice"
+                elif "bob" in ui_low:
+                    read_args["user"] = "bob"
+                if "pending" in ui_low:
+                    read_args["state"] = "PENDING"
+                elif "running" in ui_low:
+                    read_args["state"] = "RUNNING"
+                if "gpu" in ui_low and "partition" not in read_args:
+                    read_args["partition"] = "gpu"
+            elif required_tool == "scontrol_node":
                 read_name = "sinfo"
-                read_args = {"flags": "-N", "format": "%N %T"}
+                read_args = {}
+                if "gpu" in row.get("input", "").lower():
+                    read_args["partition"] = "gpu"
             else:
                 read_name = "squeue"
-                read_args = {"flags": "", "format": ""}
+                read_args = {}
 
-            if read_name in all_schemas:
+            if read_name in all_schemas and _validate_args_against_schema(read_name, read_args, all_schemas):
                 read_id = f"call_{read_name}_{random.randint(1000, 9999)}"
                 op_messages.append({
                     "role": "assistant",
@@ -294,6 +396,10 @@ def build_handoff_samples(row: dict, all_schemas: dict) -> list[dict] | None:
             if tname not in all_schemas:
                 continue
             args = _build_tool_args(tname, row)
+            if not _validate_args_against_schema(tname, args, all_schemas):
+                # Skip the entire Operator half rather than train an invalid call.
+                action_calls = []
+                break
             action_calls.append({
                 "id": f"call_{tname}_{random.randint(1000, 9999)}",
                 "type": "function",
