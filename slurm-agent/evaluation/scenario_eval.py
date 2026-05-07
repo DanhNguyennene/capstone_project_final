@@ -1875,7 +1875,7 @@ async def run_eval(args):
         merge_results()
         return
 
-    dataset = load_dataset()
+    dataset = load_dataset(Path(args.dataset) if args.dataset else DATASET_PATH)
     dataset = filter_dataset(
         dataset,
         scenario=args.scenario,
@@ -2059,6 +2059,8 @@ def main():
                    help="Run a single test by ID")
     p.add_argument("--test-ids-file", default="",
                    help="JSON file with a list of test IDs to run")
+    p.add_argument("--dataset", default="",
+                   help="Path to custom dataset JSON (overrides default dataset.json)")
     p.add_argument("--no-variants", action="store_true",
                    help="Skip prompt variant test cases")
     p.add_argument("--agent-url", default=AGENT_URL,
