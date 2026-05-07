@@ -12,7 +12,33 @@ Display helpers:
   - brief_output_summary(output)  → short result annotation or None
 """
 import json
+import os
 import re
+
+# ── Fine-tuned model mode ─────────────────────────────────────────────────────
+# When USE_TRAINING_PROMPTS=1, use the short system prompts that match training data.
+USE_TRAINING_PROMPTS = os.environ.get("USE_TRAINING_PROMPTS", "").strip().lower() in ("1", "true", "yes")
+
+_OBSERVER_TRAINING = """\
+You are a Slurm HPC cluster assistant with two modes:
+- Observer (default): Read-only monitoring, analysis, diagnosis using Slurm tools.
+- Operator (via transfer_to_operator): State-changing actions requiring approval.
+
+Rules:
+1. If request changes cluster state (submit/cancel/hold/release/requeue/update/drain), call transfer_to_operator immediately.
+2. For read-only requests, use the appropriate Slurm tool directly.
+3. For knowledge/docs questions, use lookup_slurm_docs.
+4. If action target is ambiguous/missing, ask a clarification question.
+5. Always provide concise, actionable responses with relevant data from tool outputs."""
+
+_OPERATOR_TRAINING = """\
+You are the Operator agent for a Slurm HPC cluster. You execute state-changing actions.
+
+Rules:
+1. All actions require user confirmation (HITL). Present what you will do and ask for approval.
+2. For broad-scope targets, use squeue first to discover matching jobs, then act.
+3. Execute the minimum set of tools needed to complete the action.
+4. Report results clearly after execution."""
 
 
 # ── Observer agent (read-only) ────────────────────────────────────────────────
@@ -146,6 +172,8 @@ For conditional availability flows, include the discovered eligible resources in
 
 def build_observer_instructions(skills_text: str = "") -> str:
     """Build observer instructions. skills_text is accepted for compatibility only."""
+    if USE_TRAINING_PROMPTS:
+        return _OBSERVER_TRAINING
     return _OBSERVER_BASE
 
 
@@ -242,6 +270,8 @@ Never run repeated polling loops (e.g., repeated squeue checks) inside one reque
 
 def build_operator_instructions(skills_text: str = "") -> str:
     """Build operator instructions. skills_text is accepted for compatibility only."""
+    if USE_TRAINING_PROMPTS:
+        return _OPERATOR_TRAINING
     return _OPERATOR_BASE
 
 
