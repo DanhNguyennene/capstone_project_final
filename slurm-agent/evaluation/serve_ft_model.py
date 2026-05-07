@@ -208,25 +208,49 @@ def chat_completions(req: ChatCompletionRequest):
     # Fallback: model outputs tool call as raw JSON in text (no <tool_call> tags)
     # Detect {"name": "...", "arguments": {...}} pattern in content
     if not tool_calls and content:
-        json_tc_pattern = r'\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*"arguments"\s*:\s*(\{[^}]*\})'
-        matches = list(re.finditer(json_tc_pattern, content, re.DOTALL))
-        if matches:
-            tool_calls = []
-            for m in matches:
-                name = m.group(1)
-                try:
-                    args = json.loads(m.group(2))
-                except json.JSONDecodeError:
-                    args = {}
-                tool_calls.append({
-                    "id": f"call_{uuid.uuid4().hex[:8]}",
-                    "type": "function",
-                    "function": {
-                        "name": name,
-                        "arguments": json.dumps(args),
-                    },
-                })
-            content = None
+        try:
+            # Find JSON objects that look like tool calls (handle nested braces)
+            _extracted = []
+            for m in re.finditer(r'\{\s*"name"\s*:', content):
+                start = m.start()
+                # Walk forward to find balanced closing brace
+                depth = 0
+                end = start
+                for idx in range(start, len(content)):
+                    if content[idx] == '{':
+                        depth += 1
+                    elif content[idx] == '}':
+                        depth -= 1
+                        if depth == 0:
+                            end = idx + 1
+                            break
+                if end > start:
+                    try:
+                        tc_data = json.loads(content[start:end])
+                        if "name" in tc_data and "arguments" in tc_data:
+                            _extracted.append(tc_data)
+                    except json.JSONDecodeError:
+                        pass
+            if _extracted:
+                tool_calls = []
+                for tc_data in _extracted:
+                    args = tc_data.get("arguments", {})
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except json.JSONDecodeError:
+                            args = {}
+                    tool_calls.append({
+                        "id": f"call_{uuid.uuid4().hex[:8]}",
+                        "type": "function",
+                        "function": {
+                            "name": tc_data["name"],
+                            "arguments": json.dumps(args),
+                        },
+                    })
+                content = None
+        except Exception:
+            pass  # Keep content as-is if parsing fails
 
     # Build OpenAI-compatible response
     message = {"role": "assistant", "content": content}
