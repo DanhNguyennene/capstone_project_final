@@ -103,7 +103,8 @@ def _build_transfer_args(row: dict) -> dict:
 
     if targets:
         scope = "explicit"
-    elif required in {"scontrol_reconfigure", "scontrol_shutdown", "scontrol_setdebug"}:
+    elif required in {"scontrol_reconfigure", "scontrol_shutdown", "scontrol_setdebug",
+                       "sbatch", "salloc", "srun"}:
         scope = "none"
     else:
         scope = "discovery"
@@ -209,33 +210,84 @@ def build_handoff_samples(row: dict, all_schemas: dict) -> list[dict] | None:
             "function": {"name": "transfer_to_operator", "arguments": json.dumps(transfer_args)},
         }],
     })
-    obs_messages.append({
-        "role": "tool",
-        "tool_call_id": transfer_id,
-        "content": "Transferred to Operator agent.",
-    })
-    obs_messages.append({
-        "role": "assistant",
-        "content": "I've handed this off to the Operator for execution with confirmation.",
-    })
+    # NOTE: At inference, Observer's turn ENDS after the handoff tool call (the
+    # SDK transfers control to Operator). We must NOT teach Observer to emit a
+    # trailing text message — doing so trains it to keep generating after the
+    # tool call instead of stopping.
 
     samples.append({"messages": obs_messages, "tools": role_tools("observer", all_schemas)})
 
     # ── Operator half ─────────────────────────────────────────────────────────
     if action_tools:
-        op_user = (
-            f"Action execution phase is complete.\n"
-            f"Prepare the final user-facing summary from these results.\n"
-            f"Original request: {row['input']}\n"
-            f"Action: {transfer_args.get('action_request', '')}\n"
-            f"Required tool: {transfer_args.get('required_tool', action_tools[0])}\n"
-            f"Target scope: {transfer_args.get('target_scope', 'discovery')}\n"
-            f"Targets: {transfer_args.get('targets', [])}"
-        )
+        # CRITICAL: This must mirror agent.flow.agent._operator_handoff_input_filter
+        # so the model sees the SAME first user message at training as at inference.
+        action_request = transfer_args.get("action_request", "")
+        target_scope = transfer_args.get("target_scope", "discovery")
+        required_tool = transfer_args.get("required_tool", action_tools[0])
+        targets = transfer_args.get("targets", []) or []
+        op_user_lines = [
+            "Execute this exact cluster-state action now.",
+            "Do not substitute a different action type.",
+            f"Action request: {action_request}",
+            f"Target scope: {target_scope}",
+        ]
+        if required_tool:
+            op_user_lines.append(f"Required tool: {required_tool}")
+        if targets:
+            op_user_lines.append(f"Targets: {', '.join(targets)}")
+        if target_scope == "discovery":
+            op_user_lines.append(
+                "IMPORTANT: Your FIRST tool call must be a read tool (squeue/sinfo/scontrol_show) to resolve concrete numeric IDs."
+            )
+            op_user_lines.append(
+                "NEVER call the action tool with placeholder IDs like 0, ALL, or flags."
+            )
+            op_user_lines.append(
+                f"Only after discovery, call {required_tool} with the resolved IDs."
+                if required_tool
+                else "Only after discovery, call the action tool with the resolved IDs."
+            )
+        elif required_tool:
+            op_user_lines.append(f"First action tool call MUST use {required_tool}.")
+        op_user = "\n".join(op_user_lines)
         op_messages: list[dict] = [
             {"role": "system", "content": OPERATOR_SYSTEM},
             {"role": "user", "content": op_user},
         ]
+
+        # For discovery scope, Operator must first call a read tool (squeue/sinfo/
+        # scontrol_show) to resolve targets, then the action tool. Mirror that.
+        if target_scope == "discovery":
+            # Pick a sensible read tool based on the action
+            if required_tool in {"scancel", "scontrol_hold", "scontrol_release",
+                                  "scontrol_requeue", "scontrol_suspend", "scontrol_resume",
+                                  "scontrol_update_job"}:
+                read_name = "squeue"
+                read_args = {"flags": "--me", "format": "%A %j %T %u"}
+            elif required_tool in {"scontrol_drain_node", "scontrol_resume_node",
+                                    "scontrol_update_node"}:
+                read_name = "sinfo"
+                read_args = {"flags": "-N", "format": "%N %T"}
+            else:
+                read_name = "squeue"
+                read_args = {"flags": "", "format": ""}
+
+            if read_name in all_schemas:
+                read_id = f"call_{read_name}_{random.randint(1000, 9999)}"
+                op_messages.append({
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [{
+                        "id": read_id,
+                        "type": "function",
+                        "function": {"name": read_name, "arguments": json.dumps(read_args)},
+                    }],
+                })
+                op_messages.append({
+                    "role": "tool",
+                    "tool_call_id": read_id,
+                    "content": _simulate_tool_output(read_name, source_state, row),
+                })
 
         action_calls = []
         for tname in action_tools:
