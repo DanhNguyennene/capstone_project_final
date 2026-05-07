@@ -210,13 +210,19 @@ def main():
 
     # Load base model
     print("Loading base model...")
-    model = AutoModelForCausalLM.from_pretrained(
-        args.base_model,
-        device_map="auto",
-        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-        quantization_config=quant_config,
+    load_kwargs = dict(
         trust_remote_code=True,
     )
+    if quant_config:
+        load_kwargs["quantization_config"] = quant_config
+        # For 4-bit: don't pass device_map="auto" with older accelerate/transformers
+        # bitsandbytes handles device placement internally
+        load_kwargs["device_map"] = {"": 0}  # single GPU
+    else:
+        load_kwargs["device_map"] = "auto"
+        load_kwargs["torch_dtype"] = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+    model = AutoModelForCausalLM.from_pretrained(args.base_model, **load_kwargs)
 
     # Load LoRA adapter
     print(f"Loading adapter from {adapter_path}...")
