@@ -215,9 +215,7 @@ def main():
     )
     if quant_config:
         load_kwargs["quantization_config"] = quant_config
-        # For 4-bit: don't pass device_map="auto" with older accelerate/transformers
-        # bitsandbytes handles device placement internally
-        load_kwargs["device_map"] = {"": 0}  # single GPU
+        # bitsandbytes handles device placement; no device_map needed
     else:
         load_kwargs["device_map"] = "auto"
         load_kwargs["torch_dtype"] = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
