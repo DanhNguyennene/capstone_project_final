@@ -235,15 +235,9 @@ def main():
     print(f"  Port:        {args.port}")
     print(f"{'='*60}\n")
 
-    # Load tokenizer (prefer adapter's saved tokenizer if available)
+    # Load tokenizer (always from base model — training didn't add tokens)
     print("Loading tokenizer...")
-    adapter_tokenizer_path = adapter_path / "tokenizer.json"
-    if adapter_tokenizer_path.exists():
-        print(f"  Using tokenizer from adapter: {adapter_path}")
-        tokenizer = AutoTokenizer.from_pretrained(str(adapter_path), trust_remote_code=True)
-    else:
-        print(f"  Using tokenizer from base model: {args.base_model}")
-        tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -274,21 +268,6 @@ def main():
     # Load LoRA adapter
     print(f"Loading adapter from {adapter_path}...")
     model = PeftModel.from_pretrained(model, str(adapter_path))
-
-    # Resize embeddings to match tokenizer (training may have added special tokens)
-    vocab_size = len(tokenizer)
-    embed_size = model.get_input_embeddings().weight.shape[0]
-    if vocab_size != embed_size:
-        print(f"  ⚠ Vocab mismatch: tokenizer={vocab_size}, embeddings={embed_size}")
-        if not args.no_4bit:
-            print("  ERROR: Cannot resize 4-bit quantized embeddings!")
-            print("  → Re-run with --no-4bit (A40 48GB can handle bf16)")
-            sys.exit(1)
-        model.resize_token_embeddings(vocab_size)
-        print(f"  ✓ Resized embeddings to {vocab_size}")
-    else:
-        print(f"  ✓ Vocab sizes match ({vocab_size})")
-
     model.eval()
 
     print(f"\n✓ Model ready — serving on http://{args.host}:{args.port}")
