@@ -27,6 +27,7 @@ from pathlib import Path
 
 import torch
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse, StreamingResponse
 from peft import PeftModel
 from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -92,31 +93,36 @@ def health():
 def chat_completions(req: ChatCompletionRequest):
     """Handle chat completion with optional tool calling."""
     global model, tokenizer, max_new_tokens_default
-
-    max_tokens = req.max_tokens or max_new_tokens_default
-
-    # Build input using Qwen's native chat template (with tools if provided)
-    kwargs = dict(tokenize=False, add_generation_prompt=True)
-    if req.tools:
-        kwargs["tools"] = req.tools
+    import traceback as tb
 
     try:
-        prompt = tokenizer.apply_chat_template(req.messages, **kwargs)
-    except Exception:
-        # Fallback without tools
-        prompt = tokenizer.apply_chat_template(req.messages, tokenize=False, add_generation_prompt=True)
+        max_tokens = req.max_tokens or max_new_tokens_default
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    input_len = inputs["input_ids"].shape[1]
+        # Build input using Qwen's native chat template (with tools if provided)
+        kwargs = dict(tokenize=False, add_generation_prompt=True)
+        if req.tools:
+            kwargs["tools"] = req.tools
 
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            temperature=max(req.temperature, 0.01),
-            do_sample=req.temperature > 0,
-            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-        )
+        try:
+            prompt = tokenizer.apply_chat_template(req.messages, **kwargs)
+        except Exception:
+            # Fallback without tools
+            prompt = tokenizer.apply_chat_template(req.messages, tokenize=False, add_generation_prompt=True)
+
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        input_len = inputs["input_ids"].shape[1]
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                temperature=max(req.temperature, 0.01),
+                do_sample=req.temperature > 0,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+            )
+    except Exception as e:
+        print(f"ERROR in generation: {e}\n{tb.format_exc()}")
+        return JSONResponse(status_code=500, content={"error": {"message": str(e)}})
 
     # Decode only the new tokens
     new_tokens = outputs[0][input_len:]
@@ -153,8 +159,44 @@ def chat_completions(req: ChatCompletionRequest):
     if tool_calls:
         message["tool_calls"] = tool_calls
 
+    completion_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+    finish_reason = "tool_calls" if tool_calls else "stop"
+
+    # Handle streaming mode
+    if req.stream:
+        def generate_stream():
+            # Send the full response as a single SSE chunk (fake streaming)
+            chunk = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": int(time.time()),
+                "model": req.model,
+                "choices": [{
+                    "index": 0,
+                    "delta": message,
+                    "finish_reason": None,
+                }],
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+            # Send finish
+            done_chunk = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": int(time.time()),
+                "model": req.model,
+                "choices": [{
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": finish_reason,
+                }],
+            }
+            yield f"data: {json.dumps(done_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(generate_stream(), media_type="text/event-stream")
+
     return {
-        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+        "id": completion_id,
         "object": "chat.completion",
         "created": int(time.time()),
         "model": req.model,
@@ -162,7 +204,7 @@ def chat_completions(req: ChatCompletionRequest):
             {
                 "index": 0,
                 "message": message,
-                "finish_reason": "tool_calls" if tool_calls else "stop",
+                "finish_reason": finish_reason,
             }
         ],
         "usage": {
