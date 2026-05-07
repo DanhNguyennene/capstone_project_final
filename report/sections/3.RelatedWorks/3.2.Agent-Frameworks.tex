@@ -63,3 +63,15 @@ The Slurm Agent design draws on lessons from existing frameworks:
 \end{itemize}
 
 By combining proven patterns with domain-specific design, the Slurm Agent addresses the unique requirements of HPC cluster management while leveraging established best practices from the agent development community.
+
+\subsection{Domain-Adapted Fine-Tuning for Tool-Use Agents}
+
+A growing body of work explores fine-tuning open-weight models specifically for tool-calling and agentic behavior, aiming to replicate commercial API capabilities at lower cost and with local deployment.
+
+\textbf{ToolLLM}~\cite{qin2023toolllm} constructs a dataset of 16{,}000+ tool-use trajectories by prompting a teacher model (ChatGPT) to solve tasks requiring API calls from a large tool repository. A smaller model (LLaMA) is then fine-tuned on these trajectories, achieving tool-selection accuracy competitive with the teacher on the held-out ToolBench benchmark. The key insight is that high-quality tool-use data can be synthesized from evaluation rather than manually annotated.
+
+\textbf{Gorilla}~\cite{patil2023gorilla} fine-tunes LLaMA-7B on API documentation and usage examples, demonstrating that domain-specific fine-tuning dramatically reduces API hallucination---generating calls to non-existent functions or using incorrect argument formats. Gorilla shows that smaller models with focused training can outperform GPT-4 on structured API generation tasks within their training domain.
+
+\textbf{AgentTuning}~\cite{zeng2023agenttuning} demonstrates that fine-tuning on a mix of agent interaction trajectories across multiple environments generalizes well to unseen agent tasks. The work shows that trajectory-based training---where the model learns complete episodes of reasoning, action, and observation---is more effective than training on isolated instruction-response pairs.
+
+These approaches share common principles with this thesis: (1)~using evaluation-validated traces as training signal rather than manual annotation, (2)~focusing fine-tuning on the tool-calling and decision-making layers rather than general language capability, and (3)~demonstrating that smaller domain-adapted models can approach larger general-purpose models within their operational scope. The Slurm Agent's fine-tuning contribution extends this line of work by introducing role-scoped tool exposure---enforcing the Observer/Operator safety boundary directly in the training data format---which is novel relative to prior flat-tool-list approaches.

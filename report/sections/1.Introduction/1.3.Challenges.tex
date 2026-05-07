@@ -36,3 +36,9 @@
 \textbf{Challenge:} Text-only evaluation is insufficient for a tool-using agent. A response can explain the correct operation while still using the wrong tool path, skipping a required handoff, failing to request confirmation, or producing the wrong state transition in the simulator.
 
 \textbf{Solutions:} The evaluator sends prompts through the live backend, records tool and routing traces, applies confirmation logic, and checks structural metrics such as tool recall, routing match, HITL behavior, keyword coverage, and state matching. This makes failures inspectable and repeatable, allowing the project to measure architecture-level behavior rather than relying only on final response fluency.
+
+\noindent\textbf{Domain-Adapted Fine-Tuning}
+
+\textbf{Challenge:} Relying on commercial API models introduces per-request cost, latency, and data-privacy concerns for production HPC environments. However, smaller open-weight models do not natively understand Slurm tool-calling conventions and tend to hallucinate tools across role boundaries---for example, an Observer generating destructive Operator tool calls instead of delegating through the handoff mechanism.
+
+\textbf{Solutions:} The project distills successful evaluation traces from the commercial model into a structured training corpus, then applies parameter-efficient fine-tuning---LoRA adapters on a 4-bit quantized base (QLoRA)---to an open-weight model (Qwen2.5-14B). A key innovation is role-scoped tool exposure: each training sample includes only the tools available to its role (Observer or Operator), so the model internalizes the safety boundary as part of its generation behavior. Dataset augmentation through handoff splitting and prompt variation increases diversity. The resulting model runs entirely on local GPU infrastructure with no external API dependency.

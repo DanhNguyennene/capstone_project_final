@@ -12,7 +12,7 @@ This separation ensures that the boundary between reading cluster state and muta
 % TODO: Replace with actual diagram
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{images/agent_system_architect.drawio.png}
+    \includegraphics[width=0.7\textwidth]{images/agent_system_architect.drawio.png}
     \caption{Slurm Agent System Architecture}
     \label{fig:system-architecture}
 \end{figure}
@@ -62,7 +62,7 @@ The Observer can inspect queue state, node state, accounting records, reservatio
 % TODO: Replace with actual diagram
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{images/observer_operator_flow.png}
+    \includegraphics[width=0.6\textwidth]{images/observer_operator_flow.png}
     \caption{Observer/Operator Routing and Confirmation Flow}
     \label{fig:observer-operator-flow}
 \end{figure}
@@ -88,10 +88,9 @@ Key patterns: (1)~request-response for queries, (2)~structured event stream for 
 
 A typical query flows: (1)~user submits request, (2)~Agent Layer begins ReAct reasoning, (3)~delegates to Observer or Operator, (4)~sub-agent invokes MCP tools, (5)~results propagate back, (6)~agent synthesizes response with trace events. For dangerous operations, an additional confirmation step interrupts the flow before execution.
 
-% TODO: Replace with actual diagram
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2.5cm}\textbf{Request Lifecycle Sequence Diagram}\\[0.5em]\small User $\rightarrow$ API $\rightarrow$ ReAct Agent $\rightarrow$ MCP Server $\rightarrow$ Slurm/Mock $\rightarrow$ Response Stream\vspace{2.5cm}}}
+    \includegraphics[width=0.85\textwidth]{images/request_lifecycle_flow.png}
     \caption{Request Lifecycle Data Flow}
     \label{fig:data-flow}
 \end{figure}

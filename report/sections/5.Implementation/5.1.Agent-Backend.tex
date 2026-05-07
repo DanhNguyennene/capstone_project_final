@@ -72,3 +72,9 @@ Responses use OpenAI-style SSE with typed delta fields: \texttt{status\_update},
 \subsection{Session Management}
 
 Each chat ID maps to a persistent session (conversation memory, pending actions, chart context, runtime config). Evaluation runs use deterministic isolated session IDs for reproducibility. Context budget is managed by separating large artifacts from model input.
+
+\subsection{Fine-Tuned Model Serving}
+
+To evaluate the domain-adapted open-weight model under the same agent framework, a lightweight inference server exposes the fine-tuned model through an OpenAI-compatible chat completions endpoint. The server loads the quantized base model with the LoRA adapter merged at startup, and processes requests identically to the commercial API from the agent's perspective---the same tool-calling format, streaming protocol, and system prompts are used regardless of which backend is active.
+
+As an additional safety layer, the server validates each generated tool call against the \texttt{tools} list provided in the request. Any tool call referencing a function not declared in the current request is silently filtered, preventing residual cross-role hallucinations from reaching the agent runtime. This defense-in-depth approach means that even if the model occasionally generates an out-of-scope tool call, it is caught before execution rather than causing a runtime error.

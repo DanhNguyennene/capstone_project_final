@@ -17,6 +17,8 @@ This work contributes the following practical outcomes:
 
 \textbf{5. Scenario-Grid Evaluation System.} The project implements a dataset-driven evaluation stack that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, response quality, optional LLM-as-judge scoring, parallel worker execution, and persistent result artifacts.
 
+\textbf{6. Domain-Adapted Fine-Tuning with Role-Scoped Tool Exposure.} The project demonstrates a methodology for distilling commercial-model behavior into an open-weight model while preserving the Observer/Operator safety boundary. By splitting training data at handoff points and restricting each sample's declared tool set to the active agent role, the fine-tuned model internalizes the separation rather than relying solely on runtime enforcement.
+
 \subsection{Achievement Against Project Goals}
 
 \textbf{Goal 1 (Natural language access to Slurm):} Achieved across broad read, diagnose, account, documentation, and confirmed action workflows.
@@ -72,11 +74,3 @@ The complete source code is publicly available:
 \end{center}
 
 The repository contains the agent backend, MCP server, lightweight interface layer, evaluation framework, dataset artifacts, and reproducible evaluation outputs.
-
-\subsection{Additional Evaluation Directions}
-
-\begin{itemize}
-    \item Run the benchmark under a local-Ollama stack (qwen3.5:9b main, qwen2.5:7b specialist) to compare on-premise performance against the cloud GPT-5-mini baseline.
-    \item Run the 40-case held-out paraphrase split and report it separately from the curated benchmark.
-    \item Add repeated-run statistics (pass$^k$ and confidence intervals) to quantify variance.
-\end{itemize}

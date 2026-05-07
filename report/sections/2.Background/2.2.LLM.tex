@@ -85,3 +85,20 @@ This approach is well-suited for operational documentation retrieval where queri
 LLMs introduce risks that are especially relevant to HPC operations. They may hallucinate non-existent commands, merge similar options from different tools, provide outdated documentation, or infer an action that the user did not explicitly approve. They may also produce plausible explanations for failures without actually checking logs, accounting records, or scheduler state.
 
 For these reasons, the agent architecture in this project separates language understanding from operational execution. The LLM interprets intent and decides which typed tool may be relevant, while external tools provide authoritative data and the application enforces confirmation before state-changing operations. This design uses the LLM for its strengths in language and orchestration while limiting its authority over the cluster.
+
+\subsection{Parameter-Efficient Fine-Tuning}
+\label{sec:peft-background}
+
+Full fine-tuning of large language models updates all parameters, requiring GPU memory proportional to the full model size. For models with billions of parameters, this is impractical on commodity hardware. Parameter-Efficient Fine-Tuning (PEFT) methods address this by modifying only a small subset of parameters while keeping the base model frozen.
+
+\textbf{Low-Rank Adaptation (LoRA)}~\cite{hu2022lora} decomposes weight updates into low-rank matrices. For a pre-trained weight matrix $W_0 \in \mathbb{R}^{d \times k}$, LoRA adds a trainable decomposition:
+
+\begin{equation}
+    W = W_0 + \Delta W = W_0 + BA
+\end{equation}
+
+where $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ with rank $r \ll \min(d, k)$. Only $A$ and $B$ are trained, reducing trainable parameters from $d \times k$ to $r \times (d + k)$. A scaling factor $\alpha / r$ controls the magnitude of the adaptation. At inference time, the low-rank matrices can be merged back into the base weights with zero additional latency.
+
+\textbf{Quantized LoRA (QLoRA)}~\cite{dettmers2023qlora} extends LoRA by quantizing the frozen base model to 4-bit precision (NormalFloat4) during training. The LoRA adapters remain in higher precision (bfloat16) for gradient computation. This reduces the memory footprint of the base model by approximately 4$\times$, enabling fine-tuning of 14B-parameter models on a single 48\,GB GPU. QLoRA introduces double quantization---quantizing the quantization constants themselves---for additional memory savings with negligible quality loss.
+
+\textbf{Knowledge Distillation} transfers capabilities from a larger teacher model to a smaller student model. In the context of tool-calling agents, distillation can use the teacher's successful execution traces as training data: the student learns to reproduce the teacher's tool selections, argument formatting, and response patterns without requiring manually annotated data~\cite{hinton2015distilling}. This is particularly effective when the teacher model's behavior is already validated through an evaluation framework.

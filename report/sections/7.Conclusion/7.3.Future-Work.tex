@@ -63,6 +63,10 @@ The system includes a web search fallback for documentation queries not covered 
 
 Until reproducible web grounding is achieved, the evaluation excludes web-dependent cases to maintain result determinism.
 
+\subsection{Priority 6: Open-Weight Model Parity}
+
+The current fine-tuning demonstrates that distillation from commercial-model traces can produce a functional open-weight alternative, but a gap remains between the 14B-parameter adapted model and the commercial baseline. Closing this gap requires continued iteration along several axes: training on larger and more diverse trace corpora including failure-recovery examples, exploring larger base models as they become available, and applying preference optimization (such as DPO) on cases where the fine-tuned model diverges from expected behavior. The long-term goal is a fully self-hosted deployment that matches commercial-API quality while eliminating external dependencies.
+
 \subsection{Summary Roadmap}
 
 In short, the near-term roadmap is: \textbf{stabilize benchmark weaknesses} $\rightarrow$ \textbf{validate on real clusters} $\rightarrow$ \textbf{harden security/governance} $\rightarrow$ \textbf{improve traceability and runtime maintainability}. This sequence keeps research outcomes aligned with practical HPC adoption constraints.

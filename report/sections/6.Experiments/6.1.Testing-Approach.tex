@@ -3,7 +3,7 @@
 
 \subsection{Testing Environment}
 
-Evaluation uses stateful mock scenarios exposed by the MCP server for deterministic reproducibility.
+Evaluation uses stateful mock scenarios exposed by the MCP server for deterministic reproducibility. Two model configurations are evaluated against the same benchmark:
 
 \begin{table}[H]
     \centering
@@ -15,9 +15,11 @@ Evaluation uses stateful mock scenarios exposed by the MCP server for determinis
         \textbf{Component} & \textbf{Specification} \\
         \hline
         CPU & Intel Core i5-14600K (14C/20T) \\
-        RAM / GPU & 64 GB DDR5 / RTX 5070 Ti 16 GB \\
+        RAM / GPU (local eval) & 64 GB DDR5 / RTX 5070 Ti 16 GB \\
+        GPU (fine-tuned model) & NVIDIA A40 48 GB (RunPod) \\
         OS & Ubuntu 24.04 LTS (WSL2) \\
-        Main LLM & GPT-5-mini (OpenAI API) \\
+        Main LLM (baseline) & GPT-5-mini (OpenAI API) \\
+        Main LLM (fine-tuned) & Qwen2.5-14B-Instruct + QLoRA adapter \\
         Specialist LLM & GPT-5-mini (OpenAI API) \\
         LLM Judge & GPT-OSS 20B (Ollama, local) \\
         Runtime & Python 3.12, Ollama 0.12.3, Node.js 22 \\
@@ -76,13 +78,6 @@ Each case specifies: user prompt, source state, target state, expected tools, ro
     \includegraphics[width=\textwidth]{images/evaluation/dataset_distribution_heatmap.png}
     \caption{Category $\times$ Scenario Heatmap}
     \label{fig:dataset-distribution-heatmap}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{images/evaluation/tool_normalization_canonical_tools.png}
-    \caption{Tool Distribution After Normalization}
-    \label{fig:tool-normalization}
 \end{figure}
 
 A separate \textbf{40-case held-out paraphrase set} tests generalization to unseen prompt wording while reusing the same state/label structure. It is reported as a separate split.

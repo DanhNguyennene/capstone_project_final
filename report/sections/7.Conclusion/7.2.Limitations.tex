@@ -25,6 +25,8 @@ Development-stage construction checks exposed reliability risks in specific work
 
 These failures are predominantly structural (tool/routing/HITL/state mismatches) rather than simple response-text issues.
 
+\textbf{Cross-role tool hallucination in fine-tuned models.} When the fine-tuned open-weight model is used instead of the commercial API, it can occasionally generate tool calls belonging to the wrong agent role---for example, calling a dangerous action tool while operating as the Observer. This occurs because smaller models are more prone to ignoring the declared tool list in the request. A server-side filter mitigates this at runtime, but the proper solution requires role-scoped training data where each sample's tool boundary matches the active role.
+
 \textbf{Policy-rail sensitivity.} The system uses explicit handoff policies, required-tool hints, and regex-like intent detection to improve determinism. These choices are useful for safety and evaluation, but can be brittle when users phrase requests differently from the benchmark.
 
 \subsection{Operational Scope Limitations}
