@@ -214,6 +214,10 @@ def main():
         messages = example["messages"]
         tools = example.get("tools") or None
         text = render_messages_qwen(tokenizer, messages, tools=tools)
+        # LEFT-truncate: keep the END of the sequence so assistant tool_calls
+        # (the actual training labels) are preserved. The system prompt at the
+        # start gets clipped instead — model has the full prompt at inference.
+        tokenizer.truncation_side = "left"
         tokenized = tokenizer(
             text,
             truncation=True,
