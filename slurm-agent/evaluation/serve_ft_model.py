@@ -267,6 +267,9 @@ def main():
     # Load LoRA adapter
     print(f"Loading adapter from {adapter_path}...")
     model = PeftModel.from_pretrained(model, str(adapter_path))
+
+    # Resize embeddings to match tokenizer (training may have added special tokens)
+    model.resize_token_embeddings(len(tokenizer))
     model.eval()
 
     print(f"\n✓ Model ready — serving on http://{args.host}:{args.port}")
