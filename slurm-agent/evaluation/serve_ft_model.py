@@ -182,10 +182,11 @@ def chat_completions(req: ChatCompletionRequest):
     tool_calls = None
     content = response_text
 
+    import re
+
     if "<tool_call>" in response_text:
         tool_calls = []
         content = None
-        import re
         tc_blocks = re.findall(r"<tool_call>\s*(.*?)\s*</tool_call>", response_text, re.DOTALL)
         for i, block in enumerate(tc_blocks):
             try:
@@ -203,6 +204,29 @@ def chat_completions(req: ChatCompletionRequest):
                 content = response_text
                 tool_calls = None
                 break
+
+    # Fallback: model outputs tool call as raw JSON in text (no <tool_call> tags)
+    # Detect {"name": "...", "arguments": {...}} pattern in content
+    if not tool_calls and content:
+        json_tc_pattern = r'\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*"arguments"\s*:\s*(\{[^}]*\})'
+        matches = list(re.finditer(json_tc_pattern, content, re.DOTALL))
+        if matches:
+            tool_calls = []
+            for m in matches:
+                name = m.group(1)
+                try:
+                    args = json.loads(m.group(2))
+                except json.JSONDecodeError:
+                    args = {}
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:8]}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": json.dumps(args),
+                    },
+                })
+            content = None
 
     # Build OpenAI-compatible response
     message = {"role": "assistant", "content": content}
