@@ -162,14 +162,27 @@ def chat_completions(req: ChatCompletionRequest):
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         input_len = inputs["input_ids"].shape[1]
 
+        # Try sampling first; on NaN/inf error, retry with greedy decoding
         with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=max_tokens,
-                temperature=max(req.temperature, 0.01),
-                do_sample=req.temperature > 0,
-                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-            )
+            try:
+                outputs = model.generate(
+                    **inputs,
+                    max_new_tokens=max_tokens,
+                    temperature=max(req.temperature, 0.01),
+                    do_sample=req.temperature > 0,
+                    pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+                )
+            except RuntimeError as gen_err:
+                if "probability tensor" in str(gen_err):
+                    # Fallback to greedy decoding (no sampling = no NaN issue)
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=max_tokens,
+                        do_sample=False,
+                        pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+                    )
+                else:
+                    raise
     except Exception as e:
         print(f"ERROR in generation: {e}\n{tb.format_exc()}")
         return JSONResponse(status_code=500, content={"error": {"message": str(e)}})
