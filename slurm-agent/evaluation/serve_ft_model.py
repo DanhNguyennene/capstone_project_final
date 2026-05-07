@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import uuid
@@ -33,6 +34,51 @@ from peft import PeftModel
 from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import uvicorn
+
+# ── Training tool schema override ─────────────────────────────────────────────
+USE_TRAINING_TOOLS = os.environ.get("USE_TRAINING_TOOLS", "").strip().lower() in ("1", "true", "yes")
+
+TRAINING_TOOL_SCHEMAS = {
+    "squeue": {"type": "function", "function": {"name": "squeue", "description": "Show the Slurm job queue. Filter by user, partition, state, or job ID.", "parameters": {"type": "object", "properties": {"user": {"type": "string", "description": "Filter by username"}, "partition": {"type": "string", "description": "Filter by partition"}, "state": {"type": "string", "description": "Filter by job state (RUNNING, PENDING, FAILED, etc.)"}, "job_id": {"type": "string", "description": "Specific job ID to query"}}}}},
+    "sinfo": {"type": "function", "function": {"name": "sinfo", "description": "Show cluster node and partition status.", "parameters": {"type": "object", "properties": {"partition": {"type": "string", "description": "Filter by partition"}}}}},
+    "sacct": {"type": "function", "function": {"name": "sacct", "description": "Show accounting data for completed/historical jobs.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID to query"}, "user": {"type": "string", "description": "Filter by user"}, "starttime": {"type": "string", "description": "Start time filter"}}}}},
+    "scontrol_show": {"type": "function", "function": {"name": "scontrol_show", "description": "Show detailed job or node configuration.", "parameters": {"type": "object", "properties": {"entity": {"type": "string", "description": "job or node"}, "id": {"type": "string", "description": "Job ID or node name"}}}}},
+    "sbatch": {"type": "function", "function": {"name": "sbatch", "description": "Submit a batch job script to Slurm.", "parameters": {"type": "object", "properties": {"script": {"type": "string", "description": "Script path or content"}, "options": {"type": "string", "description": "Additional sbatch options"}}, "required": ["script"]}}},
+    "scancel": {"type": "function", "function": {"name": "scancel", "description": "Cancel one or more Slurm jobs.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID(s) to cancel"}, "user": {"type": "string", "description": "Cancel all jobs for user"}, "partition": {"type": "string", "description": "Cancel all jobs in partition"}, "state": {"type": "string", "description": "Cancel jobs in state"}}}}},
+    "scontrol_hold": {"type": "function", "function": {"name": "scontrol_hold", "description": "Hold a pending job to prevent scheduling.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID to hold"}}, "required": ["job_id"]}}},
+    "scontrol_release": {"type": "function", "function": {"name": "scontrol_release", "description": "Release a held job to allow scheduling.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID to release"}}, "required": ["job_id"]}}},
+    "scontrol_requeue": {"type": "function", "function": {"name": "scontrol_requeue", "description": "Requeue a failed or completed job.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID to requeue"}}, "required": ["job_id"]}}},
+    "scontrol_update": {"type": "function", "function": {"name": "scontrol_update", "description": "Update job properties (timelimit, partition, etc.).", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID to update"}, "updates": {"type": "string", "description": "Key=Value pairs to update"}}, "required": ["job_id"]}}},
+    "scontrol_node": {"type": "function", "function": {"name": "scontrol_node", "description": "Change node state (drain, resume, down).", "parameters": {"type": "object", "properties": {"node": {"type": "string", "description": "Node name"}, "state": {"type": "string", "description": "Target state (drain, resume, down)"}, "reason": {"type": "string", "description": "Reason for state change"}}, "required": ["node", "state"]}}},
+    "sacctmgr_list": {"type": "function", "function": {"name": "sacctmgr_list", "description": "List accounting entities (accounts, users, associations, QOS).", "parameters": {"type": "object", "properties": {"entity": {"type": "string", "description": "What to list: account, user, association, qos"}}}}},
+    "lookup_slurm_docs": {"type": "function", "function": {"name": "lookup_slurm_docs", "description": "Look up Slurm documentation for a command or concept.", "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "Documentation topic to look up"}}, "required": ["query"]}}},
+    "sdiag": {"type": "function", "function": {"name": "sdiag", "description": "Show scheduler diagnostics and statistics.", "parameters": {"type": "object", "properties": {}}}},
+    "sprio": {"type": "function", "function": {"name": "sprio", "description": "Show job priority factors.", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID"}}}}},
+    "sstat": {"type": "function", "function": {"name": "sstat", "description": "Show status of running job steps (memory, CPU usage).", "parameters": {"type": "object", "properties": {"job_id": {"type": "string", "description": "Job ID"}}, "required": ["job_id"]}}},
+    "sshare": {"type": "function", "function": {"name": "sshare", "description": "Show fairshare and usage information.", "parameters": {"type": "object", "properties": {"user": {"type": "string", "description": "Filter by user"}}}}},
+    "sreport": {"type": "function", "function": {"name": "sreport", "description": "Generate accounting usage reports.", "parameters": {"type": "object", "properties": {"report_type": {"type": "string", "description": "Report type (cluster, user, job)"}}}}},
+    "scontrol_license": {"type": "function", "function": {"name": "scontrol_license", "description": "Show license information and allocations.", "parameters": {"type": "object", "properties": {}}}},
+    "scontrol_reservation_show": {"type": "function", "function": {"name": "scontrol_reservation_show", "description": "Show reservation details.", "parameters": {"type": "object", "properties": {}}}},
+    "scontrol_show_config": {"type": "function", "function": {"name": "scontrol_show_config", "description": "Show Slurm configuration parameters.", "parameters": {"type": "object", "properties": {}}}},
+    "scontrol_ping": {"type": "function", "function": {"name": "scontrol_ping", "description": "Ping Slurm controllers to check health.", "parameters": {"type": "object", "properties": {}}}},
+    "sinfo_reasons": {"type": "function", "function": {"name": "sinfo_reasons", "description": "Show reasons for node states (down, drain, etc.).", "parameters": {"type": "object", "properties": {}}}},
+    "sinfo_node": {"type": "function", "function": {"name": "sinfo_node", "description": "Show detailed per-node information.", "parameters": {"type": "object", "properties": {"node": {"type": "string", "description": "Node name"}}}}},
+    "sprio_weights": {"type": "function", "function": {"name": "sprio_weights", "description": "Show priority weight configuration.", "parameters": {"type": "object", "properties": {}}}},
+    "transfer_to_operator": {"type": "function", "function": {"name": "transfer_to_operator", "description": "Hand off to the Operator agent for state-changing actions that require approval.", "parameters": {"type": "object", "properties": {"action_request": {"type": "string", "description": "What action to perform"}, "required_tool": {"type": "string", "description": "The tool the operator should use"}, "targets": {"type": "string", "description": "Comma-separated target IDs"}, "target_scope": {"type": "string", "description": "explicit|discovery|none"}}, "required": ["action_request", "required_tool"]}}},
+    "transfer_to_observer": {"type": "function", "function": {"name": "transfer_to_observer", "description": "Hand back to the Observer agent after Operator action(s) complete.", "parameters": {"type": "object", "properties": {"summary": {"type": "string", "description": "Brief summary of the actions performed"}}}}},
+}
+
+
+def _remap_tools(tools):
+    """Replace incoming tool schemas with training versions where available."""
+    remapped = []
+    for t in tools:
+        name = (t.get("function") or {}).get("name", "")
+        if name in TRAINING_TOOL_SCHEMAS:
+            remapped.append(TRAINING_TOOL_SCHEMAS[name])
+        else:
+            remapped.append(t)
+    return remapped
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 
@@ -102,7 +148,10 @@ def chat_completions(req: ChatCompletionRequest):
         # Build input using Qwen's native chat template (with tools if provided)
         kwargs = dict(tokenize=False, add_generation_prompt=True)
         if req.tools:
-            kwargs["tools"] = req.tools
+            tools = req.tools
+            if USE_TRAINING_TOOLS:
+                tools = _remap_tools(tools)
+            kwargs["tools"] = tools
 
         try:
             prompt = tokenizer.apply_chat_template(req.messages, **kwargs)
