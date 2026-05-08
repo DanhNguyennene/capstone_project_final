@@ -52,13 +52,14 @@ else
     ok "Adapter downloaded to $ADAPTER_DIR"
 fi
 
-# ── Step 3: Start model server (port 9000, 4-bit quantized for A40) ───────────
+# ── Step 3: Start model server (port 9000, merged fp16 for A40) ───────────────
 MODEL_PORT=9000
-info "Starting model server on port $MODEL_PORT (4-bit NF4)..."
+info "Starting model server on port $MODEL_PORT (merged adapter, fp16)..."
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 python evaluation/serve_ft_model.py \
     --adapter "$ADAPTER_DIR" \
-    --port $MODEL_PORT &
+    --port $MODEL_PORT \
+    --merge &
 MODEL_PID=$!
 
 # Wait for model to be ready

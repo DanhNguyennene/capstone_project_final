@@ -90,6 +90,7 @@ def parse_args():
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--max-new-tokens", type=int, default=1024)
     p.add_argument("--no-4bit", action="store_true", help="Load in bf16 instead of 4-bit")
+    p.add_argument("--merge", action="store_true", help="Merge adapter into base model (fp16, no bitsandbytes)")
     return p.parse_args()
 
 
@@ -336,12 +337,13 @@ def main():
     root = Path(__file__).resolve().parents[1]
     adapter_path = root / args.adapter
 
+    mode = "merge" if args.merge else ("4-bit" if not args.no_4bit else "fp16")
     print(f"{'='*60}")
     print(f"  Slurm Agent FT Model Server")
     print(f"{'='*60}")
     print(f"  Base model:  {args.base_model}")
     print(f"  Adapter:     {adapter_path}")
-    print(f"  4-bit:       {not args.no_4bit}")
+    print(f"  Mode:        {mode}")
     print(f"  Port:        {args.port}")
     print(f"{'='*60}\n")
 
@@ -351,34 +353,49 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Quantization config (same as training)
-    quant_config = None
-    if not args.no_4bit:
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-            bnb_4bit_use_double_quant=True,
+    if args.merge:
+        # Merge adapter into base model — no bitsandbytes needed, pure fp16
+        print("Loading base model in fp16 for merge...")
+        model = AutoModelForCausalLM.from_pretrained(
+            args.base_model,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            trust_remote_code=True,
         )
-
-    # Load base model
-    print("Loading base model...")
-    load_kwargs = dict(
-        trust_remote_code=True,
-    )
-    if quant_config:
-        load_kwargs["quantization_config"] = quant_config
-        load_kwargs["device_map"] = "auto"
+        print(f"Loading adapter from {adapter_path}...")
+        model = PeftModel.from_pretrained(model, str(adapter_path))
+        print("Merging adapter weights into base model...")
+        model = model.merge_and_unload()
+        model.eval()
     else:
-        load_kwargs["device_map"] = "auto"
-        load_kwargs["torch_dtype"] = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        # Quantization config (same as training)
+        quant_config = None
+        if not args.no_4bit:
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+                bnb_4bit_use_double_quant=True,
+            )
 
-    model = AutoModelForCausalLM.from_pretrained(args.base_model, **load_kwargs)
+        # Load base model
+        print("Loading base model...")
+        load_kwargs = dict(
+            trust_remote_code=True,
+        )
+        if quant_config:
+            load_kwargs["quantization_config"] = quant_config
+            load_kwargs["device_map"] = "auto"
+        else:
+            load_kwargs["device_map"] = "auto"
+            load_kwargs["torch_dtype"] = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
-    # Load LoRA adapter
-    print(f"Loading adapter from {adapter_path}...")
-    model = PeftModel.from_pretrained(model, str(adapter_path))
-    model.eval()
+        model = AutoModelForCausalLM.from_pretrained(args.base_model, **load_kwargs)
+
+        # Load LoRA adapter
+        print(f"Loading adapter from {adapter_path}...")
+        model = PeftModel.from_pretrained(model, str(adapter_path))
+        model.eval()
 
     print(f"\n✓ Model ready — serving on http://{args.host}:{args.port}")
     print(f"  Endpoint: http://{args.host}:{args.port}/v1/chat/completions\n")
