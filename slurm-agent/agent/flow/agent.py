@@ -420,10 +420,26 @@ class SlurmAgentSystem:
                     payload = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
                 except Exception:
                     payload = {}
-                action_request = str(payload.get("action_request", "")).strip()
+                # Some FT models double-encode the args as a JSON string-of-a-string.
+                if isinstance(payload, str):
+                    try:
+                        payload = json.loads(payload)
+                    except Exception:
+                        payload = {}
+                if not isinstance(payload, dict):
+                    payload = {}
+                # Coerce common field type deviations (targets="" -> []).
+                _t = payload.get("targets")
+                if _t in (None, "", "null", "none"):
+                    payload["targets"] = []
+                elif isinstance(_t, str):
+                    payload["targets"] = [p.strip() for p in _t.split(",") if p.strip()]
+                elif not isinstance(_t, list):
+                    payload["targets"] = [str(_t)]
+                action_request = str(payload.get("action_request") or "").strip()
                 targets = payload.get("targets", [])
-                target_scope = normalize_target_scope(payload.get("target_scope", ""), targets=targets)
-                required_tool = _resolve_required_action_tool(str(payload.get("required_tool", "")).strip())
+                target_scope = normalize_target_scope(payload.get("target_scope") or "", targets=targets)
+                required_tool = _resolve_required_action_tool(str(payload.get("required_tool") or "").strip())
                 targets = _normalize_handoff_targets(required_tool, targets)
                 target_scope = normalize_target_scope(target_scope, targets=targets)
                 if action_request:
