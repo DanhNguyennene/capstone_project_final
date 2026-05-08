@@ -44,11 +44,18 @@ def install() -> None:
 
     _orig = _agents_json.validate_json
 
+    def _retry(new_json_str, args, kwargs):
+        # Replace whichever way the SDK passed json_str (positional or kwarg).
+        if args:
+            return _orig(new_json_str, *args[1:], **kwargs)
+        kwargs2 = dict(kwargs)
+        kwargs2["json_str"] = new_json_str
+        return _orig(**kwargs2)
+
     def _tolerant_validate_json(*args, **kwargs):
         try:
             return _orig(*args, **kwargs)
         except (ModelBehaviorError, _PydValidationError):
-            # The first positional arg is the JSON string per the SDK source.
             json_str = args[0] if args else kwargs.get("json_str")
             if not isinstance(json_str, (str, bytes, bytearray)):
                 raise
@@ -57,15 +64,11 @@ def install() -> None:
             except Exception:
                 raise
             if isinstance(once, str):
-                # Doubly-encoded: re-run on the inner string.
                 _log.debug("handoff_compat: doubly-encoded JSON args, retrying")
-                new_args = (once,) + tuple(args[1:])
-                return _orig(*new_args, **kwargs)
+                return _retry(once, args, kwargs)
             if isinstance(once, dict):
-                # Re-serialize — handles oddly escaped quoting.
                 _log.debug("handoff_compat: re-serialising dict args, retrying")
-                new_args = (_json.dumps(once),) + tuple(args[1:])
-                return _orig(*new_args, **kwargs)
+                return _retry(_json.dumps(once), args, kwargs)
             raise
 
     _agents_json.validate_json = _tolerant_validate_json
