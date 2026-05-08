@@ -163,6 +163,12 @@ def chat_completions(req: ChatCompletionRequest):
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         input_len = inputs["input_ids"].shape[1]
 
+        # Safety: clamp token IDs to valid embedding range
+        vocab_size = model.config.vocab_size
+        if inputs["input_ids"].max() >= vocab_size:
+            print(f"WARNING: token ID {inputs['input_ids'].max().item()} >= vocab_size {vocab_size}, clamping")
+            inputs["input_ids"] = inputs["input_ids"].clamp(max=vocab_size - 1)
+
         # Try sampling first; on NaN/inf error, retry with greedy decoding
         with torch.no_grad():
             try:
@@ -352,6 +358,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    print(f"  Tokenizer vocab size: {len(tokenizer)}")
 
     if args.merge:
         # Merge adapter into base model — no bitsandbytes needed, pure fp16
@@ -366,6 +373,7 @@ def main():
         model = PeftModel.from_pretrained(model, str(adapter_path))
         print("Merging adapter weights into base model...")
         model = model.merge_and_unload()
+        model.resize_token_embeddings(len(tokenizer))
         model.eval()
     else:
         # Quantization config (same as training)
