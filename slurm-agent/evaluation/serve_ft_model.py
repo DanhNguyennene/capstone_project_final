@@ -368,7 +368,7 @@ def main():
     )
     if quant_config:
         load_kwargs["quantization_config"] = quant_config
-        # bitsandbytes handles device placement; no device_map needed
+        load_kwargs["device_map"] = "auto"
     else:
         load_kwargs["device_map"] = "auto"
         load_kwargs["torch_dtype"] = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
