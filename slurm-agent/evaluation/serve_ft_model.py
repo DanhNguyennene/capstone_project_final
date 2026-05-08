@@ -378,13 +378,26 @@ def main():
     if args.merge:
         # Merge adapter into base model — no bitsandbytes needed, pure fp16
         print("Loading base model in fp16 for merge...")
-        model = AutoModelForCausalLM.from_pretrained(
-            args.base_model,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            trust_remote_code=True,
-            attn_implementation="eager",
-        )
+        # Try flash_attention_2 → sdpa → eager
+        attn_impl = os.environ.get("ATTN_IMPL", "flash_attention_2")
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                args.base_model,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True,
+                attn_implementation=attn_impl,
+            )
+            print(f"  Using attention: {attn_impl}")
+        except (ImportError, ValueError) as e:
+            print(f"  {attn_impl} unavailable ({e}), falling back to eager")
+            model = AutoModelForCausalLM.from_pretrained(
+                args.base_model,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True,
+                attn_implementation="eager",
+            )
         print(f"Loading adapter from {adapter_path}...")
         model = PeftModel.from_pretrained(model, str(adapter_path))
         print("Merging adapter weights into base model...")
