@@ -160,14 +160,22 @@ def chat_completions(req: ChatCompletionRequest):
             # Fallback without tools
             prompt = tokenizer.apply_chat_template(req.messages, tokenize=False, add_generation_prompt=True)
 
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-        input_len = inputs["input_ids"].shape[1]
+        inputs = tokenizer(prompt, return_tensors="pt")
 
-        # Safety: clamp token IDs to valid embedding range
-        vocab_size = model.config.vocab_size
-        if inputs["input_ids"].max() >= vocab_size:
-            print(f"WARNING: token ID {inputs['input_ids'].max().item()} >= vocab_size {vocab_size}, clamping")
-            inputs["input_ids"] = inputs["input_ids"].clamp(max=vocab_size - 1)
+        # Safety: clamp token IDs to valid embedding range BEFORE moving to GPU
+        # Use actual embedding table size, not config.vocab_size
+        embed_size = model.get_input_embeddings().weight.shape[0]
+        max_id = int(inputs["input_ids"].max().item())
+        if max_id >= embed_size:
+            print(f"WARNING: token ID {max_id} >= embedding size {embed_size}, clamping")
+            unk_id = tokenizer.unk_token_id if tokenizer.unk_token_id is not None else (embed_size - 1)
+            inputs["input_ids"] = inputs["input_ids"].where(
+                inputs["input_ids"] < embed_size,
+                torch.tensor(unk_id, dtype=inputs["input_ids"].dtype),
+            )
+
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        input_len = inputs["input_ids"].shape[1]
 
         # Try sampling first; on NaN/inf error, retry with greedy decoding
         with torch.no_grad():
@@ -380,7 +388,10 @@ def main():
         model = PeftModel.from_pretrained(model, str(adapter_path))
         print("Merging adapter weights into base model...")
         model = model.merge_and_unload()
-        print(f"  Model embedding size: {model.config.vocab_size}")
+        embed_size = model.get_input_embeddings().weight.shape[0]
+        print(f"  Model config vocab_size: {model.config.vocab_size}")
+        print(f"  Model embedding table size: {embed_size}")
+        print(f"  Tokenizer vocab size: {len(tokenizer)}")
         model.eval()
     else:
         # Quantization config (same as training)
