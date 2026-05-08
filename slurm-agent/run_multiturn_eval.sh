@@ -81,21 +81,17 @@ fi
 # ── Step 4: Start MCP mock server (port 3002) ────────────────────────────────
 info "Starting MCP mock server on port 3002..."
 cd "$ROOT/mcp-server"
-MCP_SCENARIO=mixed node dist/index.js --port 3002 &
+python slurm_mcp_sse.py --mock mixed --port 3002 &
 MCP_PID=$!
 cd "$ROOT"
 sleep 3
 
-if ! curl -s "http://localhost:3002/health" > /dev/null 2>&1; then
-    # Try alternate startup
-    warn "MCP /health check failed, trying npm start..."
-    kill $MCP_PID 2>/dev/null || true
-    cd "$ROOT/mcp-server"
-    MCP_SCENARIO=mixed npm start &
-    MCP_PID=$!
-    cd "$ROOT"
-    sleep 5
-fi
+for i in $(seq 1 10); do
+    if curl -s "http://localhost:3002/health" > /dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
 ok "MCP server started (PID $MCP_PID)"
 
 # ── Step 5: Start agent server (port 8000) ───────────────────────────────────
@@ -106,15 +102,20 @@ export OPENAI_API_KEY=dummy
 export SLURM_AGENT_MODEL=slurm-agent
 export USE_TRAINING_TOOLS=1
 export AGENT_AUTO_APPROVE=true
+export MCP_SERVER_URL="http://localhost:3002"
 
-python -m agent.app --port 8000 &
+cd "$ROOT/agent"
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
 AGENT_PID=$!
+cd "$ROOT"
 sleep 5
 
-if ! curl -s "http://localhost:8000/health" > /dev/null 2>&1; then
-    warn "Agent /health not responding, waiting longer..."
-    sleep 10
-fi
+for i in $(seq 1 15); do
+    if curl -s "http://localhost:8000/health" > /dev/null 2>&1; then
+        break
+    fi
+    sleep 2
+done
 ok "Agent server started (PID $AGENT_PID)"
 
 # ── Step 6: Extract test IDs (multi-turn subset from v2 training data) ────────
