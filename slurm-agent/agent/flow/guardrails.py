@@ -21,23 +21,50 @@ from agents.tool_guardrails import (
 logger = logging.getLogger(__name__)
 
 
-def _safe_parse_args(raw: str) -> dict:
-    """Parse tool arguments JSON robustly, handling LLM quirks."""
-    raw = (raw or "").strip()
+def _safe_parse_args(raw) -> dict:
+    """Parse tool arguments JSON robustly, handling LLM quirks.
+
+    Always returns a dict. Handles:
+      - already-a-dict input (some SDK paths pre-parse)
+      - empty / None
+      - normal JSON object
+      - LLM trailing junk after the JSON
+      - doubly-encoded JSON strings (FT models often emit `"\"{\\\"k\\\":1}\""`)
+    """
+    if isinstance(raw, dict):
+        return raw
+    if raw is None:
+        return {}
+    if not isinstance(raw, str):
+        try:
+            raw = str(raw)
+        except Exception:
+            return {}
+    raw = raw.strip()
     if not raw:
         return {}
+    parsed = None
     try:
-        return json.loads(raw)
+        parsed = json.loads(raw)
     except json.JSONDecodeError:
-        # LLM sometimes appends extra text after the JSON object.
-        # Try to extract the first valid JSON object.
-        match = re.search(r'\{[^{}]*\}', raw)
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
         if match:
             try:
-                return json.loads(match.group())
+                parsed = json.loads(match.group())
             except json.JSONDecodeError:
-                pass
-        return {}
+                parsed = None
+    # Unwrap up to two levels of accidental string-encoding.
+    for _ in range(2):
+        if isinstance(parsed, str):
+            try:
+                parsed = json.loads(parsed)
+            except json.JSONDecodeError:
+                break
+        else:
+            break
+    if isinstance(parsed, dict):
+        return parsed
+    return {}
 
 
 # ── Sbatch danger-pattern list ────────────────────────────────────────────────
