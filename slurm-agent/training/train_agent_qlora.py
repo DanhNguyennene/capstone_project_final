@@ -133,6 +133,21 @@ def main():
     output_dir = root / args.out
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # ── Pre-flight data validation (blocks training on known-bad data) ──
+    print("Running pre-flight data validation...")
+    from training._validate_sft import validate as _validate_data
+    issues, vstats = _validate_data(str(data_path))
+    blockers = vstats["polluted"] + vstats["bad_args"] + vstats["scope_leaks"]
+    print(f"  rows={vstats['total']}  polluted={vstats['polluted']}  "
+          f"bad_args={vstats['bad_args']}  scope_leaks={vstats['scope_leaks']}")
+    if blockers > 0:
+        print(f"\n✗ DATA VALIDATION FAILED — {blockers} blocking issues found.")
+        print("  Fix with: python training/clean_agent_sft.py --in <file> --out <cleaned>")
+        for issue in issues[:15]:
+            print(f"    ⚠  {issue}")
+        sys.exit(1)
+    print("  ✓ Data validation passed\n")
+
     print(f"{'='*60}")
     print(f"  Slurm Agent QLoRA Fine-Tuning")
     print(f"{'='*60}")

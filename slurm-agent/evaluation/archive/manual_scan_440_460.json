@@ -1,0 +1,261 @@
+[
+  {
+    "index": 440,
+    "id": "sub_single_debug_needed_v2",
+    "category": "submission",
+    "scenario": "debug_needed",
+    "input": "sbatch train.sh",
+    "ground_truth": {
+      "tools": [
+        "sbatch"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "submit",
+        "train"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 441,
+    "id": "edge_capability_debug_needed_v1",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "Help",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "job"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 442,
+    "id": "edge_capability_debug_needed_v2",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "What do you do?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "job"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 443,
+    "id": "edge_guidance_debug_needed_v1",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "How do I submit a job?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "script"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 444,
+    "id": "edge_guidance_debug_needed_v2",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "Slurm tutorial",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "script"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 445,
+    "id": "node_drain_gpu-node-01_debug_needed_v1",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Put node into maintenance mode",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 446,
+    "id": "node_drain_gpu-node-01_debug_needed_v2",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Gracefully drain the node",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 447,
+    "id": "node_resume_gpu-node-02_debug_needed_v1",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Bring that node back up",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 448,
+    "id": "node_resume_gpu-node-02_debug_needed_v2",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Node is ready — resume it",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 449,
+    "id": "sreport_cluster_debug_needed_v1",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Cluster usage this week",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "usage",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 450,
+    "id": "sreport_cluster_debug_needed_v2",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Show resource consumption report",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "usage",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 451,
+    "id": "read_licenses_debug_needed_v1",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Check license availability",
+    "ground_truth": {
+      "tools": [
+        "scontrol_license"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "matlab",
+        "license"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 452,
+    "id": "read_licenses_debug_needed_v2",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "How many MATLAB seats are free?",
+    "ground_truth": {
+      "tools": [
+        "scontrol_license"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "matlab",
+        "license"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 453,
+    "id": "read_reservations_debug_needed_v1",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Any maintenance windows coming up?",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "reservation"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 454,
+    "id": "read_reservations_debug_needed_v2",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "List scheduled reservations",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "reservation"
+      ]
+    },
+    "changed_jobs": {}
+  }
+]

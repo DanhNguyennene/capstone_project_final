@@ -1,0 +1,367 @@
+[
+  {
+    "index": 129,
+    "id": "edge_waiting_phrase_failed",
+    "input": "Remove all waiting jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "PENDING"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 139,
+    "id": "read_all_failed_v1",
+    "input": "List all jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 140,
+    "id": "read_all_failed_v2",
+    "input": "What's in the queue?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "2001": {
+          "state": "FAILED",
+          "user": "alice",
+          "name": "train_large_model",
+          "partition": "gpu"
+        },
+        "2002": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "data_pipeline",
+          "partition": "cpu"
+        },
+        "2003": {
+          "state": "TIMEOUT",
+          "user": "charlie",
+          "name": "backup_job",
+          "partition": "cpu"
+        },
+        "2004": {
+          "state": "RUNNING",
+          "user": "alice",
+          "name": "gpu_test",
+          "partition": "gpu"
+        },
+        "2005": {
+          "state": "FAILED",
+          "user": "bob",
+          "name": "failed_again",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "down",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "drain",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "mix",
+          "partition": "cpu"
+        }
+      }
+    }
+  }
+]

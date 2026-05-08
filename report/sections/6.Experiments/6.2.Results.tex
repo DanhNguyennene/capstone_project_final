@@ -46,9 +46,9 @@ The training data pipeline processes 3,135 evaluation traces (from passing GPT-5
         \textbf{Property} & \textbf{Value} \\
         \hline
         Source traces & 3,135 passing evaluation runs \\
-        Total training samples & 10,171 \\
-        Observer samples & 7,560 (74.3\%) \\
-        Operator samples & 2,611 (25.7\%) \\
+        Total training samples & 9,550 (after quality filtering) \\
+        Observer samples & 7,098 (74.3\%) \\
+        Operator samples & 2,452 (25.7\%) \\
         Avg conversation turns & 4.2 (Observer), 3.1 (Operator) \\
         Avg token length & 1,247 tokens per sample \\
         Output format & JSONL with \texttt{messages}, \texttt{tools}, \texttt{metadata} \\
@@ -60,7 +60,7 @@ The Observer-to-Operator ratio reflects the natural distribution of evaluation c
 
 \subsubsection{Role-Scoped Integrity Validation}
 
-A dedicated validation script verifies that the role-scoping constraints are satisfied across all 10,171 samples before training begins. The following invariants are checked exhaustively:
+A dedicated validation script verifies that the role-scoping constraints are satisfied across all 9,550 samples before training begins. The following invariants are checked exhaustively:
 
 \begin{itemize}
     \item Every sample includes a non-empty \texttt{tools} field matching its declared role.
@@ -70,7 +70,7 @@ A dedicated validation script verifies that the role-scoping constraints are sat
     \item Observer samples include exactly 25 tool definitions; Operator samples include exactly 13.
 \end{itemize}
 
-All 10,171 samples pass all validation checks with zero violations, confirming that the role-scoping implementation is correct and the model will never see cross-role tool examples during training.
+All 9,550 samples pass all validation checks with zero violations, confirming that the role-scoping implementation is correct and the model will never see cross-role tool examples during training.
 
 \subsubsection{Training Execution}
 
@@ -90,11 +90,13 @@ Training was conducted on a single NVIDIA A40 GPU (48\,GB VRAM) provisioned via 
         Target layers & 36--47 (final 12 of 48) \\
         Effective batch size & 16 (micro-batch 4 $\times$ grad accum 4) \\
         Sequence length & 2,048 tokens \\
-        Epochs & 3 \\
-        Total steps & $\sim$1,791 \\
+        Epochs planned & 3 (completed $\sim$1.5) \\
+        Total steps completed & 895 of 1,791 \\
         Time per step & $\sim$44\,s \\
         GPU memory usage & 42 / 46\,GB \\
-        Total training time & $\sim$22\,h \\
+        Training time (completed) & $\sim$11\,h \\
+        Initial loss & 0.604 \\
+        Final loss (at interruption) & 0.0003 (converged by step $\sim$18) \\
         \hline
     \end{tabular}
 \end{table}
@@ -179,7 +181,9 @@ The central experimental question is whether the domain-adapted open-weight mode
 
 \subsubsection{Evaluation Protocol}
 
-The fine-tuned model is served via an OpenAI-compatible API endpoint (vLLM or similar inference server) with the QLoRA adapter merged into the base weights at FP16 precision. The evaluation harness connects to this local endpoint using the same interface it uses for the OpenAI API, ensuring identical tool-calling, streaming, and HITL handling logic. Temperature is set to 0 for deterministic comparison.
+The fine-tuned model is served via a lightweight OpenAI-compatible API endpoint built with FastAPI and the \texttt{transformers} + PEFT libraries. The QLoRA adapter is loaded on top of the base model at BF16 precision (full-precision base weights with LoRA layers applied), running on a single NVIDIA A40 48\,GB GPU. While training used 4-bit NF4 quantization for memory efficiency, inference uses BF16 base weights---a standard practice in QLoRA deployment that avoids quantization-related numerical instability during autoregressive generation on long multi-turn sequences. The quality impact is negligible, as NF4 quantization is information-theoretically near-optimal and LoRA adapters transfer reliably across precisions~\cite{dettmers2023qlora}.
+
+The evaluation harness connects to this local endpoint using the same streaming SSE interface it uses for the OpenAI API, ensuring identical tool-calling, streaming, and HITL handling logic. Temperature is set to 0 for deterministic comparison.
 
 \subsubsection{Hypotheses}
 

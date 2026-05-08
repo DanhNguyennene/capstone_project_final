@@ -1,21 +1,25 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{19}{table.caption.17}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{20}{table.caption.18}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.18}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.19}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.20}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{31}{table.caption.29}%
-\contentsline {table}{\numberline {4.5}{\ignorespaces Supported LLM Providers}}{32}{table.caption.31}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.19}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.20}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.21}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{30}{table.caption.29}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{37}{table.caption.38}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{39}{table.caption.43}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Fine-Tuning Hyperparameters}}{42}{table.caption.45}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{40}{table.caption.40}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{41}{table.caption.41}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{44}{table.caption.46}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{45}{table.caption.47}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Aggregate Evaluation Metrics (3,135 Cases)}}{46}{table.caption.49}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Model Stack}}{49}{table.caption.56}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{44}{table.caption.47}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{45}{table.caption.48}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{48}{table.caption.52}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Training Data Summary}}{48}{table.caption.54}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Training Run Configuration}}{50}{table.caption.57}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{50}{table.caption.58}%
+\contentsline {table}{\numberline {6.7}{\ignorespaces Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}}{50}{table.caption.59}%
+\contentsline {table}{\numberline {6.8}{\ignorespaces Evaluation Model Stack}}{51}{table.caption.61}%
+\contentsline {table}{\numberline {6.9}{\ignorespaces Fine-Tuned Model vs GPT-5-mini Baseline (3,135 Cases)}}{52}{table.caption.65}%
+\contentsline {table}{\numberline {6.10}{\ignorespaces Deployment Cost Comparison}}{53}{table.caption.67}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{52}{table.caption.57}%
+\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{56}{table.caption.69}%

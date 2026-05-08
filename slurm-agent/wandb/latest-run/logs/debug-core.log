@@ -1,0 +1,15 @@
+{"time":"2026-05-05T20:01:29.669850264Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmplphms2_4/port-5861.txt","pid":5861,"detached":false,"idle-timeout":600000000000,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-05-05T20:01:29.670524187Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-5861-6123-1599701808/socket","Net":"unix"}}
+{"time":"2026-05-05T20:01:29.670622455Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":5861}
+{"time":"2026-05-05T20:01:29.854242987Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-05-05T20:01:29.88029792Z","level":"INFO","msg":"handleInformInit: received","streamId":"ja434jr7","id":"1(@)"}
+{"time":"2026-05-05T20:01:30.199268345Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"ja434jr7","id":"1(@)"}
+{"time":"2026-05-05T20:01:36.519351393Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"bmaswbnmfjsn"}
+{"time":"2026-05-06T05:00:12.996567155Z","level":"INFO","msg":"handleInformTeardown: server teardown initiated","id":"1(@)"}
+{"time":"2026-05-06T05:00:12.996814876Z","level":"INFO","msg":"server is shutting down"}
+{"time":"2026-05-06T05:00:12.996926156Z","level":"INFO","msg":"connection: closing","id":"1(@)"}
+{"time":"2026-05-06T05:00:12.997083042Z","level":"INFO","msg":"connection: closed successfully","id":"1(@)"}
+{"time":"2026-05-06T05:00:12.997091002Z","level":"INFO","msg":"server: listener closed","addr":{"Name":"/tmp/wandb-5861-6123-1599701808/socket","Net":"unix"}}
+{"time":"2026-05-06T05:00:14.047361174Z","level":"INFO","msg":"handleInformTeardown: server shutdown complete","id":"1(@)"}
+{"time":"2026-05-06T05:00:14.047459473Z","level":"INFO","msg":"connection: ManageConnectionData: connection closed","id":"1(@)"}
+{"time":"2026-05-06T05:00:14.047490043Z","level":"INFO","msg":"server is closed"}

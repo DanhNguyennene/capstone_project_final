@@ -1,0 +1,412 @@
+[
+  {
+    "index": 400,
+    "id": "acct_delete_debug_needed",
+    "category": "account",
+    "scenario": "debug_needed",
+    "input": "Remove user dave from the research account",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_delete"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "dave"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 401,
+    "id": "acct_modify_charlie_debug_needed",
+    "category": "account",
+    "scenario": "debug_needed",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_modify"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "charlie",
+        "64"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 402,
+    "id": "edge_nonexistent_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "What is the status of job 99999?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "99999"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 403,
+    "id": "edge_invalid_id_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "Cancel job abc",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "invalid"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 404,
+    "id": "edge_capability_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "What can you help me with?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "job"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 405,
+    "id": "edge_incomplete_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "Cancel",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 406,
+    "id": "edge_waiting_phrase_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "Remove all waiting jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue",
+        "scancel"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "5004",
+        "cancel"
+      ]
+    },
+    "changed_jobs": {
+      "5004": {
+        "from": "PENDING",
+        "to": "CANCELLED"
+      }
+    }
+  },
+  {
+    "index": 407,
+    "id": "edge_guidance_debug_needed",
+    "category": "edge",
+    "scenario": "debug_needed",
+    "input": "How do I write a good Slurm batch script?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "script"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 408,
+    "id": "node_drain_gpu-node-01_debug_needed",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Drain gpu-node-01 for scheduled maintenance",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "drain"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 409,
+    "id": "node_resume_gpu-node-02_debug_needed",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Maintenance is done — bring gpu-node-02 back online",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-02",
+        "resume"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 410,
+    "id": "node_down_gpu-node-01_debug_needed",
+    "category": "action",
+    "scenario": "debug_needed",
+    "input": "Take gpu-node-01 down immediately — hardware failure detected",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "down"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 411,
+    "id": "sreport_cluster_debug_needed",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Show me a cluster usage report for this week",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "usage",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 412,
+    "id": "sreport_user_charlie_debug_needed",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "How many CPU hours has charlie used this month?",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "charlie",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 413,
+    "id": "read_licenses_debug_needed",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Are there any MATLAB licenses available right now?",
+    "ground_truth": {
+      "tools": [
+        "scontrol_license"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "matlab",
+        "license"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 414,
+    "id": "read_reservations_debug_needed",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "Show all current reservations on the cluster",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "reservation"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 415,
+    "id": "multi_reserve_drain_gpu-node-01_debug_needed",
+    "category": "multi_step",
+    "scenario": "debug_needed",
+    "input": "Check existing reservations then drain gpu-node-01 for a maintenance window",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "reservation",
+        "drain"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 416,
+    "id": "read_all_debug_needed_v1",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "List all jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "5001",
+        "5002",
+        "5003",
+        "5004",
+        "5005",
+        "5006",
+        "5007",
+        "5008"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 417,
+    "id": "read_all_debug_needed_v2",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "What's in the queue?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "5001",
+        "5002",
+        "5003",
+        "5004",
+        "5005",
+        "5006",
+        "5007",
+        "5008"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 418,
+    "id": "read_all_debug_needed_v3",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "squeue",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "5001",
+        "5002",
+        "5003",
+        "5004",
+        "5005",
+        "5006",
+        "5007",
+        "5008"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 419,
+    "id": "read_running_debug_needed_v1",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "What jobs are running right now?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "5008",
+        "RUNNING"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 420,
+    "id": "read_running_debug_needed_v2",
+    "category": "read",
+    "scenario": "debug_needed",
+    "input": "List active jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "5008",
+        "RUNNING"
+      ]
+    },
+    "changed_jobs": {}
+  }
+]

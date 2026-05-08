@@ -617,6 +617,13 @@ async def run_agent(
                             tokens = status[2:].split()
                             tool = _normalize_tool_name(tokens)
                             entry: dict = {"type": "tool", "cmd": status, "tool": tool, "index": len(tool_call_history)}
+                            # Capture raw tool args if available
+                            raw_name = delta.get("tool_name", "")
+                            raw_args = delta.get("tool_args")
+                            if raw_name:
+                                entry["tool_name"] = raw_name
+                            if raw_args is not None:
+                                entry["tool_args"] = raw_args
                             tool_call_history.append(entry)
                             if tool not in ROUTING_TOOLS:
                                 tools_called.append(tool)

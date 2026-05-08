@@ -96,7 +96,11 @@ def _event_to_sse(event: dict) -> str | None:
         return f"data: {json.dumps({'id': cid, 'object': 'chat.completion.chunk', 'created': ts, 'model': 'slurm-agent', 'choices': [{'index': 0, 'finish_reason': None, 'delta': delta}]})}\n\n"
 
     if t == "status":
-        return _chunk({"status_update": event.get("message", "")})
+        delta: dict = {"status_update": event.get("message", "")}
+        if "tool_name" in event:
+            delta["tool_name"] = event["tool_name"]
+            delta["tool_args"] = event.get("tool_args", {})
+        return _chunk(delta)
     elif t == "tool_output":
         return _chunk({"tool_output": event.get("output", "")})
     elif t == "thinking":

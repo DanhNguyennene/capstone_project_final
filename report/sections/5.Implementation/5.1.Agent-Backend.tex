@@ -12,20 +12,35 @@ The backend maintains session-aware multi-agent execution, exposes an OpenAI-com
     \item \textbf{SQLiteSession}: persistent per-session context and chat history
 \end{itemize}
 
-Model routing supports local Ollama (default) and optional remote providers.
-
 \subsection{Agent Topology}
 
-The system implements a two-agent architecture with bidirectional handoffs:
+The system implements a two-agent architecture with bidirectional handoffs. Both agents share the same LLM instance but differ in tool access and generation policy.
 
-\begin{itemize}
-    \item \textbf{Observer}: the primary orchestrator and entry point for all requests. It handles read-only inspection (queue status, node info, accounting, diagnostics), documentation retrieval, and intent classification. When a state-changing action is identified, the Observer hands off to the Operator with a structured payload specifying the required tool, targets, and action description.
-    \item \textbf{Operator}: a restricted execution agent that receives structured handoffs from the Observer. It may perform one discovery read to resolve ambiguous targets (e.g., resolving ``that job'' to a job ID), then executes the confirmed action. After completion, it hands back to the Observer.
-\end{itemize}
+\begin{lstlisting}[language=Python, caption={Observer agent construction}, label={lst:observer-agent}]
+observer = Agent(
+    name="Observer",
+    instructions=observer_instructions,
+    model=reasoning_model,
+    model_settings=ModelSettings(tool_choice="auto"),
+    mcp_servers=[mcp_observer],  # read-only Slurm tools
+    tools=[slurm_docs_lookup, skill_lookup],
+    handoffs=[transfer_to_operator],
+)
+\end{lstlisting}
 
-Both agents share the same underlying LLM but operate with different tool sets, system prompts, and model settings (the Observer uses \texttt{tool\_choice=auto}; the Operator uses \texttt{tool\_choice=required}). The Observer's MCP tool surface is limited to read-only Slurm commands, while the Operator receives both dangerous action tools and a subset of read tools for target resolution.
+\begin{lstlisting}[language=Python, caption={Operator agent construction}, label={lst:operator-agent}]
+operator = Agent(
+    name="Operator",
+    instructions=operator_instructions,
+    model=reasoning_model,
+    model_settings=ModelSettings(tool_choice="required"),
+    mcp_servers=[mcp_operator],  # action Slurm tools
+    tools=[*dangerous_fns, *operator_read_fns],
+    handoffs=[transfer_to_observer],
+)
+\end{lstlisting}
 
-Additional utility tools available to the Observer: \texttt{generate\_chart}, \texttt{lookup\_slurm\_docs}, and \texttt{lookup\_skill}. Confirmation tools (\texttt{confirm\_action}, \texttt{cancel\_action}, \texttt{check\_pending\_actions}) are implemented as guarded wrappers that enforce human approval before the underlying MCP tool executes.
+The Observer uses \texttt{tool\_choice="auto"} (the model decides whether to call a tool or respond directly), while the Operator uses \texttt{tool\_choice="required"} (every turn must invoke a tool---either an action or the handoff back). The MCP server instances expose disjoint tool sets: the Observer sees only read-only commands (\texttt{squeue}, \texttt{sinfo}, \texttt{sacct}, \texttt{scontrol show}), while the Operator receives action tools (\texttt{scancel}, \texttt{scontrol update}, \texttt{sbatch}) plus a subset of read tools for target discovery.
 
 \subsection{Safety and Confirmation Pipeline}
 
@@ -65,13 +80,11 @@ To avoid a GPU-intensive embedding pass at server startup, a build script (\text
 
 This hybrid approach addresses a practical limitation observed during evaluation: purely lexical retrieval fails on paraphrased queries (e.g., ``how to chain jobs'' does not lexically match ``dependency afterok''), while purely semantic retrieval can miss exact command-syntax matches. RRF combines both strengths without requiring score calibration. The tool is invoked lazily---only when the agent encounters a documentation question---so it adds zero tokens to non-documentation conversations.
 
-\subsection{Streaming Protocol}
+\subsection{Runtime Services}
 
-Responses use OpenAI-style SSE with typed delta fields: \texttt{status\_update}, \texttt{tool\_output}, \texttt{reasoning\_content}, \texttt{content}, \texttt{chart\_artifact}, \texttt{todo\_update}, and \texttt{pending\_actions}. Chart artifacts are filtered from future LLM context to prevent token pollution.
+The backend streams responses using OpenAI-style Server-Sent Events with typed delta fields (\texttt{status\_update}, \texttt{tool\_output}, \texttt{reasoning\_content}, \texttt{content}, \texttt{chart\_artifact}, \texttt{pending\_actions}). Chart artifacts are filtered from future LLM context to prevent token pollution.
 
-\subsection{Session Management}
-
-Each chat ID maps to a persistent session (conversation memory, pending actions, chart context, runtime config). Evaluation runs use deterministic isolated session IDs for reproducibility. Context budget is managed by separating large artifacts from model input.
+Each chat ID maps to a persistent session storing conversation memory, pending actions, chart context, and runtime config. Evaluation runs use deterministic isolated session IDs for reproducibility.
 
 \subsection{Fine-Tuned Model Serving}
 

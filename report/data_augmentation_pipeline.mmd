@@ -1,0 +1,18 @@
+flowchart TD
+    A["Raw GPT-5 Mini Traces"] --> B{"Contains\nhandoff?"}
+    B -->|"Yes"| C["Split at handoff boundary"]
+    B -->|"No"| D["Single Observer sample"]
+    C --> E["Observer sample\n(ends at handoff directive)"]
+    C --> F["Operator sample\n(starts from handoff context)"]
+
+    D --> G["Role-scoped tool filtering"]
+    E --> G
+    F --> G
+
+    G --> H["Observer:\nread-only tools + handoff"]
+    G --> I["Operator:\naction tools + discovery reads"]
+
+    H --> J["Prompt variation\n(lexical rephrasing)"]
+    I --> J
+
+    J --> K["Final Dataset\n~3,300 train / ~800 test\nstratified by category × scenario"]

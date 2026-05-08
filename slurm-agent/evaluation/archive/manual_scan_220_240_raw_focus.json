@@ -1,0 +1,605 @@
+[
+  {
+    "index": 226,
+    "id": "read_all_pending_v1",
+    "input": "List all jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "3001",
+        "3002",
+        "3003",
+        "3004",
+        "3005"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 227,
+    "id": "read_all_pending_v2",
+    "input": "What's in the queue?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "3001",
+        "3002",
+        "3003",
+        "3004",
+        "3005"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 228,
+    "id": "read_all_pending_v3",
+    "input": "squeue",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "3001",
+        "3002",
+        "3003",
+        "3004",
+        "3005"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 237,
+    "id": "diag_pending_3001_pending_v1",
+    "input": "Why is this job stuck?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 240,
+    "id": "action_cancel_3001_pending_v1",
+    "input": "Kill that job",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "source_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    },
+    "target_state": {
+      "jobs": {
+        "3001": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "big_gpu_job",
+          "partition": "gpu"
+        },
+        "3002": {
+          "state": "PENDING",
+          "user": "bob",
+          "name": "waiting_job",
+          "partition": "cpu"
+        },
+        "3003": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "queue_test",
+          "partition": "gpu"
+        },
+        "3004": {
+          "state": "PENDING",
+          "user": "alice",
+          "name": "dependency_job",
+          "partition": "cpu"
+        },
+        "3005": {
+          "state": "RUNNING",
+          "user": "bob",
+          "name": "running_one",
+          "partition": "cpu"
+        }
+      },
+      "nodes": {
+        "gpu-node-01": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "gpu-node-02": {
+          "state": "alloc",
+          "partition": "gpu"
+        },
+        "cpu-node-01": {
+          "state": "alloc",
+          "partition": "cpu"
+        },
+        "cpu-node-02": {
+          "state": "alloc",
+          "partition": "cpu"
+        }
+      }
+    }
+  }
+]

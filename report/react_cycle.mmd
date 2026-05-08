@@ -1,0 +1,6 @@
+flowchart LR
+    T[Think] --> A[Act\n Tool Call]
+    A --> O[Observe\n Tool Result]
+    O --> D{Done?}
+    D -->|No| T
+    D -->|Yes| R[Final Response]

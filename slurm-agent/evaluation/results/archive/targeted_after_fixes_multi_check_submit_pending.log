@@ -1,0 +1,11 @@
+
+Scenario-Grid Behavioral Alignment Evaluation
+  Agent URL    : http://localhost:8000
+  Test cases   : 1
+  Scenario     : all
+  Repeat (k)   : 1
+  Auto-approve : True
+  LLM Judge    : OFF
+  MCP URL      : http://localhost:3002
+  Agent        : ONLINE ✓
+  [001/001] multi_check_submit_pending                                              

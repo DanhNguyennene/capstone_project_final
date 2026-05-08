@@ -1,0 +1,14 @@
+flowchart LR
+    A["Benchmark Scenarios\n7 categories × N cases"] --> B["Mock MCP Server\nConfigurable cluster states"]
+    B -->|"tool responses"| C["GPT-5 Mini Agent\n(Observer + Operator)"]
+    C -->|"tool calls"| B
+    C --> D["Raw Interaction Traces\nsystem prompt, reasoning,\ntool calls, responses"]
+
+    subgraph Mock States
+        B1["Jobs: pending/running/failed"]
+        B2["Nodes: idle/mixed/down"]
+        B3["Accounts & QOS policies"]
+    end
+    B1 -.-> B
+    B2 -.-> B
+    B3 -.-> B

@@ -1,0 +1,425 @@
+[
+  {
+    "index": 300,
+    "id": "acct_list_mixed",
+    "category": "account",
+    "scenario": "mixed",
+    "input": "Show all accounts on the cluster",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_list"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "account"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 301,
+    "id": "acct_qos_mixed",
+    "category": "account",
+    "scenario": "mixed",
+    "input": "List all QOS policies and their limits",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_list"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "QOS"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 302,
+    "id": "acct_add_mixed",
+    "category": "account",
+    "scenario": "mixed",
+    "input": "Add user dave to the research account",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_add"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "dave",
+        "add"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 303,
+    "id": "acct_delete_mixed",
+    "category": "account",
+    "scenario": "mixed",
+    "input": "Remove user dave from the research account",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_delete"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "dave"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 304,
+    "id": "acct_modify_charlie_mixed",
+    "category": "account",
+    "scenario": "mixed",
+    "input": "Set charlie's MaxCPUs limit to 64 on the gpu partition",
+    "ground_truth": {
+      "tools": [
+        "sacctmgr_modify"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "charlie",
+        "64"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 305,
+    "id": "edge_nonexistent_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "What is the status of job 99999?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "99999"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 306,
+    "id": "edge_invalid_id_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "Cancel job abc",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "invalid"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 307,
+    "id": "edge_capability_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "What can you help me with?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "job"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 308,
+    "id": "edge_incomplete_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "Cancel",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "which"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 309,
+    "id": "edge_waiting_phrase_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "Remove all waiting jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue",
+        "scancel"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "4003",
+        "4006",
+        "cancel"
+      ]
+    },
+    "changed_jobs": {
+      "4003": {
+        "from": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "charlie",
+          "name": "batch_inference",
+          "partition": "gpu"
+        }
+      },
+      "4006": {
+        "from": {
+          "state": "PENDING",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        },
+        "to": {
+          "state": "CANCELLED",
+          "user": "charlie",
+          "name": "stuck_job",
+          "partition": "cpu"
+        }
+      }
+    }
+  },
+  {
+    "index": 310,
+    "id": "edge_guidance_mixed",
+    "category": "edge",
+    "scenario": "mixed",
+    "input": "How do I write a good Slurm batch script?",
+    "ground_truth": {
+      "tools": [],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "script"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 311,
+    "id": "node_drain_gpu-node-01_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Drain gpu-node-01 for scheduled maintenance",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "drain"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 312,
+    "id": "node_resume_gpu-node-02_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Maintenance is done — bring gpu-node-02 back online",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-02",
+        "resume"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 313,
+    "id": "node_down_gpu-node-01_mixed",
+    "category": "action",
+    "scenario": "mixed",
+    "input": "Take gpu-node-01 down immediately — hardware failure detected",
+    "ground_truth": {
+      "tools": [
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "down"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 314,
+    "id": "sreport_cluster_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show me a cluster usage report for this week",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "usage",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 315,
+    "id": "sreport_user_charlie_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "How many CPU hours has charlie used this month?",
+    "ground_truth": {
+      "tools": [
+        "sreport"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "charlie",
+        "hours"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 316,
+    "id": "read_licenses_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Are there any MATLAB licenses available right now?",
+    "ground_truth": {
+      "tools": [
+        "scontrol_license"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "matlab",
+        "license"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 317,
+    "id": "read_reservations_mixed",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "Show all current reservations on the cluster",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "reservation"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 318,
+    "id": "multi_reserve_drain_gpu-node-01_mixed",
+    "category": "multi_step",
+    "scenario": "mixed",
+    "input": "Check existing reservations then drain gpu-node-01 for a maintenance window",
+    "ground_truth": {
+      "tools": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "handoff": true,
+      "hitl": true,
+      "keywords": [
+        "gpu-node-01",
+        "reservation",
+        "drain"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 319,
+    "id": "read_all_mixed_v1",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "List all jobs",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "4002",
+        "4003",
+        "4004",
+        "4005",
+        "4006"
+      ]
+    },
+    "changed_jobs": {}
+  },
+  {
+    "index": 320,
+    "id": "read_all_mixed_v2",
+    "category": "read",
+    "scenario": "mixed",
+    "input": "What's in the queue?",
+    "ground_truth": {
+      "tools": [
+        "squeue"
+      ],
+      "handoff": false,
+      "hitl": false,
+      "keywords": [
+        "4001",
+        "4002",
+        "4003",
+        "4004",
+        "4005",
+        "4006"
+      ]
+    },
+    "changed_jobs": {}
+  }
+]

@@ -101,4 +101,11 @@ where $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ with r
 
 \textbf{Quantized LoRA (QLoRA)}~\cite{dettmers2023qlora} extends LoRA by quantizing the frozen base model to 4-bit precision (NormalFloat4) during training. The LoRA adapters remain in higher precision (bfloat16) for gradient computation. This reduces the memory footprint of the base model by approximately 4$\times$, enabling fine-tuning of 14B-parameter models on a single 48\,GB GPU. QLoRA introduces double quantization---quantizing the quantization constants themselves---for additional memory savings with negligible quality loss.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/qlora.png}
+    \caption{Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\cite{dettmers2023qlora}}
+    \label{fig:qlora}
+\end{figure}
+
 \textbf{Knowledge Distillation} transfers capabilities from a larger teacher model to a smaller student model. In the context of tool-calling agents, distillation can use the teacher's successful execution traces as training data: the student learns to reproduce the teacher's tool selections, argument formatting, and response patterns without requiring manually annotated data~\cite{hinton2015distilling}. This is particularly effective when the teacher model's behavior is already validated through an evaluation framework.

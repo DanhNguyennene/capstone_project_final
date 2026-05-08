@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant U as User/Frontend
+    participant API as FastAPI Server
+    participant RA as ReAct Agent
+    participant R as Router
+    participant O as Observer/Operator
+    participant MCP as MCP Server
+    participant S as Slurm Cluster
+
+    U->>API: HTTP Request / WebSocket
+    API->>RA: Invoke agent
+    RA->>R: Classify intent
+    R->>O: Delegate to sub-agent
+    O->>MCP: Tool call (via stdio)
+    MCP->>S: Execute command
+    S-->>MCP: Result
+    MCP-->>O: Tool response
+    O-->>RA: Sub-agent result
+    RA-->>API: Synthesized response + trace
+    API-->>U: SSE stream / JSON
+
+    Note over O,MCP: Dangerous ops trigger<br/>confirmation interruption

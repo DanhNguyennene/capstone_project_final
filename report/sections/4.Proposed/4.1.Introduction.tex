@@ -1,41 +1,12 @@
 \section{Proposed Slurm Agent Overview}
 \label{sec:app-introduction}
 
-The proposed system is a stateful Slurm Agent for translating natural-language operational requests into grounded scheduler interactions. Its purpose is to study how an LLM-based agent can interpret Slurm intent, choose typed tools, separate read-only inspection from state-changing operations, and produce traces that can be evaluated against expected behavior. The user-facing interface is only an entry point; the main design object is the agent control flow and the evaluation method around it.
+The proposed system is a stateful Slurm Agent for translating natural-language operational requests into grounded scheduler interactions. Its purpose is to study how an LLM-based agent can interpret Slurm intent, choose typed tools, separate read-only inspection from state-changing operations, and produce traces that can be evaluated against expected behavior. A key contribution is the domain-adapted fine-tuning of an open-weight model (Qwen2.5-14B-Instruct) using QLoRA, enabling local deployment without reliance on commercial APIs while maintaining tool-calling accuracy through training data aligned exactly with the inference-time prompts and schemas. The user-facing interface is only an entry point; the main design object is the agent control flow, the fine-tuning pipeline, and the evaluation method around it.
 
 \subsection{System Objective}
 
 The system sits between a natural-language request and the Slurm command surface. A request such as ``why is my job pending?'', ``show failed jobs for this account'', or ``cancel job 12345'' is not executed as a free-form shell command. Instead, the agent maps the request onto a constrained set of MCP tools, retrieves current or simulated cluster state, and decides whether the task is observational, diagnostic, documentation-oriented, or state-changing.
 
-This objective creates three design requirements. First, the agent must ground claims in Slurm evidence rather than model memory alone. Second, commands that modify cluster state must pass through an explicit confirmation path. Third, the runtime must expose enough trace information to evaluate tool choice, routing, confirmation behavior, and state-transition consistency.
+This objective creates three design requirements. First, the agent must ground claims in Slurm evidence rather than model memory alone. Second, commands that modify cluster state must pass through an explicit confirmation path. Third, the runtime must expose enough trace information to evaluate tool choice, routing, confirmation behavior, and state-transition consistency. A fourth requirement emerges from deployment constraints: the system should operate with a locally fine-tuned open-weight model so that HPC sites retain data sovereignty and avoid per-query API costs, while still matching the behavioral quality of commercial models.
 
-\subsection{Core Agent Capabilities}
-
-The proposed system combines the following capabilities:
-
-\begin{itemize}
-    \item \textbf{Slurm intent interpretation}: map natural-language requests to monitoring, diagnosis, documentation, submission, accounting, job-control, or safety-sensitive workflows.
-    \item \textbf{Observer/Operator separation}: route read-only inspection to the Observer path and state-changing operations to the Operator path with confirmation control.
-    \item \textbf{MCP tool grounding}: expose Slurm commands as typed tools with explicit parameters instead of asking the model to generate arbitrary shell commands.
-    \item \textbf{Documentation and web-search grounding}: retrieve local official Slurm documentation for command syntax, state meanings, reason codes, and policy-like explanations, with web search as a fallback for external troubleshooting material not covered by the local corpus.
-    \item \textbf{Traceable execution}: record tool calls, handoff behavior, pending actions, response evidence, and state effects so each case can be inspected and scored.
-    \item \textbf{Dataset-driven evaluation}: run manually constructed benchmark cases against resettable mock Slurm states and compare observed behavior with expected tools, routing, HITL labels, and target-state semantics.
-\end{itemize}
-
-
-
-\subsection{Operational Flow}
-
-A typical request follows this control path:
-
-\begin{enumerate}
-    \item A user or evaluator submits a natural-language Slurm request through the runtime API.
-    \item The backend loads the session context, model configuration, MCP connection, and any pending-action state.
-    \item The main ReAct agent interprets the request and decides whether to answer from context, retrieve local documentation, use web search for external troubleshooting context, inspect cluster state, or hand off to an action path.
-    \item The Observer path performs read-only tool calls for queue, node, accounting, reservation, configuration, documentation, web-search, or diagnostic evidence.
-    \item The Operator path prepares state-changing actions such as submission, cancellation, hold, release, requeue, or selected updates, but execution is delayed until confirmation is received.
-    \item Tool outputs, handoff decisions, pending-action events, final response text, and state effects are emitted as structured trace evidence.
-    \item During evaluation, the trace is compared with benchmark ground truth for tool recall, routing match, HITL match, response evidence, and source-to-target state behavior.
-\end{enumerate}
-
-This flow keeps the thesis focus on agent behavior rather than interface design. The same runtime path can support manual interaction and automated evaluation, which makes implementation choices directly testable in the scenario-grid benchmark.
+The following sections detail the architecture that satisfies these requirements: the dual-agent routing design (Section~\ref{sec:architecture}), the MCP tool protocol (Section~\ref{sec:module-specifications}), the ReAct reasoning cycle (Section~\ref{sec:llm-architecture}), the fine-tuning pipeline (Section~\ref{sec:fine-tuning}), and the scenario-grid evaluation method (Section~\ref{sec:testing-approach}).

@@ -1,0 +1,58 @@
+{
+  "os":  "Linux-6.5.0-45-generic-x86_64-with-glibc2.39",
+  "python":  "CPython 3.12.3",
+  "startedAt":  "2026-05-05T19:59:18.348820Z",
+  "args":  [
+    "--base-model",
+    "Qwen/Qwen2.5-14B-Instruct",
+    "--max-length",
+    "2048",
+    "--lora-r",
+    "64",
+    "--lora-alpha",
+    "128",
+    "--epochs",
+    "3",
+    "--batch-size",
+    "1",
+    "--grad-accum",
+    "16",
+    "--out",
+    "training/out/slurm-agent-14b-lora"
+  ],
+  "program":  "/workspace/capstone_project/slurm-agent/training/train_agent_qlora.py",
+  "codePath":  "slurm-agent/training/train_agent_qlora.py",
+  "codePathLocal":  "training/train_agent_qlora.py",
+  "git":  {
+    "remote":  "https://github.com/DanhNguyennene/capstone_project.git",
+    "commit":  "39a0b24dd21eb3216b05c2a56742f40f322d5ed0"
+  },
+  "email":  "danhvm12345@gmail.com",
+  "root":  "/workspace/capstone_project/slurm-agent",
+  "host":  "dab0e665cbcd",
+  "executable":  "/usr/local/bin/python",
+  "cpu_count":  48,
+  "cpu_count_logical":  96,
+  "gpu":  "NVIDIA A40",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "75161927680",
+      "used":  "1731563520"
+    }
+  },
+  "memory":  {
+    "total":  "540645847040"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA A40",
+      "memoryTotal":  "48305799168",
+      "cudaCores":  10752,
+      "architecture":  "Ampere",
+      "uuid":  "GPU-9fedd303-0908-0efe-eb54-8db27ffdfd79"
+    }
+  ],
+  "cudaVersion":  "12.8",
+  "writerId":  "2gc8s43nukqj4jabdd9iblawscor1yal"
+}

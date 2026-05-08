@@ -1,0 +1,90 @@
+Loading source datasets...
+  Single-turn: 3135
+  Multi-turn:  200
+  Web:         200
+  Total source: 3535
+
+  Targets:
+    Single-turn: 7700 (700 × 11 categories)
+    Multi-turn:  1150
+    Web:         1150
+    Total:       10000
+
+Testing model qwen2.5:7b...
+  Model OK: Ready! How can I ass
+
+============================================================
+  Phase 1: Augmenting single-turn (3135 → 7700)
+============================================================
+  account: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  action: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  bulk: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  diagnose: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  docs: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  domain: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  edge: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  multi_step: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  read: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  safety: 285 orig + 285 swapped = 570 (need 700, gap=130)
+  submission: 285 orig + 285 swapped = 570 (need 700, gap=130)
+
+  Phase 1b: Paraphrasing 3135 swapped + 1430 gap-fill cases...
+    Swapped paraphrased: 64/3135    Swapped paraphrased: 128/3135    Swapped paraphrased: 192/3135    Swapped paraphrased: 256/3135    Swapped paraphrased: 320/3135    Swapped paraphrased: 384/3135    Swapped paraphrased: 448/3135    Swapped paraphrased: 512/3135    Swapped paraphrased: 576/3135    Swapped paraphrased: 640/3135    Swapped paraphrased: 704/3135    Swapped paraphrased: 768/3135    Swapped paraphrased: 832/3135    Swapped paraphrased: 896/3135    Swapped paraphrased: 960/3135    Swapped paraphrased: 1024/3135    Swapped paraphrased: 1088/3135    Swapped paraphrased: 1152/3135    Swapped paraphrased: 1216/3135    Swapped paraphrased: 1280/3135    Swapped paraphrased: 1344/3135    Swapped paraphrased: 1408/3135    Swapped paraphrased: 1472/3135    Swapped paraphrased: 1536/3135    Swapped paraphrased: 1600/3135    Swapped paraphrased: 1664/3135    Swapped paraphrased: 1728/3135    Swapped paraphrased: 1792/3135    Swapped paraphrased: 1856/3135    Swapped paraphrased: 1920/3135    Swapped paraphrased: 1984/3135    Swapped paraphrased: 2048/3135    Swapped paraphrased: 2112/3135    Swapped paraphrased: 2176/3135    Swapped paraphrased: 2240/3135    Swapped paraphrased: 2304/3135    Swapped paraphrased: 2368/3135    Swapped paraphrased: 2432/3135    Swapped paraphrased: 2496/3135    Swapped paraphrased: 2560/3135    Swapped paraphrased: 2624/3135    Swapped paraphrased: 2688/3135    Swapped paraphrased: 2752/3135    Swapped paraphrased: 2816/3135    Swapped paraphrased: 2880/3135    Swapped paraphrased: 2944/3135    Swapped paraphrased: 3008/3135    Swapped paraphrased: 3072/3135    Swapped paraphrased: 3135/3135    Swapped paraphrased: 3135/3135
+    Gap-fill paraphrased: 64/1430    Gap-fill paraphrased: 128/1430    Gap-fill paraphrased: 192/1430    Gap-fill paraphrased: 256/1430    Gap-fill paraphrased: 320/1430    Gap-fill paraphrased: 384/1430    Gap-fill paraphrased: 448/1430    Gap-fill paraphrased: 512/1430    Gap-fill paraphrased: 576/1430    Gap-fill paraphrased: 640/1430    Gap-fill paraphrased: 704/1430    Gap-fill paraphrased: 768/1430    Gap-fill paraphrased: 832/1430    Gap-fill paraphrased: 896/1430    Gap-fill paraphrased: 960/1430    Gap-fill paraphrased: 1024/1430    Gap-fill paraphrased: 1088/1430    Gap-fill paraphrased: 1152/1430    Gap-fill paraphrased: 1216/1430    Gap-fill paraphrased: 1280/1430    Gap-fill paraphrased: 1344/1430    Gap-fill paraphrased: 1408/1430    Gap-fill paraphrased: 1430/1430    Gap-fill paraphrased: 1430/1430
+
+  Balancing scenarios...
+    Scenario dist: {'failed': 1519, 'pending': 1518, 'mixed': 1561, 'healthy': 1585, 'debug_needed': 1517}
+
+============================================================
+  Phase 2: Augmenting multi-turn (200 → 1150)
+============================================================
+  Scenario swap: +400 → 600 total
+  Paraphrasing 550 multi-turn variants...
+    16/550    32/550    48/550    64/550    80/550    96/550    112/550    128/550    144/550    160/550    176/550    192/550    208/550    224/550    240/550    256/550    272/550    288/550    304/550    320/550    336/550    352/550    368/550    384/550    400/550    416/550    432/550    448/550    464/550    480/550    496/550    512/550    528/550    544/550    550/550    Paraphrased 550 multi-turn variants
+  Final: 1150 | difficulty: {'easy': 230, 'medium': 660, 'hard': 260}
+
+============================================================
+  Phase 3: Augmenting web retrieval (200 → 1150)
+============================================================
+  Scenario swap: +400 → 600 total
+  Paraphrasing 550 web variants...
+    32/550    64/550    96/550    128/550    160/550    192/550    224/550    256/550    288/550    320/550    352/550    384/550    416/550    448/550    480/550    512/550    544/550    550/550    Paraphrased 550 web variants
+  Final: 1150 | categories: {'third-party': 272, 'cloud': 192, 'containers': 144, 'ml-frameworks': 144, 'comparison': 48, 'monitoring': 96, 'security': 94, 'versioning': 80, 'advanced': 80}
+
+============================================================
+  Phase 4: Validation
+============================================================
+  Single-turn: 7700 cases, 0 invalid
+  Multi-turn:  1150 cases, 0 invalid
+  Web:         1150 cases, 0 invalid
+  Duplicate IDs: 0
+  Unique inputs: st=5113/7700, mt=779/1150, web=673/1150
+
+============================================================
+  Phase 5: Saving
+============================================================
+
+  TOTAL: 10000 cases
+
+  Single-turn by category:
+    account: 700
+    action: 700
+    bulk: 700
+    diagnose: 700
+    docs: 700
+    domain: 700
+    edge: 700
+    multi_step: 700
+    read: 700
+    safety: 700
+    submission: 700
+
+  Single-turn by scenario: {'failed': 1519, 'pending': 1518, 'mixed': 1561, 'healthy': 1585, 'debug_needed': 1517}
+
+  Saved: dataset_10k.json (7700 cases)
+  Saved: multi_turn_dataset_10k.json (1150 cases)
+  Saved: web_retrieval_dataset_10k.json (1150 cases)
+
+============================================================
+  DONE! 7700 + 1150 + 1150 = 10000
+============================================================

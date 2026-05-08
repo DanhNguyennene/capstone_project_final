@@ -1,0 +1,63 @@
+\section{Fine-Tuning Implementation}
+\label{sec:ft-implementation}
+
+This section details the concrete training configuration that realizes the fine-tuning design described in Section~\ref{sec:fine-tuning}.
+
+\subsection{Model Preparation}
+
+The base model (Qwen2.5-14B-Instruct, 48 transformer layers) is loaded in 4-bit NormalFloat (NF4) quantization with double quantization enabled, reducing GPU memory from approximately 28\,GB to under 10\,GB. Computation uses bfloat16 precision for numerical stability.
+
+A LoRA adapter with rank $r{=}64$ and scaling factor $\alpha{=}128$ is attached to the final 12 transformer layers (layers 36--47), targeting all linear projections: query, key, value, and output attention projections plus the MLP gate, up, and down projections. This yields approximately 180M trainable parameters---about 1.3\% of the full model.
+
+\subsection{Data Formatting}
+
+Each training sample is rendered through Qwen2.5's native chat template. The per-sample \texttt{tools} field is passed directly to the template engine so that tool definitions appear in the token stream exactly as they would at inference time. The tokenizer applies the chat template with \texttt{add\_generation\_prompt=False} to produce a complete input--output sequence.
+
+Loss masking ensures the model is trained only to generate assistant responses and tool calls. System prompts, user messages, and tool-response observations are masked from gradient computation. Sequences exceeding 6{,}144 tokens are truncated from the left, preserving the most recent tool interactions when early context overflows---this is preferable to right-truncation because the critical tool-calling patterns typically appear in the later turns of multi-tool traces.
+
+\subsection{Training Procedure}
+
+\begin{table}[H]
+    \centering
+    \caption{Fine-Tuning Hyperparameters}
+    \label{tab:ft-hyperparams}
+    \small
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Parameter} & \textbf{Value} \\
+        \hline
+        Base model & Qwen2.5-14B-Instruct \\
+        Quantization & NF4 + double quantization \\
+        LoRA rank / alpha & 64 / 128 \\
+        Target layers & 36--47 (of 48) \\
+        Target modules & q/k/v/o\_proj, gate/up/down\_proj \\
+        Trainable parameters & $\sim$180M (1.3\%) \\
+        \hline
+        Epochs & 3 \\
+        Effective batch size & 16 (micro-batch 1 $\times$ grad accum 16) \\
+        Max sequence length & 6{,}144 tokens \\
+        Learning rate & $1 \times 10^{-4}$ \\
+        LR schedule & Cosine with 3\% warmup \\
+        Optimizer & AdamW (8-bit state) \\
+        Truncation & Left \\
+        Gradient checkpointing & Enabled (non-reentrant) \\
+        \hline
+        Hardware & 1$\times$ NVIDIA A40 (46\,GB) \\
+        Training time & $\sim$17.5 hours \\
+        Peak VRAM & $\sim$43\,GB / 46\,GB \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Training uses the AdamW optimizer with 8-bit quantized state to reduce optimizer memory. Gradient checkpointing trades recomputation for memory savings, allowing the full 6{,}144-token sequences to fit within the 46\,GB A40 GPU at batch size 1. The cosine learning rate schedule with warmup avoids early instability from the relatively high learning rate.
+
+\subsection{Training Monitoring}
+
+Training progress is tracked via Weights \& Biases. Key metrics include training loss (cross-entropy on masked assistant tokens) and gradient norm. The loss curve is expected to show rapid initial descent as the model learns tool-call formatting, followed by slower convergence as it refines argument accuracy and handoff timing.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2em}\textit{Placeholder: Training loss curve from W\&B showing convergence over 3 epochs}\vspace{2em}}}
+    \caption{Fine-Tuning Training Loss Curve}
+    \label{fig:training-loss}
+\end{figure}

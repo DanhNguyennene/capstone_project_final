@@ -41,13 +41,13 @@
 \@writefile{toc}{\contentsline {section}{\numberline {1.2}Scope and Goals}{2}{section.1.2}\protected@file@percent }
 \newlabel{sec:scope-goals}{{1.2}{2}{Scope and Goals}{section.1.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2.1}Project Goals}{2}{subsection.1.2.1}\protected@file@percent }
-\abx@aux@cite{0}{yao2022react}
-\abx@aux@segm{0}{0}{yao2022react}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2.2}Project Scope}{3}{subsection.1.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.3}Challenges and Solutions}{3}{section.1.3}\protected@file@percent }
 \newlabel{sec:challenges}{{1.3}{3}{Challenges and Solutions}{section.1.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {1.4}Project Structure}{5}{section.1.4}\protected@file@percent }
-\newlabel{sec:thesis-structure}{{1.4}{5}{Project Structure}{section.1.4}{}}
+\abx@aux@cite{0}{yao2022react}
+\abx@aux@segm{0}{0}{yao2022react}
+\@writefile{toc}{\contentsline {section}{\numberline {1.4}Project Structure}{6}{section.1.4}\protected@file@percent }
+\newlabel{sec:thesis-structure}{{1.4}{6}{Project Structure}{section.1.4}{}}
 \abx@aux@cite{0}{yoo2003slurm}
 \abx@aux@segm{0}{0}{yoo2003slurm}
 \abx@aux@cite{0}{slurm2024docs}
@@ -101,6 +101,18 @@
 \@writefile{toc}{\contentsline {subsubsection}{Lexical vs.\ Semantic Retrieval}{12}{subsubsection*.12}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{Hybrid Retrieval and Reciprocal Rank Fusion}{12}{subsubsection*.13}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2.5}Limitations in Operational Settings}{12}{subsection.2.2.5}\protected@file@percent }
+\abx@aux@cite{0}{hu2022lora}
+\abx@aux@segm{0}{0}{hu2022lora}
+\abx@aux@cite{0}{dettmers2023qlora}
+\abx@aux@segm{0}{0}{dettmers2023qlora}
+\abx@aux@cite{0}{dettmers2023qlora}
+\abx@aux@segm{0}{0}{dettmers2023qlora}
+\abx@aux@cite{0}{dettmers2023qlora}
+\abx@aux@segm{0}{0}{dettmers2023qlora}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.6}Parameter-Efficient Fine-Tuning}{13}{subsection.2.2.6}\protected@file@percent }
+\newlabel{sec:peft-background}{{2.2.6}{13}{Parameter-Efficient Fine-Tuning}{subsection.2.2.6}{}}
+\abx@aux@cite{0}{hinton2015distilling}
+\abx@aux@segm{0}{0}{hinton2015distilling}
 \abx@aux@cite{0}{anthropic2024mcp}
 \abx@aux@segm{0}{0}{anthropic2024mcp}
 \abx@aux@cite{0}{mcpspec2024}
@@ -109,27 +121,29 @@
 \abx@aux@segm{0}{0}{hou2025mcp}
 \abx@aux@cite{0}{hou2025mcp}
 \abx@aux@segm{0}{0}{hou2025mcp}
-\@writefile{toc}{\contentsline {section}{\numberline {2.3}Model Context Protocol}{13}{section.2.3}\protected@file@percent }
-\newlabel{sec:mcp}{{2.3}{13}{Model Context Protocol}{section.2.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.1}Protocol Overview}{13}{subsection.2.3.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2.3}{\ignorespaces Model Context Protocol Architecture~\blx@tocontentsinit {0}\cite {hou2025mcp}}}{14}{figure.caption.14}\protected@file@percent }
-\newlabel{fig:mcp-architecture}{{2.3}{14}{Model Context Protocol Architecture~\cite {hou2025mcp}}{figure.caption.14}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.2}Core Components}{14}{subsection.2.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.3}Capabilities}{15}{subsection.2.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.4}Tool Definition and Invocation}{15}{subsection.2.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.5}Transport and Deployment}{15}{subsection.2.3.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.3}{\ignorespaces Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\blx@tocontentsinit {0}\cite {dettmers2023qlora}}}{14}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:qlora}{{2.3}{14}{Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\cite {dettmers2023qlora}}{figure.caption.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Model Context Protocol}{14}{section.2.3}\protected@file@percent }
+\newlabel{sec:mcp}{{2.3}{14}{Model Context Protocol}{section.2.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.1}Protocol Overview}{14}{subsection.2.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.4}{\ignorespaces Model Context Protocol Architecture~\blx@tocontentsinit {0}\cite {hou2025mcp}}}{15}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:mcp-architecture}{{2.4}{15}{Model Context Protocol Architecture~\cite {hou2025mcp}}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.2}Core Components}{15}{subsection.2.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.3}Capabilities}{16}{subsection.2.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.4}Tool Definition and Invocation}{16}{subsection.2.3.4}\protected@file@percent }
 \abx@aux@cite{0}{yao2022react}
 \abx@aux@segm{0}{0}{yao2022react}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.6}Security Considerations}{16}{subsection.2.3.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2.4}Agent Architectures and Frameworks}{16}{section.2.4}\protected@file@percent }
-\newlabel{sec:agent-architectures}{{2.4}{16}{Agent Architectures and Frameworks}{section.2.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.1}ReAct: Reasoning and Acting}{16}{subsection.2.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{The Think-Act-Observe Loop}{16}{subsubsection*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.5}Transport and Deployment}{17}{subsection.2.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.6}Security Considerations}{17}{subsection.2.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Agent Architectures and Frameworks}{17}{section.2.4}\protected@file@percent }
+\newlabel{sec:agent-architectures}{{2.4}{17}{Agent Architectures and Frameworks}{section.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.1}ReAct: Reasoning and Acting}{17}{subsection.2.4.1}\protected@file@percent }
 \abx@aux@cite{0}{openaiagentssdk2024}
 \abx@aux@segm{0}{0}{openaiagentssdk2024}
-\@writefile{lof}{\contentsline {figure}{\numberline {2.4}{\ignorespaces The ReAct Think-Act-Observe Loop}}{17}{figure.caption.16}\protected@file@percent }
-\newlabel{fig:react-loop}{{2.4}{17}{The ReAct Think-Act-Observe Loop}{figure.caption.16}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.2}OpenAI Agents SDK}{17}{subsection.2.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{The Think-Act-Observe Loop}{18}{subsubsection*.16}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.5}{\ignorespaces The ReAct Think-Act-Observe Loop}}{18}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:react-loop}{{2.5}{18}{The ReAct Think-Act-Observe Loop}{figure.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.2}OpenAI Agents SDK}{18}{subsection.2.4.2}\protected@file@percent }
 \abx@aux@cite{0}{yoo2003slurm}
 \abx@aux@segm{0}{0}{yoo2003slurm}
 \abx@aux@cite{0}{slurm2024docs}
@@ -166,17 +180,17 @@
 \abx@aux@segm{0}{0}{anthropic2024mcp}
 \abx@aux@cite{0}{mcpspec2024}
 \abx@aux@segm{0}{0}{mcpspec2024}
-\@writefile{toc}{\contentsline {chapter}{\numberline {3}Related Tools and Works}{19}{chapter.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}Related Tools and Works}{20}{chapter.3}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chapter:related}{{3}{19}{Related Tools and Works}{chapter.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.1}Related Works}{19}{section.3.1}\protected@file@percent }
-\newlabel{sec:related-works-compact}{{3.1}{19}{Related Works}{section.3.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}HPC Management Interfaces}{19}{subsection.3.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.2}LLM-Based HPC Systems}{19}{subsection.3.1.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{19}{table.caption.17}\protected@file@percent }
-\newlabel{tab:llm-hpc-comparison}{{3.1}{19}{Comparison of LLM-Based HPC Systems}{table.caption.17}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.3}LLM Agents and Tool-Augmented Reasoning}{19}{subsection.3.1.3}\protected@file@percent }
+\newlabel{chapter:related}{{3}{20}{Related Tools and Works}{chapter.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Related Works}{20}{section.3.1}\protected@file@percent }
+\newlabel{sec:related-works-compact}{{3.1}{20}{Related Works}{section.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}HPC Management Interfaces}{20}{subsection.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.2}LLM-Based HPC Systems}{20}{subsection.3.1.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{20}{table.caption.18}\protected@file@percent }
+\newlabel{tab:llm-hpc-comparison}{{3.1}{20}{Comparison of LLM-Based HPC Systems}{table.caption.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.3}LLM Agents and Tool-Augmented Reasoning}{20}{subsection.3.1.3}\protected@file@percent }
 \abx@aux@cite{0}{zhong2017seq2sql}
 \abx@aux@segm{0}{0}{zhong2017seq2sql}
 \abx@aux@cite{0}{yu2018spider}
@@ -189,187 +203,218 @@
 \abx@aux@segm{0}{0}{ouyang2022training}
 \abx@aux@cite{0}{zheng2023judging}
 \abx@aux@segm{0}{0}{zheng2023judging}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.4}Protocol-Based Tool Integration}{20}{subsection.3.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.5}Natural Language to Structured Operations}{20}{subsection.3.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.6}Safety and Evaluation}{20}{subsection.3.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {4}Proposed Approaches}{21}{chapter.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.4}Protocol-Based Tool Integration}{21}{subsection.3.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.5}Natural Language to Structured Operations}{21}{subsection.3.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.6}Safety and Evaluation}{21}{subsection.3.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Proposed Approaches}{22}{chapter.4}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {4.1}Proposed Slurm Agent Overview}{21}{section.4.1}\protected@file@percent }
-\newlabel{sec:app-introduction}{{4.1}{21}{Proposed Slurm Agent Overview}{section.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}System Objective}{21}{subsection.4.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Core Agent Capabilities}{21}{subsection.4.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.3}Operational Flow}{22}{subsection.4.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Proposed Slurm Agent Overview}{22}{section.4.1}\protected@file@percent }
+\newlabel{sec:app-introduction}{{4.1}{22}{Proposed Slurm Agent Overview}{section.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}System Objective}{22}{subsection.4.1.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4.2}Requirements Overview}{22}{section.4.2}\protected@file@percent }
 \newlabel{sec:requirements}{{4.2}{22}{Requirements Overview}{section.4.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}Functional Requirements}{23}{subsection.4.2.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.18}\protected@file@percent }
-\newlabel{tab:functional-requirements}{{4.1}{23}{Functional Requirements}{table.caption.18}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.19}\protected@file@percent }
+\newlabel{tab:functional-requirements}{{4.1}{23}{Functional Requirements}{table.caption.19}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Non-Functional Requirements}{24}{subsection.4.2.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.19}\protected@file@percent }
-\newlabel{tab:nonfunctional-requirements}{{4.2}{24}{Non-Functional Requirements}{table.caption.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.20}\protected@file@percent }
+\newlabel{tab:nonfunctional-requirements}{{4.2}{24}{Non-Functional Requirements}{table.caption.20}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}Requirements Traceability}{24}{subsection.4.2.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.20}\protected@file@percent }
-\newlabel{tab:requirements-traceability}{{4.3}{25}{Requirements Traceability to Project Goals}{table.caption.20}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.21}\protected@file@percent }
+\newlabel{tab:requirements-traceability}{{4.3}{25}{Requirements Traceability to Project Goals}{table.caption.21}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2.4}Constraints}{25}{subsection.4.2.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4.3}System Architecture}{25}{section.4.3}\protected@file@percent }
 \newlabel{sec:architecture}{{4.3}{25}{System Architecture}{section.4.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3.1}Architecture Overview}{25}{subsection.4.3.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent System Architecture}}{26}{figure.caption.21}\protected@file@percent }
-\newlabel{fig:system-architecture}{{4.1}{26}{Slurm Agent System Architecture}{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent System Architecture}}{26}{figure.caption.22}\protected@file@percent }
+\newlabel{fig:system-architecture}{{4.1}{26}{Slurm Agent System Architecture}{figure.caption.22}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3.2}Design Rationale}{26}{subsection.4.3.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3.3}Component Descriptions}{27}{subsection.4.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Interface Layer}{27}{subsubsection*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Agent Layer}{27}{subsubsection*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Protocol Layer}{28}{subsubsection*.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Evaluation Layer}{28}{subsubsection*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Interface Layer}{27}{subsubsection*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Agent Layer}{27}{subsubsection*.24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Observer/Operator Routing and Confirmation Flow}}{28}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:observer-operator-flow}{{4.2}{28}{Observer/Operator Routing and Confirmation Flow}{figure.caption.25}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Protocol Layer}{28}{subsubsection*.26}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{Infrastructure Layer}{28}{subsubsection*.27}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3.4}Communication Patterns}{28}{subsection.4.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3.5}Data Flow}{28}{subsection.4.3.5}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Observer/Operator Routing and Confirmation Flow}}{29}{figure.caption.24}\protected@file@percent }
-\newlabel{fig:observer-operator-flow}{{4.2}{29}{Observer/Operator Routing and Confirmation Flow}{figure.caption.24}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Request Lifecycle Data Flow}}{30}{figure.caption.28}\protected@file@percent }
-\newlabel{fig:data-flow}{{4.3}{30}{Request Lifecycle Data Flow}{figure.caption.28}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.6}Deployment Architecture}{30}{subsection.4.3.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}Module Specifications}{30}{section.4.4}\protected@file@percent }
-\newlabel{sec:module-specifications}{{4.4}{30}{Module Specifications}{section.4.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.1}Observer Module}{30}{subsection.4.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.2}Operator Module}{30}{subsection.4.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.3}MCP Tool Layer}{31}{subsection.4.4.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{31}{table.caption.29}\protected@file@percent }
-\newlabel{tab:mcp-tool-groups}{{4.4}{31}{MCP Tool Groups}{table.caption.29}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.4}Documentation Retrieval}{31}{subsection.4.4.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Request Lifecycle Data Flow}}{29}{figure.caption.28}\protected@file@percent }
+\newlabel{fig:data-flow}{{4.3}{29}{Request Lifecycle Data Flow}{figure.caption.28}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.6}Deployment Architecture}{29}{subsection.4.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Module Specifications}{29}{section.4.4}\protected@file@percent }
+\newlabel{sec:module-specifications}{{4.4}{29}{Module Specifications}{section.4.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.1}Observer Module}{29}{subsection.4.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.2}Operator Module}{29}{subsection.4.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.3}MCP Tool Layer}{30}{subsection.4.4.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{30}{table.caption.29}\protected@file@percent }
+\newlabel{tab:mcp-tool-groups}{{4.4}{30}{MCP Tool Groups}{table.caption.29}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.4}Documentation Retrieval}{30}{subsection.4.4.4}\protected@file@percent }
 \abx@aux@cite{0}{yao2022react}
 \abx@aux@segm{0}{0}{yao2022react}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.5}Evaluation Pipeline}{32}{subsection.4.4.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.5}Large Language Model Architecture}{32}{section.4.5}\protected@file@percent }
-\newlabel{sec:llm-architecture}{{4.5}{32}{Large Language Model Architecture}{section.4.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.1}ReAct Reasoning Loop}{32}{subsection.4.5.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces ReAct Reasoning Cycle}}{32}{figure.caption.30}\protected@file@percent }
-\newlabel{fig:react-cycle}{{4.4}{32}{ReAct Reasoning Cycle}{figure.caption.30}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Multi-Provider Model Configuration}{32}{subsection.4.5.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Supported LLM Providers}}{32}{table.caption.31}\protected@file@percent }
-\newlabel{tab:llm-providers}{{4.5}{32}{Supported LLM Providers}{table.caption.31}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.3}Instruction Design}{33}{subsection.4.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.4}Tool Calling Integration}{33}{subsection.4.5.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.5}Context Management}{33}{subsection.4.5.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.6}Streaming Events}{33}{subsection.4.5.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {5}Implementation}{34}{chapter.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.5}Evaluation Pipeline}{31}{subsection.4.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Large Language Model Architecture}{31}{section.4.5}\protected@file@percent }
+\newlabel{sec:llm-architecture}{{4.5}{31}{Large Language Model Architecture}{section.4.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.1}ReAct Reasoning Loop}{31}{subsection.4.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces ReAct Reasoning Cycle}}{31}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:react-cycle}{{4.4}{31}{ReAct Reasoning Cycle}{figure.caption.30}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Instruction Design}{31}{subsection.4.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.3}Domain-Adapted Fine-Tuning}{32}{subsection.4.5.3}\protected@file@percent }
+\newlabel{sec:fine-tuning}{{4.5.3}{32}{Domain-Adapted Fine-Tuning}{subsection.4.5.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{MCP Mock Environment for Data Collection}{32}{subsubsection*.31}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces MCP Mock Environment for Training Data Collection}}{32}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:mcp-mock-data-collection}{{4.5}{32}{MCP Mock Environment for Training Data Collection}{figure.caption.32}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Distillation from GPT-5 Mini}{32}{subsubsection*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Data Augmentation}{33}{subsubsection*.34}\protected@file@percent }
+\abx@aux@cite{0}{dettmers2023qlora}
+\abx@aux@segm{0}{0}{dettmers2023qlora}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Training Data Augmentation Pipeline}}{34}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:data-augmentation-pipeline}{{4.6}{34}{Training Data Augmentation Pipeline}{figure.caption.35}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Training Configuration}{34}{subsubsection*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Implementation}{35}{chapter.5}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {5.1}Agent Backend Implementation}{34}{section.5.1}\protected@file@percent }
-\newlabel{sec:agent-backend}{{5.1}{34}{Agent Backend Implementation}{section.5.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.1}Technology Stack}{34}{subsection.5.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.2}Agent Topology}{34}{subsection.5.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Agent Backend Implementation}{35}{section.5.1}\protected@file@percent }
+\newlabel{sec:agent-backend}{{5.1}{35}{Agent Backend Implementation}{section.5.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.1}Technology Stack}{35}{subsection.5.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.2}Agent Topology}{35}{subsection.5.1.2}\protected@file@percent }
+\newlabel{lst:observer-agent}{{5.1}{35}{Observer agent construction}{lstlisting.5.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.1}{\ignorespaces Observer agent construction}}{35}{lstlisting.5.1}\protected@file@percent }
+\newlabel{lst:operator-agent}{{5.2}{35}{Operator agent construction}{lstlisting.5.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.2}{\ignorespaces Operator agent construction}}{35}{lstlisting.5.2}\protected@file@percent }
 \abx@aux@cite{0}{reimers2019sentence}
 \abx@aux@segm{0}{0}{reimers2019sentence}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.3}Safety and Confirmation Pipeline}{36}{subsection.5.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.4}Hybrid RAG Documentation Retrieval}{36}{subsection.5.1.4}\protected@file@percent }
+\newlabel{sec:impl-rag}{{5.1.4}{36}{Hybrid RAG Documentation Retrieval}{subsection.5.1.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Corpus Preparation}{36}{subsubsection*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Chunking Strategy}{36}{subsubsection*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Dual Retrieval}{36}{subsubsection*.39}\protected@file@percent }
 \abx@aux@cite{0}{cormack2009reciprocal}
 \abx@aux@segm{0}{0}{cormack2009reciprocal}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.3}Safety and Confirmation Pipeline}{35}{subsection.5.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.4}Hybrid RAG Documentation Retrieval}{35}{subsection.5.1.4}\protected@file@percent }
-\newlabel{sec:impl-rag}{{5.1.4}{35}{Hybrid RAG Documentation Retrieval}{subsection.5.1.4}{}}
-\@writefile{toc}{\contentsline {subsubsection}{Corpus Preparation}{35}{subsubsection*.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Chunking Strategy}{35}{subsubsection*.33}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Dual Retrieval}{35}{subsubsection*.34}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Reciprocal Rank Fusion}{35}{subsubsection*.35}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Pre-computed Embeddings}{36}{subsubsection*.36}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Design Rationale}{36}{subsubsection*.37}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.5}Streaming Protocol}{36}{subsection.5.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.6}Session Management}{36}{subsection.5.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5.2}MCP Server Implementation}{36}{section.5.2}\protected@file@percent }
-\newlabel{sec:mcp-implementation}{{5.2}{36}{MCP Server Implementation}{section.5.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}Design Principles}{36}{subsection.5.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.2}Tool Surface}{37}{subsection.5.2.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{37}{table.caption.38}\protected@file@percent }
-\newlabel{tab:mcp-tools}{{5.1}{37}{MCP Server Tool Reference}{table.caption.38}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.3}Dual Execution Modes}{37}{subsection.5.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.4}Web Search}{37}{subsection.5.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.5}Transport}{37}{subsection.5.2.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5.3}Runtime Interface and Evaluation Integration}{38}{section.5.3}\protected@file@percent }
-\newlabel{sec:runtime-interface}{{5.3}{38}{Runtime Interface and Evaluation Integration}{section.5.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.1}Interface Role in the System}{38}{subsection.5.3.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Slurm Agent Chat Interface}}{38}{figure.caption.39}\protected@file@percent }
-\newlabel{fig:frontend-ui}{{5.1}{38}{Slurm Agent Chat Interface}{figure.caption.39}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.2}Agent Service API}{38}{subsection.5.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.3}Evaluation Integration}{39}{subsection.5.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.4}Deployment Scripts}{39}{subsection.5.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}Experiments}{40}{chapter.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Reciprocal Rank Fusion}{37}{subsubsection*.40}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Pre-computed Embeddings}{37}{subsubsection*.41}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Design Rationale}{37}{subsubsection*.42}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.5}Runtime Services}{37}{subsection.5.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.6}Fine-Tuned Model Serving}{37}{subsection.5.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}MCP Server Implementation}{38}{section.5.2}\protected@file@percent }
+\newlabel{sec:mcp-implementation}{{5.2}{38}{MCP Server Implementation}{section.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}Design Principles}{38}{subsection.5.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.2}Tool Surface}{38}{subsection.5.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{39}{table.caption.43}\protected@file@percent }
+\newlabel{tab:mcp-tools}{{5.1}{39}{MCP Server Tool Reference}{table.caption.43}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.3}Dual Execution Modes}{39}{subsection.5.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.4}Web Search}{39}{subsection.5.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.5}Transport}{39}{subsection.5.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Runtime Interface and Evaluation Integration}{40}{section.5.3}\protected@file@percent }
+\newlabel{sec:runtime-interface}{{5.3}{40}{Runtime Interface and Evaluation Integration}{section.5.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.1}Interface Role in the System}{40}{subsection.5.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Slurm Agent Chat Interface}}{40}{figure.caption.44}\protected@file@percent }
+\newlabel{fig:frontend-ui}{{5.1}{40}{Slurm Agent Chat Interface}{figure.caption.44}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.2}Agent Service API}{40}{subsection.5.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.3}Evaluation Integration}{41}{subsection.5.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.4}Deployment Scripts}{41}{subsection.5.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Fine-Tuning Implementation}{41}{section.5.4}\protected@file@percent }
+\newlabel{sec:ft-implementation}{{5.4}{41}{Fine-Tuning Implementation}{section.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.1}Model Preparation}{41}{subsection.5.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.2}Data Formatting}{42}{subsection.5.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.3}Training Procedure}{42}{subsection.5.4.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces Fine-Tuning Hyperparameters}}{42}{table.caption.45}\protected@file@percent }
+\newlabel{tab:ft-hyperparams}{{5.2}{42}{Fine-Tuning Hyperparameters}{table.caption.45}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.4}Training Monitoring}{43}{subsection.5.4.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces Fine-Tuning Training Loss Curve}}{43}{figure.caption.46}\protected@file@percent }
+\newlabel{fig:training-loss}{{5.2}{43}{Fine-Tuning Training Loss Curve}{figure.caption.46}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Experiments}{44}{chapter.6}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {6.1}Testing Approach}{40}{section.6.1}\protected@file@percent }
-\newlabel{sec:testing-approach}{{6.1}{40}{Testing Approach}{section.6.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.1}Testing Environment}{40}{subsection.6.1.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{40}{table.caption.40}\protected@file@percent }
-\newlabel{tab:test-specs}{{6.1}{40}{Test Environment Specifications}{table.caption.40}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.2}Benchmark Dataset}{40}{subsection.6.1.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{41}{table.caption.41}\protected@file@percent }
-\newlabel{tab:dataset-distribution}{{6.2}{41}{Benchmark Categories}{table.caption.41}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{41}{figure.caption.42}\protected@file@percent }
-\newlabel{fig:dataset-distribution-category}{{6.1}{41}{Dataset Distribution by Category (3,135 total cases)}{figure.caption.42}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{42}{figure.caption.43}\protected@file@percent }
-\newlabel{fig:dataset-distribution-scenario}{{6.2}{42}{Dataset Distribution by Scenario}{figure.caption.43}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{42}{figure.caption.44}\protected@file@percent }
-\newlabel{fig:dataset-distribution-heatmap}{{6.3}{42}{Category $\times $ Scenario Heatmap}{figure.caption.44}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces Tool Distribution After Normalization}}{43}{figure.caption.45}\protected@file@percent }
-\newlabel{fig:tool-normalization}{{6.4}{43}{Tool Distribution After Normalization}{figure.caption.45}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.3}Scoring Methodology}{43}{subsection.6.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.4}Execution Flow}{44}{subsection.6.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.5}Source Code}{44}{subsection.6.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.2}Experimental Results}{44}{section.6.2}\protected@file@percent }
-\newlabel{sec:results}{{6.2}{44}{Experimental Results}{section.6.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Benchmark Construction Outcome}{44}{subsection.6.2.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{44}{table.caption.46}\protected@file@percent }
-\newlabel{tab:constructed-benchmark-summary}{{6.3}{44}{Constructed Benchmark Summary}{table.caption.46}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Dataset Construction Outcome}{45}{subsection.6.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}Evaluation Evidence and Splits}{45}{subsection.6.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.4}Comparison with Manual CLI Workflow}{45}{subsection.6.2.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{45}{table.caption.47}\protected@file@percent }
-\newlabel{tab:agent-vs-cli}{{6.4}{45}{Task Complexity: Agent vs Manual CLI}{table.caption.47}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.5}Quantitative Performance Results}{45}{subsection.6.2.5}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {6.5}{\ignorespaces Aggregate Scoring Dimensions (Radar Chart)}}{46}{figure.caption.48}\protected@file@percent }
-\newlabel{fig:metrics-radar}{{6.5}{46}{Aggregate Scoring Dimensions (Radar Chart)}{figure.caption.48}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Aggregate Evaluation Metrics (3,135 Cases)}}{46}{table.caption.49}\protected@file@percent }
-\newlabel{tab:aggregate-metrics}{{6.5}{46}{Aggregate Evaluation Metrics (3,135 Cases)}{table.caption.49}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.6}{\ignorespaces Pass Rate and Average Score by Category}}{47}{figure.caption.50}\protected@file@percent }
-\newlabel{fig:pass-rate-by-category}{{6.6}{47}{Pass Rate and Average Score by Category}{figure.caption.50}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.7}{\ignorespaces Scoring Dimensions by Category (Heatmap)}}{47}{figure.caption.51}\protected@file@percent }
-\newlabel{fig:dimension-heatmap}{{6.7}{47}{Scoring Dimensions by Category (Heatmap)}{figure.caption.51}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.8}{\ignorespaces Distribution of Overall Scores}}{48}{figure.caption.52}\protected@file@percent }
-\newlabel{fig:score-distribution}{{6.8}{48}{Distribution of Overall Scores}{figure.caption.52}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.9}{\ignorespaces Safety Category: HITL Compliance}}{48}{figure.caption.53}\protected@file@percent }
-\newlabel{fig:safety-hitl}{{6.9}{48}{Safety Category: HITL Compliance}{figure.caption.53}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.10}{\ignorespaces Response Latency by Category}}{49}{figure.caption.54}\protected@file@percent }
-\newlabel{fig:latency-by-category}{{6.10}{49}{Response Latency by Category}{figure.caption.54}{}}
-\@writefile{toc}{\contentsline {subsubsection}{LLM-as-Judge Analysis}{49}{subsubsection*.55}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.6}Model Configuration}{49}{subsection.6.2.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Evaluation Model Stack}}{49}{table.caption.56}\protected@file@percent }
-\newlabel{tab:eval-model-stack}{{6.6}{49}{Evaluation Model Stack}{table.caption.56}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.7}Result Interpretation}{49}{subsection.6.2.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{51}{chapter.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Testing Approach}{44}{section.6.1}\protected@file@percent }
+\newlabel{sec:testing-approach}{{6.1}{44}{Testing Approach}{section.6.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.1}Testing Environment}{44}{subsection.6.1.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{44}{table.caption.47}\protected@file@percent }
+\newlabel{tab:test-specs}{{6.1}{44}{Test Environment Specifications}{table.caption.47}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.2}Benchmark Dataset}{44}{subsection.6.1.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{45}{table.caption.48}\protected@file@percent }
+\newlabel{tab:dataset-distribution}{{6.2}{45}{Benchmark Categories}{table.caption.48}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{45}{figure.caption.49}\protected@file@percent }
+\newlabel{fig:dataset-distribution-category}{{6.1}{45}{Dataset Distribution by Category (3,135 total cases)}{figure.caption.49}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{46}{figure.caption.50}\protected@file@percent }
+\newlabel{fig:dataset-distribution-scenario}{{6.2}{46}{Dataset Distribution by Scenario}{figure.caption.50}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{46}{figure.caption.51}\protected@file@percent }
+\newlabel{fig:dataset-distribution-heatmap}{{6.3}{46}{Category $\times $ Scenario Heatmap}{figure.caption.51}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.3}Scoring Methodology}{46}{subsection.6.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.4}Execution Flow}{47}{subsection.6.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.5}Source Code}{47}{subsection.6.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Experimental Results}{47}{section.6.2}\protected@file@percent }
+\newlabel{sec:results}{{6.2}{47}{Experimental Results}{section.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Benchmark Construction Outcome}{47}{subsection.6.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{48}{table.caption.52}\protected@file@percent }
+\newlabel{tab:constructed-benchmark-summary}{{6.3}{48}{Constructed Benchmark Summary}{table.caption.52}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Dataset Construction Outcome}{48}{subsection.6.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}Training Data Construction and Validation}{48}{subsection.6.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Data Pipeline Output}{48}{subsubsection*.53}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Training Data Summary}}{48}{table.caption.54}\protected@file@percent }
+\newlabel{tab:training-data-summary}{{6.4}{48}{Training Data Summary}{table.caption.54}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Role-Scoped Integrity Validation}{49}{subsubsection*.55}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Training Execution}{49}{subsubsection*.56}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Training Run Configuration}}{50}{table.caption.57}\protected@file@percent }
+\newlabel{tab:training-run-config}{{6.5}{50}{Training Run Configuration}{table.caption.57}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.4}Comparison with Manual CLI Workflow}{50}{subsection.6.2.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{50}{table.caption.58}\protected@file@percent }
+\newlabel{tab:agent-vs-cli}{{6.6}{50}{Task Complexity: Agent vs Manual CLI}{table.caption.58}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.5}Quantitative Performance Results}{50}{subsection.6.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}}{50}{table.caption.59}\protected@file@percent }
+\newlabel{tab:aggregate-metrics}{{6.7}{50}{Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}{table.caption.59}{}}
+\abx@aux@cite{0}{dettmers2023qlora}
+\abx@aux@segm{0}{0}{dettmers2023qlora}
+\@writefile{toc}{\contentsline {subsubsection}{LLM-as-Judge Analysis}{51}{subsubsection*.60}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.6}Model Configuration}{51}{subsection.6.2.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Evaluation Model Stack}}{51}{table.caption.61}\protected@file@percent }
+\newlabel{tab:eval-model-stack}{{6.8}{51}{Evaluation Model Stack}{table.caption.61}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.7}Fine-Tuned Model vs Baseline Comparison}{51}{subsection.6.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Evaluation Protocol}{51}{subsubsection*.62}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Hypotheses}{52}{subsubsection*.63}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Comparative Results}{52}{subsubsection*.64}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Fine-Tuned Model vs GPT-5-mini Baseline (3,135 Cases)}}{52}{table.caption.65}\protected@file@percent }
+\newlabel{tab:ft-vs-baseline}{{6.9}{52}{Fine-Tuned Model vs GPT-5-mini Baseline (3,135 Cases)}{table.caption.65}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Cost and Deployment Analysis}{52}{subsubsection*.66}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Deployment Cost Comparison}}{53}{table.caption.67}\protected@file@percent }
+\newlabel{tab:deployment-cost}{{6.10}{53}{Deployment Cost Comparison}{table.caption.67}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.8}Result Interpretation}{53}{subsection.6.2.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{State-Match Scoring Artifact}{53}{subsubsection*.68}\protected@file@percent }
+\newlabel{sec:state-match-artifact}{{6.2.8}{53}{State-Match Scoring Artifact}{subsubsection*.68}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{55}{chapter.7}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {7.1}Summary}{51}{section.7.1}\protected@file@percent }
-\newlabel{sec:summary}{{7.1}{51}{Summary}{section.7.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{51}{subsection.7.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{51}{subsection.7.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.3}Benchmark Artifact Outcomes}{52}{subsection.7.1.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{52}{table.caption.57}\protected@file@percent }
-\newlabel{tab:summary-highlights}{{7.1}{52}{Benchmark Artifact Highlights}{table.caption.57}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.4}Main Findings}{52}{subsection.7.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{53}{subsection.7.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.6}Additional Evaluation Directions}{53}{subsection.7.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7.2}Limitations}{53}{section.7.2}\protected@file@percent }
-\newlabel{sec:limitations}{{7.2}{53}{Limitations}{section.7.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{53}{subsection.7.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{54}{subsection.7.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{54}{subsection.7.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{54}{subsection.7.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{54}{subsection.7.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}Summary}{55}{section.7.1}\protected@file@percent }
+\newlabel{sec:summary}{{7.1}{55}{Summary}{section.7.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{55}{subsection.7.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{56}{subsection.7.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.3}Benchmark Artifact Outcomes}{56}{subsection.7.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{56}{table.caption.69}\protected@file@percent }
+\newlabel{tab:summary-highlights}{{7.1}{56}{Benchmark Artifact Highlights}{table.caption.69}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.4}Main Findings}{56}{subsection.7.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{57}{subsection.7.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.2}Limitations}{57}{section.7.2}\protected@file@percent }
+\newlabel{sec:limitations}{{7.2}{57}{Limitations}{section.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{57}{subsection.7.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{57}{subsection.7.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{58}{subsection.7.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{58}{subsection.7.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{58}{subsection.7.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{58}{subsection.7.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.7}Limitation Mitigation Plan}{59}{subsection.7.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.3}Future Work}{59}{section.7.3}\protected@file@percent }
+\newlabel{sec:future-work}{{7.3}{59}{Future Work}{section.7.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.1}Priority 1: Reliability Hardening}{59}{subsection.7.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.2}Priority 2: Real Cluster Validation}{59}{subsection.7.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.3}Priority 3: Security and Governance Readiness}{60}{subsection.7.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.4}Priority 4: Multi-Turn Behavioral Evaluation}{60}{subsection.7.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.5}Priority 5: Web-Grounded Retrieval Reproducibility}{60}{subsection.7.3.5}\protected@file@percent }
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{55}{subsection.7.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2.7}Limitation Mitigation Plan}{55}{subsection.7.2.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{References}{55}{subsection.7.2.7}\protected@file@percent }
-\abx@aux@read@bbl@mdfivesum{9F76B615209642DC4927696EF4DC6057}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.6}Priority 6: Open-Weight Model Parity}{61}{subsection.7.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.7}Summary Roadmap}{61}{subsection.7.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{References}{61}{subsection.7.3.7}\protected@file@percent }
+\abx@aux@read@bbl@mdfivesum{DCD1B91928E746D31EF258580D677F1D}
 \abx@aux@defaultrefcontext{0}{abhishek2022dynamic}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{langchainparsl2025}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{anthropic2024mcp}{nty/global//global/global/global}
@@ -378,11 +423,14 @@
 \abx@aux@defaultrefcontext{0}{brown2020language}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{cheng2024llmagents}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{cormack2009reciprocal}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{dettmers2023qlora}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{doosthosseini2024chatai}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{feitelson2014experience}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{fujitsu2025acb}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{grafana2024}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{hinton2015distilling}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{hou2025mcp}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{hu2022lora}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{hudak2018openondemand}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{jupyterhub2024}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{lewis2020retrieval}{nty/global//global/global/global}
@@ -394,7 +442,9 @@
 \abx@aux@defaultrefcontext{0}{openaiagentssdk2024}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{ouyang2022training}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{palmer2015openxdmod}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{patil2023gorilla}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{prometheus2024}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{qin2023toolllm}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{fastapi2024}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{reimers2019sentence}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{sabin2020hpc}{nty/global//global/global/global}
@@ -414,9 +464,10 @@
 \abx@aux@defaultrefcontext{0}{yao2022react}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{yoo2003slurm}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{yu2018spider}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{zeng2023agenttuning}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{zheng2023judging}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{zhong2017seq2sql}{nty/global//global/global/global}
-\newlabel{LastPage}{{7.2.7}{58}{Limitation Mitigation Plan}{page.58}{}}
-\gdef\lastpage@lastpage{58}
-\gdef\lastpage@lastpageHy{58}
-\gdef \@abspage@last{71}
+\newlabel{LastPage}{{7.3.7}{65}{Summary Roadmap}{page.65}{}}
+\gdef\lastpage@lastpage{65}
+\gdef\lastpage@lastpageHy{65}
+\gdef \@abspage@last{78}

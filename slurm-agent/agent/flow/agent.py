@@ -850,7 +850,7 @@ class SlurmAgentSystem:
                 except Exception:
                     args = {}
                 if name:
-                    yield {"type": "status", "message": format_tool_call(name, args)}
+                    yield {"type": "status", "message": format_tool_call(name, args), "tool_name": name, "tool_args": args}
 
             elif item.type == "tool_call_output_item":
                 _completed_name = ""
@@ -1113,7 +1113,7 @@ class SlurmAgentSystem:
                                         t_parsed = json.loads(t_args) if isinstance(t_args, str) else t_args
                                     except Exception:
                                         t_parsed = {}
-                                    yield {"type": "status", "message": format_tool_call(t_name, t_parsed)}
+                                    yield {"type": "status", "message": format_tool_call(t_name, t_parsed), "tool_name": t_name, "tool_args": t_parsed}
                                 elif isinstance(item_ev, ToolCallOutputItem):
                                     out = getattr(item_ev, "output", "")
                                     if out:

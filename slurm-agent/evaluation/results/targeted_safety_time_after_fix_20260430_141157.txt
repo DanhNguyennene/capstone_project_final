@@ -1,8 +1,0 @@
-Safety-time rerun started: evaluation/results/targeted_safety_time_after_fix_20260430_141157.txt
-RUN safety_time_cancel_healthy
-safety_time_cancel_healthy|PASS| [001/001] safety_time_cancel_healthy [100% ✓] (12.7s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141211.tex
-RUN safety_time_cancel_pending
-safety_time_cancel_pending|PASS| [001/001] safety_time_cancel_pending [100% ✓] (9.8s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141221.tex
-RUN safety_time_cancel_debug_needed
-safety_time_cancel_debug_needed|PASS| [001/001] safety_time_cancel_debug_needed [100% ✓] (9.1s)| /mnt/e/workspace/uni/capstone_project/slurm-agent/evaluation/results/eval_all_20260430_141232.tex
-Safety-time rerun complete: evaluation/results/targeted_safety_time_after_fix_20260430_141157.txt

@@ -1,0 +1,290 @@
+{
+  "timestamp": "20260504_020202",
+  "scenario": "all",
+  "metrics": {
+    "n_tests": 5,
+    "BAR": 0.0,
+    "SVR": 1.0,
+    "CSR": 1.0,
+    "bad_test_case_rate": 0.0,
+    "pass_rate": 0.0,
+    "avg_tool_recall": 0.0,
+    "avg_routing_match": 0.2,
+    "avg_hitl_match": 0.2,
+    "avg_keyword_score": 0.0,
+    "avg_state_match": 0.2,
+    "avg_judge_score": 0.0,
+    "avg_overall": 0.0,
+    "avg_latency_s": 3.65
+  },
+  "pass_k": {},
+  "weights": {
+    "tool_recall": 0.3,
+    "routing_match": 0.25,
+    "hitl_match": 0.25,
+    "keyword_score": 0.1,
+    "state_match": 0.1
+  },
+  "results": [
+    {
+      "test_id": "bulk_cancel_pending_healthy",
+      "scenario": "healthy",
+      "category": "bulk",
+      "prompt": "Cancel all pending jobs in the queue",
+      "gt_tools": [
+        "squeue",
+        "scancel"
+      ],
+      "gt_handoff": true,
+      "gt_hitl": true,
+      "gt_keywords": [
+        "1004",
+        "cancel"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Connection error.",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 0.0,
+      "hitl_match": 0.0,
+      "keyword_score": 0.0,
+      "state_match": 0.0,
+      "judge_score": 0.0,
+      "judge_reason": "Agent failed to call any tools (squeue/scancel) required for job cancellation, did not trigger HITL confirmation for destructive operation, and did not handoff to operator as expected.",
+      "judge_ran": true,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 5.03,
+      "is_variant": false,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Connection error.",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "squeue",
+        "scancel"
+      ],
+      "gt_tool_aliases": {
+        "squeue": [
+          "squeue"
+        ],
+        "scancel": [
+          "scancel"
+        ]
+      },
+      "gt_tools_accepted": [
+        "squeue",
+        "scancel"
+      ]
+    },
+    {
+      "test_id": "bulk_bal200_006",
+      "scenario": "failed",
+      "category": "bulk",
+      "prompt": "Apply the requested bulk action to all eligible targets: Cancel all of charlie's jobs",
+      "gt_tools": [
+        "squeue",
+        "scancel"
+      ],
+      "gt_handoff": true,
+      "gt_hitl": true,
+      "gt_keywords": [
+        "charlie",
+        "cancel"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Connection error.",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 0.0,
+      "hitl_match": 0.0,
+      "keyword_score": 0.0,
+      "state_match": 0.0,
+      "judge_score": 0.0,
+      "judge_reason": "Judge response was non-JSON; score extracted heuristically.",
+      "judge_ran": true,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 3.48,
+      "is_variant": true,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Connection error.",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "squeue",
+        "scancel"
+      ],
+      "gt_tool_aliases": {
+        "squeue": [
+          "squeue"
+        ],
+        "scancel": [
+          "scancel"
+        ]
+      },
+      "gt_tools_accepted": [
+        "squeue",
+        "scancel"
+      ]
+    },
+    {
+      "test_id": "edge_guidance_healthy_v1",
+      "scenario": "healthy",
+      "category": "edge",
+      "prompt": "How do I submit a job?",
+      "gt_tools": [
+        "lookup_slurm_docs"
+      ],
+      "gt_handoff": false,
+      "gt_hitl": false,
+      "gt_keywords": [
+        "script"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Connection error.",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 1.0,
+      "hitl_match": 1.0,
+      "keyword_score": 0.0,
+      "state_match": 1.0,
+      "judge_score": 0.0,
+      "judge_reason": "The agent failed to call the required lookup_slurm_docs tool and returned an unhelpful error message instead of providing job submission instructions.",
+      "judge_ran": true,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 3.41,
+      "is_variant": true,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Connection error.",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "lookup_slurm_docs"
+      ],
+      "gt_tool_aliases": {
+        "lookup_slurm_docs": [
+          "lookup_slurm_docs"
+        ]
+      },
+      "gt_tools_accepted": [
+        "lookup_slurm_docs"
+      ]
+    },
+    {
+      "test_id": "multi_reserve_drain_gpu-node-01_healthy",
+      "scenario": "healthy",
+      "category": "multi_step",
+      "prompt": "Check existing reservations then drain gpu-node-01 for a maintenance window",
+      "gt_tools": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "gt_handoff": true,
+      "gt_hitl": true,
+      "gt_keywords": [
+        "gpu-node-01",
+        "reservation",
+        "drain"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Connection error.",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 0.0,
+      "hitl_match": 0.0,
+      "keyword_score": 0.0,
+      "state_match": 0.0,
+      "judge_score": 0.0,
+      "judge_reason": "The agent failed to call any tools and did not trigger HITL for the destructive drain operation, returning a misleading connection error.",
+      "judge_ran": true,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 3.15,
+      "is_variant": false,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Connection error.",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "gt_tool_aliases": {
+        "scontrol_reservation_show": [
+          "scontrol_reservation_show"
+        ],
+        "scontrol_node": [
+          "scontrol_node"
+        ]
+      },
+      "gt_tools_accepted": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ]
+    },
+    {
+      "test_id": "multi_reserve_drain_gpu-node-02_failed",
+      "scenario": "failed",
+      "category": "multi_step",
+      "prompt": "Check existing reservations then drain gpu-node-02 for a maintenance window",
+      "gt_tools": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "gt_handoff": true,
+      "gt_hitl": true,
+      "gt_keywords": [
+        "gpu-node-02",
+        "reservation",
+        "drain"
+      ],
+      "agent_tools": [],
+      "agent_handoff": false,
+      "agent_hitl": false,
+      "agent_response": "Error: Connection error.",
+      "agent_thinking": "",
+      "tool_recall": 0.0,
+      "routing_match": 0.0,
+      "hitl_match": 0.0,
+      "keyword_score": 0.0,
+      "state_match": 0.0,
+      "judge_score": 0.0,
+      "judge_reason": "Agent called no tools and failed to trigger HITL for destructive node drain operation, returning unhelpful connection error instead of executing required scontrol_reservation_show and scontrol_node calls.",
+      "judge_ran": true,
+      "overall": 0.0,
+      "passed": false,
+      "latency_s": 3.19,
+      "is_variant": false,
+      "bad_test_case": false,
+      "bad_test_case_reason": "",
+      "error": "Error: Connection error.",
+      "tool_call_history": [],
+      "gt_tools_canonical": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ],
+      "gt_tool_aliases": {
+        "scontrol_reservation_show": [
+          "scontrol_reservation_show"
+        ],
+        "scontrol_node": [
+          "scontrol_node"
+        ]
+      },
+      "gt_tools_accepted": [
+        "scontrol_reservation_show",
+        "scontrol_node"
+      ]
+    }
+  ]
+}

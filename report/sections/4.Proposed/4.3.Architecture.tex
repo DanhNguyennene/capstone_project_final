@@ -1,7 +1,7 @@
 \section{System Architecture}
 \label{sec:architecture}
 
-This section presents the overall architecture of the Slurm Agent system, describing the major components, their interactions, and the rationale behind architectural decisions. The design uses common web and agent frameworks, but the architectural contribution is the Slurm-specific control plane built on top of them: broad Slurm tool coverage, read/write separation with confirmation, local documentation grounding, and state-resettable evaluation.
+This section presents the overall architecture of the Slurm Agent system, describing the major components, their interactions, and the rationale behind architectural decisions. The design uses common web and agent frameworks, but the architectural contribution is the Slurm-specific control plane built on top of them: broad Slurm tool coverage, read/write separation with confirmation, and local documentation grounding.
 
 \subsection{Architecture Overview}
 
@@ -12,7 +12,7 @@ This separation ensures that the boundary between reading cluster state and muta
 % TODO: Replace with actual diagram
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/agent_system_architect.drawio.png}
+    \includegraphics[width=0.95\textwidth]{images/agent_system_architect.drawio.png}
     \caption{Slurm Agent System Architecture}
     \label{fig:system-architecture}
 \end{figure}
@@ -25,7 +25,6 @@ The main design decision is to treat Slurm interaction as a controlled operation
 \begin{itemize}
     \item \textbf{Operational grounding}: current cluster facts come from Slurm tools exposed through MCP.
     \item \textbf{Documentation grounding}: command syntax, reason-code meanings, and policy-like explanations come from local Slurm documentation retrieval.
-    \item \textbf{Evaluation grounding}: behavior is tested against resettable source states and expected target states instead of relying only on subjective response quality.
 \end{itemize}
 
 The architecture is also designed to support incomplete or ambiguous user requests. When the user says a phrase such as ``cancel that job'', the system must determine whether a specific job is already known from context. If the target is unclear, the safe behavior is to ask for clarification. If the target is clear but the action changes cluster state, the safe behavior is to create a pending action and require confirmation. This is why session state and pending-action persistence are architectural components rather than UI conveniences.
@@ -47,22 +46,20 @@ The interface is therefore support infrastructure, not the central contribution.
 
 \subsubsection{Agent Layer}
 
-The Agent Layer implements the core reasoning and orchestration logic using a multi-agent architecture. The system employs a hierarchical structure with specialized agents:
+The Agent Layer implements core reasoning and orchestration using a dual-agent architecture. Both agents share the same fine-tuned LLM and MCP tool connection but operate under distinct system prompts and tool-access policies:
 
 \begin{itemize}
-    \item \textbf{Main ReAct Agent}: The primary orchestrator that implements the Think $\rightarrow$ Act $\rightarrow$ Observe reasoning loop. This agent maintains conversation context, interprets user intent, and delegates to specialized sub-agents based on the nature and risk of the request.
+    \item \textbf{Observer}: The primary entry point for every request. It implements the ReAct reasoning loop (Think $\rightarrow$ Act $\rightarrow$ Observe), classifies user intent, and handles all read-only operations---queue inspection, node status, accounting queries, reservation checks, scheduler diagnostics, documentation retrieval, and web search. When the request requires cluster state modification, the Observer produces a structured handoff directive specifying the action, target scope, and tool, then delegates to the Operator.
     
-    \item \textbf{Observer}: Handles read-only information gathering operations including cluster status queries, job queue inspection, resource monitoring, accounting and resource-limit inspection, reservation checks, scheduler diagnostics, and documentation retrieval. This agent can chain multiple tool calls to gather comprehensive information.
-    
-    \item \textbf{Operator}: Manages operations that modify cluster state, such as job submission, cancellation, hold, release, requeue, and selected updates. This agent receives structured handoffs and enforces safety controls and confirmation requirements for dangerous operations.
+    \item \textbf{Operator}: Receives handoff directives for state-changing operations such as job submission, cancellation, hold, release, requeue, and configuration updates. It may perform a single discovery read to resolve targets (e.g., listing jobs before cancelling), then invokes the action tool. Execution is gated by a human-in-the-loop confirmation step for all destructive operations.
 \end{itemize}
 
-The Observer can inspect queue state, node state, accounting records, reservations, fair-share, priority, scheduler diagnostics, and documentation. The Operator handles submission, cancellation, hold, release, requeue, update, reservation changes, node changes, and administrative actions. This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy.
+This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy. The Observer never holds action tools, and the Operator never runs without an explicit handoff---ensuring that the boundary between reading and mutating state is enforced by the framework rather than by prompt compliance alone.
 
 % TODO: Replace with actual diagram
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/observer_operator_flow.png}
+    \includegraphics[width=\textwidth]{images/observer_operator_flow.png}
     \caption{Observer/Operator Routing and Confirmation Flow}
     \label{fig:observer-operator-flow}
 \end{figure}
@@ -71,17 +68,13 @@ The Observer can inspect queue state, node state, accounting records, reservatio
 
 The MCP Protocol Layer wraps each Slurm command as a typed tool with parameter validation, operational semantics preservation, safe subprocess execution, and structured output formatting. It decouples agent logic from Slurm implementation details and provides a security boundary for command execution.
 
-\subsubsection{Evaluation Layer}
-
-The evaluation layer verifies agent behavior by controlling mock-state reset, sending prompts to the live backend, recording stream events, and comparing observed tools/handoffs/HITL against ground truth.
-
 \subsubsection{Infrastructure Layer}
 
 External systems: LLM provider (local Ollama or cloud API), Slurm cluster (real or mock), local documentation corpus, web search service, and SQLite context database.
 
 \subsection{Communication Patterns}
 
-Key patterns: (1)~request-response for queries, (2)~structured event stream for status/tool/trace output, (3)~tool invocation via MCP, (4)~confirmation interruption for dangerous operations, (5)~trace reporting for evaluation scoring.
+Key patterns: (1)~request-response for queries, (2)~structured event stream for status/tool/trace output, (3)~tool invocation via MCP, (4)~confirmation interruption for dangerous operations.
 
 
 \subsection{Data Flow}
@@ -90,7 +83,7 @@ A typical query flows: (1)~user submits request, (2)~Agent Layer begins ReAct re
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{images/request_lifecycle_flow.png}
+    \includegraphics[width=\textwidth]{images/request_lifecycle_flow.png}
     \caption{Request Lifecycle Data Flow}
     \label{fig:data-flow}
 \end{figure}

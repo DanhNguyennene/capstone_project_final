@@ -1,0 +1,17 @@
+Filtered to 20 cases from results/sample_50_ids.json
+
+Scenario-Grid Behavioral Alignment Evaluation
+  Agent URL    : http://localhost:8000
+  Test cases   : 20
+  Scenario     : all
+  Repeat (k)   : 1
+  Auto-approve : True
+  Main LLM     : ollama / slurm-agent-ft
+  Specialist   : ollama / slurm-agent-ft
+  OpenAI tools : serial
+  Workers      : 1
+  Judge Workers: 1
+  LLM Judge    : ON (ollama / qwen2.5:7b)
+  MCP URL      : http://localhost:3002
+  Agent        : ONLINE ✓
+  [001/020] account_bal200_031 (v)                                          
