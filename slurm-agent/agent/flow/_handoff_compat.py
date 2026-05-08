@@ -1,0 +1,76 @@
+"""Tolerance patch for FT models that emit handoff arguments as JSON-encoded strings.
+
+Some fine-tuned chat models serialize tool-call `arguments` like:
+    "{\"action_request\": \"...\", \"targets\": [\"2001\"]}"
+instead of a proper JSON object. The OpenAI Agents SDK calls
+`type_adapter.validate_json(args, ...)`; pydantic then sees a *string* and rejects
+with `Input should be an object`.
+
+This patch wraps `agents.util._json.validate_json` so that on
+`ModelBehaviorError`/`ValidationError`, we try a single round of `json.loads`
+and re-validate the resulting object. Idempotent: only installs once.
+
+Importing this module installs the patch as a side effect.
+"""
+from __future__ import annotations
+
+import json as _json
+import logging as _logging
+
+_log = _logging.getLogger(__name__)
+
+_INSTALLED_FLAG = "_slurm_agent_handoff_compat_installed"
+
+
+def install() -> None:
+    try:
+        from agents.util import _json as _agents_json
+    except Exception as exc:  # pragma: no cover
+        _log.warning("agents.util._json not importable; handoff compat skipped: %s", exc)
+        return
+
+    if getattr(_agents_json, _INSTALLED_FLAG, False):
+        return
+
+    try:
+        from agents.exceptions import ModelBehaviorError
+    except Exception:  # pragma: no cover
+        ModelBehaviorError = Exception  # type: ignore[assignment]
+
+    try:
+        from pydantic import ValidationError as _PydValidationError
+    except Exception:  # pragma: no cover
+        _PydValidationError = Exception  # type: ignore[assignment]
+
+    _orig = _agents_json.validate_json
+
+    def _tolerant_validate_json(*args, **kwargs):
+        try:
+            return _orig(*args, **kwargs)
+        except (ModelBehaviorError, _PydValidationError):
+            # The first positional arg is the JSON string per the SDK source.
+            json_str = args[0] if args else kwargs.get("json_str")
+            if not isinstance(json_str, (str, bytes, bytearray)):
+                raise
+            try:
+                once = _json.loads(json_str)
+            except Exception:
+                raise
+            if isinstance(once, str):
+                # Doubly-encoded: re-run on the inner string.
+                _log.debug("handoff_compat: doubly-encoded JSON args, retrying")
+                new_args = (once,) + tuple(args[1:])
+                return _orig(*new_args, **kwargs)
+            if isinstance(once, dict):
+                # Re-serialize — handles oddly escaped quoting.
+                _log.debug("handoff_compat: re-serialising dict args, retrying")
+                new_args = (_json.dumps(once),) + tuple(args[1:])
+                return _orig(*new_args, **kwargs)
+            raise
+
+    _agents_json.validate_json = _tolerant_validate_json
+    setattr(_agents_json, _INSTALLED_FLAG, True)
+    _log.info("handoff_compat: tolerant validate_json installed")
+
+
+install()
