@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--export-gguf", action="store_true",
                    help="After training, merge adapter and export GGUF for Ollama")
     p.add_argument("--sample-count", type=int, default=0)
+    p.add_argument("--init-adapter", default="",
+                   help="Warm-start LoRA from an existing adapter dir "
+                        "(continued fine-tuning). Reuses its lora_r/alpha.")
+    p.add_argument("--resume-from-checkpoint", default="",
+                   help="Resume Trainer state (optimizer, scheduler, step) "
+                        "from a checkpoint dir produced by a previous run.")
     return p.parse_args()
 
 
@@ -180,17 +186,24 @@ def main():
         model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         model.enable_input_require_grads()
 
-    # LoRA config
-    peft_config = LoraConfig(
-        r=args.lora_r,
-        lora_alpha=args.lora_alpha,
-        lora_dropout=args.lora_dropout,
-        bias="none",
-        task_type="CAUSAL_LM",
-        target_modules=TARGET_MODULES,
-        layers_to_transform=list(range(36, 48)),
-    )
-    model = get_peft_model(model, peft_config)
+    if args.init_adapter:
+        init_path = Path(args.init_adapter)
+        if not init_path.is_absolute():
+            init_path = root / init_path
+        print(f"\nWarm-starting LoRA from existing adapter: {init_path}")
+        model = PeftModel.from_pretrained(model, str(init_path), is_trainable=True)
+    else:
+        # LoRA config
+        peft_config = LoraConfig(
+            r=args.lora_r,
+            lora_alpha=args.lora_alpha,
+            lora_dropout=args.lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=TARGET_MODULES,
+            layers_to_transform=list(range(36, 48)),
+        )
+        model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
     # Load and tokenize dataset
@@ -280,7 +293,15 @@ def main():
         train_dataset=tokenized_dataset,
         data_collator=collator,
     )
-    trainer.train()
+    resume = args.resume_from_checkpoint or None
+    if resume:
+        resume_path = Path(resume)
+        if not resume_path.is_absolute():
+            resume_path = root / resume_path
+        print(f"Resuming Trainer state from: {resume_path}")
+        trainer.train(resume_from_checkpoint=str(resume_path))
+    else:
+        trainer.train()
 
     # Save adapter
     trainer.save_model(str(output_dir))
