@@ -383,6 +383,7 @@ def main():
             torch_dtype=torch.float16,
             device_map="auto",
             trust_remote_code=True,
+            attn_implementation="eager",
         )
         print(f"Loading adapter from {adapter_path}...")
         model = PeftModel.from_pretrained(model, str(adapter_path))
