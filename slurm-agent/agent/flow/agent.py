@@ -491,7 +491,7 @@ class SlurmAgentSystem:
                 "Action execution phase is complete.",
                 "Prepare the final user-facing summary from these results.",
                 "Do NOT ask the user to provide action execution results; use the results below.",
-                "Do NOT call transfer_to_operator again unless a NEW user message asks for another action.",
+                # "Do NOT call transfer_to_operator again unless a NEW user message asks for another action.",
             ]
             if compact_snippets:
                 lines.append("Execution results:")
