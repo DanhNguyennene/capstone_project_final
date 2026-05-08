@@ -1996,21 +1996,42 @@ async def run_eval(args):
 
             async def _run_one(idx: int, test: dict):
                 async with sem:
-                    reset_ok, _ = await reset_mock_state_for_test(test, args.mcp_url)
-                    session_id = f"eval_{test['id']}_{int(time.time())}_{idx}"
-                    try:
-                        trace = await run_agent(
-                            test["input"], session_id, args.agent_url, args.auto_approve,
-                            mcp_url=args.mcp_url,
-                            llm_provider=args.llm_provider,
-                            main_provider=main_provider,
-                            specialist_provider=specialist_provider,
-                            main_model=args.main_model,
-                            specialist_model=args.specialist_model,
-                            openai_parallel=args.openai_parallel,
-                        )
-                    finally:
-                        await clear_agent_session(args.agent_url, session_id)
+                    # Retry on transient MCP/streaming infra failures.
+                    # Patterns observed: aiohttp/anyio TaskGroup unwind,
+                    # `Error in post_writer` from MCP SSE, brief connect errors.
+                    transient_re = re.compile(
+                        r"TaskGroup|post_writer|ConnectError|Connection reset|"
+                        r"ServerDisconnectedError|ClientConnectorError|"
+                        r"Streaming error",
+                        re.IGNORECASE,
+                    )
+                    max_attempts = 3
+                    backoff = 2.0
+                    trace = None
+                    for attempt in range(1, max_attempts + 1):
+                        reset_ok, _ = await reset_mock_state_for_test(test, args.mcp_url)
+                        session_id = f"eval_{test['id']}_{int(time.time())}_{idx}_a{attempt}"
+                        try:
+                            trace = await run_agent(
+                                test["input"], session_id, args.agent_url, args.auto_approve,
+                                mcp_url=args.mcp_url,
+                                llm_provider=args.llm_provider,
+                                main_provider=main_provider,
+                                specialist_provider=specialist_provider,
+                                main_model=args.main_model,
+                                specialist_model=args.specialist_model,
+                                openai_parallel=args.openai_parallel,
+                            )
+                        finally:
+                            await clear_agent_session(args.agent_url, session_id)
+
+                        # Only retry if error looks transient (infra), not model behavior.
+                        if trace.error and transient_re.search(trace.error) and attempt < max_attempts:
+                            async with print_lock:
+                                print(f"  [retry {attempt}/{max_attempts-1}] {test['id'][:40]} transient: {trace.error[:80]}")
+                            await asyncio.sleep(backoff * attempt)
+                            continue
+                        break
 
                     result = await score_test(
                         test,
