@@ -353,9 +353,16 @@ def main():
     print(f"  Port:        {args.port}")
     print(f"{'='*60}\n")
 
-    # Load tokenizer (always from base model — training didn't add tokens)
+    # Load tokenizer — prefer adapter's saved tokenizer (exact match from training),
+    # fall back to base model if adapter has no tokenizer files
     print("Loading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
+    adapter_tokenizer_path = adapter_path / "tokenizer.json"
+    if adapter_tokenizer_path.exists():
+        print(f"  Using tokenizer from adapter: {adapter_path}")
+        tokenizer = AutoTokenizer.from_pretrained(str(adapter_path), trust_remote_code=True)
+    else:
+        print(f"  Using tokenizer from base model: {args.base_model}")
+        tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     print(f"  Tokenizer vocab size: {len(tokenizer)}")
@@ -373,7 +380,7 @@ def main():
         model = PeftModel.from_pretrained(model, str(adapter_path))
         print("Merging adapter weights into base model...")
         model = model.merge_and_unload()
-        model.resize_token_embeddings(len(tokenizer))
+        print(f"  Model embedding size: {model.config.vocab_size}")
         model.eval()
     else:
         # Quantization config (same as training)
