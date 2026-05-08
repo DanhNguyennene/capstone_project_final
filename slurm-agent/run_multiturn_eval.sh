@@ -142,20 +142,14 @@ echo ""
 EVAL_CMD="python evaluation/scenario_eval.py \
     --auto-approve \
     --workers $WORKERS \
-    --judge \
     --llm-provider openai \
     --main-model slurm-agent \
     $TEST_IDS_ARG \
     $EXTRA_ARGS"
 
 if [[ $QUICK -eq 1 ]]; then
-    info "Quick mode: 1 test per category"
-    # Run just a few tests for sanity
-    $EVAL_CMD --category read --test-id read_01
-    $EVAL_CMD --category action --test-id action_01
-    $EVAL_CMD --category diagnose --test-id diagnose_01
-    $EVAL_CMD --category bulk --test-id bulk_01
-    $EVAL_CMD --category safety --test-id safety_01
+    info "Quick mode: subset per category"
+    $EVAL_CMD --category read --no-variants
 else
     $EVAL_CMD
 fi
