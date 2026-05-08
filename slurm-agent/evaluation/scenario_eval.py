@@ -1756,14 +1756,24 @@ def save_results(
     metrics: Dict,
     scenario: str,
     pass_k: Dict = None,
+    model_tag: str = "",
+    split_tag: str = "",
 ) -> Path:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    name = f"eval_{scenario}_{ts}"
+    parts = ["eval", scenario]
+    if model_tag:
+        parts.append(model_tag.replace("/", "_").replace(":", "_"))
+    if split_tag:
+        parts.append(split_tag)
+    parts.append(ts)
+    name = "_".join(parts)
 
     data = {
         "timestamp": ts,
         "scenario": scenario,
+        "model": model_tag,
+        "split": split_tag,
         "metrics": metrics,
         "pass_k": pass_k or {},
         "weights": WEIGHTS,
@@ -2072,7 +2082,20 @@ async def run_eval(args):
     pass_k_data = compute_pass_k(all_runs, k) if k > 1 else None
 
     print_report(final, metrics, pass_k_data)
-    save_results(final, metrics, scenario_label, pass_k_data)
+
+    # Derive tags for filename
+    model_tag = args.main_model or ""
+    split_tag = ""
+    if args.test_ids_file:
+        p = Path(args.test_ids_file).stem          # e.g. "split_train_ids"
+        if "train" in p:
+            split_tag = "train"
+        elif "test" in p:
+            split_tag = "test"
+        else:
+            split_tag = p
+    save_results(final, metrics, scenario_label, pass_k_data,
+                 model_tag=model_tag, split_tag=split_tag)
 
 
 def main():
