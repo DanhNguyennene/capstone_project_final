@@ -91,6 +91,7 @@ def parse_args():
     p.add_argument("--max-new-tokens", type=int, default=1024)
     p.add_argument("--no-4bit", action="store_true", help="Load in bf16 instead of 4-bit")
     p.add_argument("--merge", action="store_true", help="Merge adapter into base model (fp16, no bitsandbytes)")
+    p.add_argument("--no-adapter", action="store_true", help="Serve the base model only — skip PEFT adapter load (for baseline comparisons)")
     return p.parse_args()
 
 
@@ -351,7 +352,10 @@ def main():
     root = Path(__file__).resolve().parents[1]
     adapter_path = root / args.adapter
 
-    mode = "merge" if args.merge else ("4-bit" if not args.no_4bit else "fp16")
+    if args.no_adapter:
+        mode = "base-only-fp16"
+    else:
+        mode = "merge" if args.merge else ("4-bit" if not args.no_4bit else "fp16")
     print(f"{'='*60}")
     print(f"  Slurm Agent FT Model Server")
     print(f"{'='*60}")
@@ -362,10 +366,10 @@ def main():
     print(f"{'='*60}\n")
 
     # Load tokenizer — prefer adapter's saved tokenizer (exact match from training),
-    # fall back to base model if adapter has no tokenizer files
+    # fall back to base model if adapter has no tokenizer files or in --no-adapter mode
     print("Loading tokenizer...")
     adapter_tokenizer_path = adapter_path / "tokenizer.json"
-    if adapter_tokenizer_path.exists():
+    if not args.no_adapter and adapter_tokenizer_path.exists():
         print(f"  Using tokenizer from adapter: {adapter_path}")
         tokenizer = AutoTokenizer.from_pretrained(str(adapter_path), trust_remote_code=True)
     else:
@@ -375,7 +379,30 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     print(f"  Tokenizer vocab size: {len(tokenizer)}")
 
-    if args.merge:
+    if args.no_adapter:
+        # Vanilla base model — fp16 + flash-attn (matches the merged FT recipe).
+        print("Loading base model in fp16 (no adapter)...")
+        attn_impl = os.environ.get("ATTN_IMPL", "flash_attention_2")
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                args.base_model,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True,
+                attn_implementation=attn_impl,
+            )
+            print(f"  Using attention: {attn_impl}")
+        except (ImportError, ValueError) as e:
+            print(f"  {attn_impl} unavailable ({e}), falling back to eager")
+            model = AutoModelForCausalLM.from_pretrained(
+                args.base_model,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True,
+                attn_implementation="eager",
+            )
+        model.eval()
+    elif args.merge:
         # Merge adapter into base model — no bitsandbytes needed, pure fp16
         print("Loading base model in fp16 for merge...")
         # Try flash_attention_2 → sdpa → eager
