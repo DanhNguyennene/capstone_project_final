@@ -44,8 +44,31 @@ def install() -> None:
 
     _orig = _agents_json.validate_json
 
+    def _coerce_payload(d):
+        """Best-effort coercion for FT-model handoff payloads.
+
+        Fixes common deviations like targets="" (string) → targets=[],
+        targets="2001" → targets=["2001"], required_tool=null → "".
+        """
+        if not isinstance(d, dict):
+            return d
+        out = dict(d)
+        if "targets" in out:
+            t = out["targets"]
+            if t in (None, "", "null", "none"):
+                out["targets"] = []
+            elif isinstance(t, str):
+                # Comma-separated single string → list
+                parts = [p.strip() for p in t.split(",") if p.strip()]
+                out["targets"] = parts if parts else []
+            elif not isinstance(t, list):
+                out["targets"] = [str(t)]
+        for k in ("action_request", "required_tool", "target_scope"):
+            if k in out and out[k] is None:
+                out[k] = ""
+        return out
+
     def _retry(new_json_str, args, kwargs):
-        # Replace whichever way the SDK passed json_str (positional or kwarg).
         if args:
             return _orig(new_json_str, *args[1:], **kwargs)
         kwargs2 = dict(kwargs)
@@ -59,16 +82,24 @@ def install() -> None:
             json_str = args[0] if args else kwargs.get("json_str")
             if not isinstance(json_str, (str, bytes, bytearray)):
                 raise
+            # Step 1: try parsing the JSON directly (the original payload may
+            # already be a valid JSON object that just has wrong field types).
             try:
-                once = _json.loads(json_str)
+                parsed = _json.loads(json_str)
             except Exception:
                 raise
-            if isinstance(once, str):
-                _log.debug("handoff_compat: doubly-encoded JSON args, retrying")
-                return _retry(once, args, kwargs)
-            if isinstance(once, dict):
-                _log.debug("handoff_compat: re-serialising dict args, retrying")
-                return _retry(_json.dumps(once), args, kwargs)
+            # Step 2: unwrap doubly-encoded JSON-string-of-a-JSON-string.
+            if isinstance(parsed, str):
+                _log.debug("handoff_compat: doubly-encoded JSON args, unwrapping")
+                try:
+                    parsed = _json.loads(parsed)
+                except Exception:
+                    raise
+            # Step 3: coerce common type deviations and retry.
+            if isinstance(parsed, dict):
+                coerced = _coerce_payload(parsed)
+                _log.debug("handoff_compat: coerced payload, retrying")
+                return _retry(_json.dumps(coerced), args, kwargs)
             raise
 
     _agents_json.validate_json = _tolerant_validate_json
