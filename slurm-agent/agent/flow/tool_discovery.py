@@ -13,6 +13,7 @@ Classification is driven by two small config sets below (just names, no schemas)
 Schemas are fetched from MCP dynamically, so adding / renaming a tool on the
 server side is automatically reflected without touching agent code.
 """
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Set
@@ -21,6 +22,16 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 
 logger = logging.getLogger(__name__)
+
+# Process-wide cache: MCP tool catalog rarely changes during an agent
+# process lifetime. Re-discovering on every session causes connect-timeout
+# storms when MCP is under load (each /sse handshake can hang for seconds).
+# One catalog per (mcp_url) is sufficient.
+_CATALOG_CACHE: Dict[str, "ToolCatalog"] = {}
+_CATALOG_LOCKS: Dict[str, asyncio.Lock] = {}
+# Bound the SSE handshake. MCP /sse is a long-lived stream but the
+# initialize+list_tools round-trip should complete in <5s on a healthy server.
+_DISCOVERY_TIMEOUT_S = 15.0
 
 
 # ── Classification config ─────────────────────────────────────────────────────
@@ -112,48 +123,85 @@ class ToolCatalog:
 
 # ── Discovery ─────────────────────────────────────────────────────────────────
 
-async def discover_tools(mcp_url: str) -> ToolCatalog:
+async def discover_tools(mcp_url: str, *, force_refresh: bool = False) -> ToolCatalog:
     """
     Fetch the live tool list from the MCP server via SSE transport.
     Classify each tool and return a ToolCatalog with live schemas.
 
+    Results are cached per `mcp_url` for the lifetime of the process.
+    Pass ``force_refresh=True`` to bypass the cache.
+
     Raises if the MCP server is unreachable.
     """
     base = mcp_url.rstrip("/")
-    logger.info(f"Discovering tools from {base}/sse")
 
-    async with sse_client(f"{base}/sse") as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            tools_response = await session.list_tools()
+    if not force_refresh:
+        cached = _CATALOG_CACHE.get(base)
+        if cached is not None:
+            return cached
 
-    raw_tools = tools_response.tools
-    logger.info(f"MCP returned {len(raw_tools)} tools")
+    lock = _CATALOG_LOCKS.setdefault(base, asyncio.Lock())
+    async with lock:
+        # Double-checked: another waiter may have populated it.
+        if not force_refresh:
+            cached = _CATALOG_CACHE.get(base)
+            if cached is not None:
+                return cached
 
-    catalog = ToolCatalog()
-    for t in raw_tools:
-        name   = t.name
-        desc   = t.description or ""
-        schema = t.inputSchema or {"type": "object", "properties": {}, "required": []}
+        logger.info(f"Discovering tools from {base}/sse")
 
-        if name in DANGEROUS_TOOL_NAMES:
-            category = "dangerous"
-        elif name in ANALYSIS_TOOL_NAMES:
-            category = "analysis"
-        else:
-            # Heuristic for unknown tools: scan description for danger verbs
-            desc_lower = desc.lower()
-            danger_verbs = {"cancel", "delete", "remove", "hold", "submit", "modify", "reconfigure", "create"}
-            category = "dangerous" if any(v in desc_lower for v in danger_verbs) else "safe"
-            if category == "dangerous":
-                logger.warning(f"Auto-classified '{name}' as dangerous via description heuristic")
+        async def _do_discover() -> "ToolCatalog":
+            async with sse_client(f"{base}/sse") as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    return await session.list_tools()
 
-        tool = DiscoveredTool(name=name, description=desc, schema=schema, category=category)
-        getattr(catalog, category, catalog.other).append(tool)
-        logger.debug(f"  {category:12} {name}")
+        try:
+            tools_response = await asyncio.wait_for(
+                _do_discover(), timeout=_DISCOVERY_TIMEOUT_S
+            )
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"MCP discovery timed out after {_DISCOVERY_TIMEOUT_S:.0f}s "
+                f"({base}/sse)"
+            ) from exc
 
-    logger.info(
-        f"Catalog — analysis:{len(catalog.analysis)} safe:{len(catalog.safe)} "
-        f"dangerous:{len(catalog.dangerous)} other:{len(catalog.other)}"
-    )
-    return catalog
+        raw_tools = tools_response.tools
+        logger.info(f"MCP returned {len(raw_tools)} tools")
+
+        catalog = ToolCatalog()
+        for t in raw_tools:
+            name   = t.name
+            desc   = t.description or ""
+            schema = t.inputSchema or {"type": "object", "properties": {}, "required": []}
+
+            if name in DANGEROUS_TOOL_NAMES:
+                category = "dangerous"
+            elif name in ANALYSIS_TOOL_NAMES:
+                category = "analysis"
+            else:
+                # Heuristic for unknown tools: scan description for danger verbs
+                desc_lower = desc.lower()
+                danger_verbs = {"cancel", "delete", "remove", "hold", "submit", "modify", "reconfigure", "create"}
+                category = "dangerous" if any(v in desc_lower for v in danger_verbs) else "safe"
+                if category == "dangerous":
+                    logger.warning(f"Auto-classified '{name}' as dangerous via description heuristic")
+
+            tool = DiscoveredTool(name=name, description=desc, schema=schema, category=category)
+            getattr(catalog, category, catalog.other).append(tool)
+            logger.debug(f"  {category:12} {name}")
+
+        logger.info(
+            f"Catalog — analysis:{len(catalog.analysis)} safe:{len(catalog.safe)} "
+            f"dangerous:{len(catalog.dangerous)} other:{len(catalog.other)}"
+        )
+        _CATALOG_CACHE[base] = catalog
+        return catalog
+
+
+def clear_catalog_cache(mcp_url: str | None = None) -> None:
+    """Drop cached tool catalogs. If ``mcp_url`` is None, clear all entries."""
+    if mcp_url is None:
+        _CATALOG_CACHE.clear()
+        return
+    _CATALOG_CACHE.pop(mcp_url.rstrip("/"), None)
