@@ -52,13 +52,13 @@ else
     ok "Adapter downloaded to $ADAPTER_DIR"
 fi
 
-# ── Step 3: Start model server (port 9000, bf16 — no 4-bit for eval) ─────────
+# ── Step 3: Start model server (port 9000, 4-bit quantized for A40) ───────────
 MODEL_PORT=9000
-info "Starting model server on port $MODEL_PORT (bf16, no quantization)..."
+info "Starting model server on port $MODEL_PORT (4-bit NF4)..."
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 python evaluation/serve_ft_model.py \
     --adapter "$ADAPTER_DIR" \
-    --port $MODEL_PORT \
-    --no-4bit &
+    --port $MODEL_PORT &
 MODEL_PID=$!
 
 # Wait for model to be ready
@@ -103,6 +103,7 @@ export SLURM_AGENT_MODEL=slurm-agent
 export USE_TRAINING_TOOLS=1
 export AGENT_AUTO_APPROVE=true
 export MCP_SERVER_URL="http://localhost:3002"
+export OPENAI_AGENTS_DISABLE_TRACING=1
 
 cd "$ROOT/agent"
 python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
