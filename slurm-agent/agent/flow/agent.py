@@ -1056,6 +1056,14 @@ class SlurmAgentSystem:
                         args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
                     except Exception:
                         args = {}
+                    # FT models sometimes double-encode args as a JSON-string.
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except Exception:
+                            args = {}
+                    if not isinstance(args, dict):
+                        args = {}
                     args_str = ", ".join(f"{k}={v}" for k, v in args.items()) if args else ""
                     full_desc = f"{name}({args_str})"
                     actions.append({
