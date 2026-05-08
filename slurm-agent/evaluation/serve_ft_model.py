@@ -147,6 +147,36 @@ def chat_completions(req: ChatCompletionRequest):
     try:
         max_tokens = req.max_tokens or max_new_tokens_default
 
+        # Normalize message content: agents SDK / OpenAI format may send
+        # `content` as a list of parts (e.g. [{"type":"input_text","text":"..."}])
+        # but Qwen's chat template assumes plain strings → "can only concatenate str (not list) to str".
+        def _flatten_content(c):
+            if c is None:
+                return ""
+            if isinstance(c, str):
+                return c
+            if isinstance(c, list):
+                parts = []
+                for item in c:
+                    if isinstance(item, str):
+                        parts.append(item)
+                    elif isinstance(item, dict):
+                        # OpenAI-style content parts
+                        txt = item.get("text") or item.get("input_text") or ""
+                        if not txt and item.get("type") in ("text", "input_text", "output_text"):
+                            txt = item.get("content", "") or ""
+                        if txt:
+                            parts.append(str(txt))
+                return "\n".join(parts)
+            return str(c)
+
+        normalized_messages = []
+        for m in req.messages:
+            mm = dict(m)
+            if "content" in mm:
+                mm["content"] = _flatten_content(mm["content"])
+            normalized_messages.append(mm)
+
         # Build input using Qwen's native chat template (with tools if provided)
         kwargs = dict(tokenize=False, add_generation_prompt=True)
         if req.tools:
@@ -156,10 +186,10 @@ def chat_completions(req: ChatCompletionRequest):
             kwargs["tools"] = tools
 
         try:
-            prompt = tokenizer.apply_chat_template(req.messages, **kwargs)
+            prompt = tokenizer.apply_chat_template(normalized_messages, **kwargs)
         except Exception:
             # Fallback without tools
-            prompt = tokenizer.apply_chat_template(req.messages, tokenize=False, add_generation_prompt=True)
+            prompt = tokenizer.apply_chat_template(normalized_messages, tokenize=False, add_generation_prompt=True)
 
         inputs = tokenizer(prompt, return_tensors="pt")
 
