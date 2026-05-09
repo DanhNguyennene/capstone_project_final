@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import asyncio
 import json
 import os
 import time
@@ -178,6 +179,10 @@ def load_model(base_model: str, adapter_path: str, device: str = "auto", quantiz
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(title="Slurm Agent FT Model Server")
 
+# Serialize GPU inference — model.generate() is NOT thread-safe.
+# Without this, concurrent requests trigger CUDA device-side asserts.
+_GENERATE_LOCK = asyncio.Lock()
+
 
 @app.get("/v1/models")
 async def list_models():
@@ -212,19 +217,20 @@ async def chat_completions(request: Request):
     input_len = inputs["input_ids"].shape[1]
     logger.info(f"Prompt tokens: {input_len}")
 
-    # Free any cached blocks before generating to reduce fragmentation
-    torch.cuda.empty_cache()
+    # Serialize inference to prevent CUDA device-side asserts from concurrent generate() calls
+    async with _GENERATE_LOCK:
+        torch.cuda.empty_cache()
 
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            temperature=temperature if temperature > 0 else None,
-            do_sample=temperature > 0,
-            top_p=0.9 if temperature > 0 else None,
-            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-            use_cache=True,
-        )
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                temperature=temperature if temperature > 0 else None,
+                do_sample=temperature > 0,
+                top_p=0.9 if temperature > 0 else None,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+                use_cache=True,
+            )
 
     generated_ids = outputs[0][input_len:]
     response_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
