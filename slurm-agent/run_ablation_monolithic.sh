@@ -91,16 +91,16 @@ else
   exit 1
 fi
 
-# ── 4. Run Eval on 167 base-failed cases ──
+# ── 4. Run Eval on full 615 test split ──
 echo ""
-echo "[4/4] Running eval on 167 base-failed cases (monolithic agent)..."
+echo "[4/4] Running eval on 615 test cases (monolithic agent)..."
 echo "  PIDs: MCP=$MCP_PID, Model=$MODEL_PID, Agent=$AGENT_PID"
 echo ""
 
 python evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
-  --test-ids-file evaluation/base_failed_ids.json \
+  --test-ids-file evaluation/split_test_ids.json \
   --workers 1
 
 echo ""
