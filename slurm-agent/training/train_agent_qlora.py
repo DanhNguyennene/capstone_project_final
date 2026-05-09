@@ -239,15 +239,8 @@ def main():
     if args.sample_count and args.sample_count > 0:
         dataset = dataset.select(range(min(args.sample_count, len(dataset))))
 
-    # Filter: remove edge-case samples with no tool calls (just clarification questions)
-    # These dilute tool-calling signal. Keep only samples with ≥4 messages or tool_calls.
-    pre_filter = len(dataset)
-    dataset = dataset.filter(
-        lambda ex: len(ex["messages"]) > 3 or any(
-            m.get("tool_calls") for m in ex["messages"]
-        )
-    )
-    print(f"  Loaded: {pre_filter} → filtered to {len(dataset)} (removed {pre_filter - len(dataset)} edge-only samples)")
+    # Keep all samples including edge/safety refusals — the model needs to learn
+    # when NOT to call tools (clarifications, refusals) as well as when to call them.
     print(f"  Training samples: {len(dataset)}")
 
     def tokenize(example):
