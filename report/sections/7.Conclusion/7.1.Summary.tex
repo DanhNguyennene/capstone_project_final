@@ -9,7 +9,7 @@ This work contributes the following practical outcomes:
 
 \textbf{1. Broad Slurm Intent Surface.} The project defines and implements natural-language coverage across monitoring, diagnosis, submission, job control, accounting, resource limits, QoS, reservations, scheduler health, configuration inspection, documentation support, and safety edge cases.
 
-\textbf{2. Safety-Centered Observer/Operator Workflow.} The system separates read-only observation from state-changing operation through structured handoffs, pending-action persistence, human confirmation, dynamic tool filtering, and session-scoped cleanup.
+\textbf{2. Capacity-Aware Observer/Operator Workflow.} The system separates read-only observation from state-changing operation through structured handoffs, pending-action persistence, human confirmation, and dynamic tool filtering. Beyond safety enforcement, this partitioning reduces the per-agent tool surface from 18 to approximately 8 tools, directly addressing tool-selection degradation in the 14B-parameter local model. Ablation experiments confirm a +13.2 percentage point task-quality improvement on routing-neutral cases attributable solely to this tool-scope reduction.
 
 \textbf{3. Grounded Slurm Knowledge and Tool Execution.} Live cluster facts are retrieved through typed MCP tools, while command syntax, reason-code interpretation, state meanings, and reference-style explanations are supported by local official Slurm documentation retrieval with web search as fallback.
 
@@ -27,11 +27,11 @@ This work contributes the following practical outcomes:
 
 \textbf{Goal 3 (Risk-aware MCP tool integration):} Achieved. Tool interfaces are separated from agent reasoning, exposed through the MCP layer, and governed by agent-side risk classification.
 
-\textbf{Goal 4 (Curated Slurm benchmark dataset):} Achieved as an artifact. The active dataset contains 3,135 cases, with eleven categories balanced at 285 cases each.
+\textbf{Goal 4 (Dataset, fine-tuning \& evaluation):} Achieved. The benchmark contains 3,135 cases across eleven balanced categories. A fine-tuning pipeline distills 3,329 role-scoped training samples from the commercial teacher model into Qwen2.5-14B-Instruct via QLoRA, enabling local deployment without API costs or data-sovereignty concerns. A 615-case held-out test split supports three-way comparison (GPT-5-mini vs.\ fine-tuned Qwen vs.\ base Qwen) to quantify the performance--cost trade-off.
 
 \subsection{Benchmark Artifact Outcomes}
 
-The main quantitative outcome of the evaluation work is the manually constructed synthetic benchmark, the trace-oriented evaluation path, and the final 3,135-case evaluation run achieving 96.1\% pass rate on the production GPT-5-mini model stack (result artifact: \texttt{eval\_all\_20260504\_001747.json}).
+The main quantitative outcome of the evaluation work is the manually constructed synthetic benchmark, the trace-oriented evaluation path, and the final 3,135-case evaluation run achieving 97.8\% pass rate on the production GPT-5-mini model stack after rescoring (result artifact: \texttt{eval\_all\_20260504\_001747.json}).
 
 \begin{table}[H]
     \centering

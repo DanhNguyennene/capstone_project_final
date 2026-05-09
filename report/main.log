@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  8 MAY 2026 11:38
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  10 MAY 2026 00:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1524,8 +1524,8 @@ Chapter 1.
 (sections/1.Introduction/1.1.Motivation.tex [1
 
 ])
-(sections/1.Introduction/1.2.Scope-Goals.tex [2])
-(sections/1.Introduction/1.3.Challenges.tex [3]
+(sections/1.Introduction/1.2.Scope-Goals.tex [2]) [3]
+(sections/1.Introduction/1.3.Challenges.tex
 Overfull \hbox (7.48245pt too wide) in paragraph at lines 14--15
 []\TU/TimesNewRoman(0)/b/n/12 Solutions: \TU/TimesNewRoman(0)/m/n/12 The system
  separates read-only observation from state-changing operation through
@@ -1537,7 +1537,7 @@ Overfull \hbox (13.55501pt too wide) in paragraph at lines 14--15
  inspection, diagnosis, accounting/resource-
  []
 
-[4]) (sections/1.Introduction/1.4.Thesis-structure.tex [5]) [6]
+[4] [5]) (sections/1.Introduction/1.4.Thesis-structure.tex) [6]
 Chapter 2.
 (sections/2.Background/2.1.Slurm.tex
 File: images/slurm_resource_management.png Graphic file (type bmp)
@@ -1591,10 +1591,9 @@ uring execution
 [23] [24]) (sections/4.Proposed/4.3.Architecture.tex [25]
 File: images/agent_system_architect.drawio.png Graphic file (type bmp)
 <images/agent_system_architect.drawio.png>
- [26]
+ [26] [27]
 File: images/observer_operator_flow.png Graphic file (type bmp)
 <images/observer_operator_flow.png>
- [27]
 File: images/request_lifecycle_flow.png Graphic file (type bmp)
 <images/request_lifecycle_flow.png>
  [28])
@@ -1711,55 +1710,68 @@ File: images/evaluation/dataset_distribution_heatmap.png Graphic file (type bmp
 <images/evaluation/dataset_distribution_heatmap.png>
  [46])
 (sections/6.Experiments/6.2.Results.tex
+Overfull \hbox (7.10825pt too wide) in paragraph at lines 4--5
+\TU/TimesNewRoman(0)/m/n/12 fine-tuning data, and (3) the three-way comparative
+ evaluation that quantifies whether the domain-
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 21--22
 []|\TU/TimesNewRoman(0)/m/n/12 healthy, failed, pending, mixed, de-
  []
 
-[47]
-Underfull \hbox (badness 10000) in paragraph at lines 54--55
-[]|\TU/TimesNewRoman(0)/m/n/12 JSONL with \TU/lmtt/m/n/12 messages\TU/TimesNewR
-oman(0)/m/n/12 , \TU/lmtt/m/n/12 tools\TU/TimesNewRoman(0)/m/n/12 ,
- []
-
-[48]
-Overfull \hbox (70.56755pt too wide) in paragraph at lines 68--69
+[47] [48]
+Overfull \hbox (70.56755pt too wide) in paragraph at lines 70--71
 []\TU/TimesNewRoman(0)/m/n/12 No Observer sample contains calls to destructive 
 tools (\TU/lmtt/m/n/12 scancel\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 sco
 ntrol_hold\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 scontrol_release\TU/Tim
 esNewRoman(0)/m/n/12 ,
  []
 
-[49]
+
 Overfull \hbox (9.52629pt too wide) in paragraph at lines 118--128
  [][] 
  []
 
-[50] [51] [52] [53]) [54]
-Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex [55
-
-]
-Overfull \hbox (82.93068pt too wide) in paragraph at lines 34--35
-\TU/TimesNewRoman(0)/m/n/12 96.1% pass rate on the production GPT-5-mini model 
-stack (result artifact: \TU/lmtt/m/n/12 eval_all_20260504_001747.json\TU/TimesN
-ewRoman(0)/m/n/12 ). 
+[49] [50] [51] [52] [53]
+File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
+<images/evaluation/ablation_per_category.png>
+ [54]
+File: images/evaluation/ablation_observer_only.png Graphic file (type bmp)
+<images/evaluation/ablation_observer_only.png>
+ [55]
+Overfull \hbox (2.06335pt too wide) in paragraph at lines 360--361
+\TU/TimesNewRoman(0)/m/n/12 (+38.2pp) both require the agent to distinguish bet
+ween \TU/lmtt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/
+n/12 sacctmgr_list\TU/TimesNewRoman(0)/m/n/12 ,
  []
 
-[56]) (sections/7.Conclusion/7.2.Limitations.tex
-Overfull \hbox (6.79634pt too wide) in paragraph at lines 21--22
+[56]) [57]
+Chapter 7.
+(sections/7.Conclusion/7.1.Summary.tex [58
+
+] [59])
+(sections/7.Conclusion/7.2.Limitations.tex [60]
+Overfull \hbox (6.79634pt too wide) in paragraph at lines 27--28
 []\TU/TimesNewRoman(0)/b/n/12 submission\TU/TimesNewRoman(0)/m/n/12 : batch scr
 ipts, dependencies, GPU/GRES requests, and reservation constraints, 
  []
 
-[57] [58]) (sections/7.Conclusion/7.3.Future-Work.tex [59] [60])
-(sections/references.tex) [61]
+
+Overfull \hbox (1.49287pt too wide) in paragraph at lines 34--35
+[]\TU/TimesNewRoman(0)/b/n/12 Training data duplication. \TU/TimesNewRoman(0)/m
+/n/12 The distillation pipeline produced 704 duplicate samples (21.1%
+ []
+
+[61]) (sections/7.Conclusion/7.3.Future-Work.tex [62] [63]) [64]
+(sections/references.tex) [65]
 Overfull \hbox (23.71375pt too wide) in paragraph at lines 142--142
 []\TU/TimesNewRoman(0)/m/n/12 Anthropic. \TU/TimesNewRoman(0)/m/it/12 Model Con
 text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] [] 
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[62
+[66
 
 ]
 Overfull \hbox (3.9435pt too wide) in paragraph at lines 142--142
@@ -1773,13 +1785,13 @@ Overfull \hbox (0.3274pt too wide) in paragraph at lines 142--142
 Sentence embeddings using Siamese
  []
 
-[63] [64]
+[67] [68]
 Overfull \hbox (56.17505pt too wide) in paragraph at lines 142--142
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[65] 
+[69] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1787,18 +1799,18 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2025-12-24>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: F915F348379187012BF897AA2F352D76;23043.
+(rerunfilecheck)             Checksum: 69AED6AB4921D54BEDA4C57BAA6AC3D0;23756.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 45427 strings out of 402987
- 1046909 string characters out of 5447904
- 2054691 words of memory out of 5000000
- 73383 multiletter control sequences out of 15000+600000
+ 45450 strings out of 402987
+ 1047872 string characters out of 5447904
+ 2055237 words of memory out of 5000000
+ 73404 multiletter control sequences out of 15000+600000
  638297 words of font info for 116 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  110i,10n,107p,2021b,4977s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (78 pages).
+Output written on main.pdf (82 pages).

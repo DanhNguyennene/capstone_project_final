@@ -13,6 +13,12 @@ The current Slurm Agent demonstrates promising behavior on the curated benchmark
 
 \textbf{Limited human-subject evaluation.} Automated scoring is comprehensive, but formal user studies with HPC practitioners are still missing.
 
+\subsection{Evaluation--Architecture Coupling}
+
+\textbf{Routing metric structural bias.} The routing metric (25\% of the overall score) rewards correct Observer$\rightarrow$Operator handoff, which a monolithic baseline cannot satisfy by design. Of the 615 test cases, 237 expect a handoff; the monolithic agent receives routing\,=\,0 on all of them regardless of actual task quality. This inflates the headline ablation gap (+25.7\,pp) beyond the architecture's pure task-quality contribution (+13.2\,pp on routing-neutral cases). To address this, Section~\ref{sec:ablation} reports both the aggregate comparison and the routing-neutral subset, making the metric coupling explicit.
+
+\textbf{Absence of tool-level blocking baseline.} An alternative safety mechanism---blocking destructive tool calls at the MCP layer with mandatory confirmation regardless of calling agent---could achieve comparable safety guarantees without a multi-agent architecture. The current evaluation does not include this baseline, so the safety-enforcement benefit of the dual-agent design versus simple tool-level gating remains unquantified. The +13.2\,pp task-quality improvement from tool-scope reduction is independent of this concern.
+
 \subsection{Behavioral Reliability Limitations}
 
 Development-stage construction checks exposed reliability risks in specific workflow families:
@@ -25,7 +31,7 @@ Development-stage construction checks exposed reliability risks in specific work
 
 These failures are predominantly structural (tool/routing/HITL/state mismatches) rather than simple response-text issues.
 
-\textbf{Cross-role tool hallucination in fine-tuned models.} When the fine-tuned open-weight model is used instead of the commercial API, it can occasionally generate tool calls belonging to the wrong agent role---for example, calling a dangerous action tool while operating as the Observer. This occurs because smaller models are more prone to ignoring the declared tool list in the request. A server-side filter mitigates this at runtime, but the proper solution requires role-scoped training data where each sample's tool boundary matches the active role.
+\textbf{Training data duplication.} The distillation pipeline produced 704 duplicate samples (21.1\% of the 3,329-sample training set), concentrated in Operator-role data where 54\% of samples belong to duplicate groups. While the duplicated content is individually correct, the imbalance may bias the model toward over-represented action patterns and reduce effective diversity for under-represented categories.
 
 \textbf{Policy-rail sensitivity.} The system uses explicit handoff policies, required-tool hints, and regex-like intent detection to improve determinism. These choices are useful for safety and evaluation, but can be brittle when users phrase requests differently from the benchmark.
 

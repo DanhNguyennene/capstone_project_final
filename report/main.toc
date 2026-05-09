@@ -5,7 +5,7 @@
 \contentsline {section}{\numberline {1.2}Scope and Goals}{2}{section.1.2}%
 \contentsline {subsection}{\numberline {1.2.1}Project Goals}{2}{subsection.1.2.1}%
 \contentsline {subsection}{\numberline {1.2.2}Project Scope}{3}{subsection.1.2.2}%
-\contentsline {section}{\numberline {1.3}Challenges and Solutions}{3}{section.1.3}%
+\contentsline {section}{\numberline {1.3}Challenges and Solutions}{4}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Project Structure}{6}{section.1.4}%
 \contentsline {chapter}{\numberline {2}Theoretical Background}{7}{chapter.2}%
 \contentsline {section}{\numberline {2.1}Slurm Workload Manager}{7}{section.2.1}%
@@ -43,7 +43,7 @@
 \contentsline {chapter}{\numberline {4}Proposed Approaches}{22}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Proposed Slurm Agent Overview}{22}{section.4.1}%
 \contentsline {subsection}{\numberline {4.1.1}System Objective}{22}{subsection.4.1.1}%
-\contentsline {section}{\numberline {4.2}Requirements Overview}{22}{section.4.2}%
+\contentsline {section}{\numberline {4.2}Requirements Overview}{23}{section.4.2}%
 \contentsline {subsection}{\numberline {4.2.1}Functional Requirements}{23}{subsection.4.2.1}%
 \contentsline {subsection}{\numberline {4.2.2}Non-Functional Requirements}{24}{subsection.4.2.2}%
 \contentsline {subsection}{\numberline {4.2.3}Requirements Traceability}{24}{subsection.4.2.3}%
@@ -70,7 +70,7 @@
 \contentsline {subsection}{\numberline {4.5.2}Instruction Design}{31}{subsection.4.5.2}%
 \contentsline {subsection}{\numberline {4.5.3}Domain-Adapted Fine-Tuning}{32}{subsection.4.5.3}%
 \contentsline {subsubsection}{MCP Mock Environment for Data Collection}{32}{subsubsection*.31}%
-\contentsline {subsubsection}{Distillation from GPT-5 Mini}{32}{subsubsection*.33}%
+\contentsline {subsubsection}{Distillation from GPT-5-mini}{32}{subsubsection*.33}%
 \contentsline {subsubsection}{Data Augmentation}{33}{subsubsection*.34}%
 \contentsline {subsubsection}{Training Configuration}{34}{subsubsection*.36}%
 \contentsline {chapter}{\numberline {5}Implementation}{35}{chapter.5}%
@@ -97,19 +97,20 @@
 \contentsline {subsection}{\numberline {5.3.1}Interface Role in the System}{40}{subsection.5.3.1}%
 \contentsline {subsection}{\numberline {5.3.2}Agent Service API}{40}{subsection.5.3.2}%
 \contentsline {subsection}{\numberline {5.3.3}Evaluation Integration}{41}{subsection.5.3.3}%
-\contentsline {subsection}{\numberline {5.3.4}Deployment Scripts}{41}{subsection.5.3.4}%
 \contentsline {section}{\numberline {5.4}Fine-Tuning Implementation}{41}{section.5.4}%
 \contentsline {subsection}{\numberline {5.4.1}Model Preparation}{41}{subsection.5.4.1}%
-\contentsline {subsection}{\numberline {5.4.2}Data Formatting}{42}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.2}Data Formatting}{41}{subsection.5.4.2}%
 \contentsline {subsection}{\numberline {5.4.3}Training Procedure}{42}{subsection.5.4.3}%
-\contentsline {subsection}{\numberline {5.4.4}Training Monitoring}{43}{subsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.4.4}Training Monitoring}{42}{subsection.5.4.4}%
+\contentsline {subsubsection}{Data Quality Note}{43}{subsubsection*.46}%
 \contentsline {chapter}{\numberline {6}Experiments}{44}{chapter.6}%
 \contentsline {section}{\numberline {6.1}Testing Approach}{44}{section.6.1}%
 \contentsline {subsection}{\numberline {6.1.1}Testing Environment}{44}{subsection.6.1.1}%
 \contentsline {subsection}{\numberline {6.1.2}Benchmark Dataset}{44}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}Scoring Methodology}{46}{subsection.6.1.3}%
-\contentsline {subsection}{\numberline {6.1.4}Execution Flow}{47}{subsection.6.1.4}%
-\contentsline {subsection}{\numberline {6.1.5}Source Code}{47}{subsection.6.1.5}%
+\contentsline {subsection}{\numberline {6.1.3}Train/Test Split for Fine-Tuning Evaluation}{46}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Scoring Methodology}{47}{subsection.6.1.4}%
+\contentsline {subsection}{\numberline {6.1.5}Execution Flow}{47}{subsection.6.1.5}%
+\contentsline {subsection}{\numberline {6.1.6}Source Code}{47}{subsection.6.1.6}%
 \contentsline {section}{\numberline {6.2}Experimental Results}{47}{section.6.2}%
 \contentsline {subsection}{\numberline {6.2.1}Benchmark Construction Outcome}{47}{subsection.6.2.1}%
 \contentsline {subsection}{\numberline {6.2.2}Dataset Construction Outcome}{48}{subsection.6.2.2}%
@@ -119,36 +120,41 @@
 \contentsline {subsubsection}{Training Execution}{49}{subsubsection*.56}%
 \contentsline {subsection}{\numberline {6.2.4}Comparison with Manual CLI Workflow}{50}{subsection.6.2.4}%
 \contentsline {subsection}{\numberline {6.2.5}Quantitative Performance Results}{50}{subsection.6.2.5}%
-\contentsline {subsubsection}{LLM-as-Judge Analysis}{51}{subsubsection*.60}%
+\contentsline {subsubsection}{LLM-as-Judge Analysis}{50}{subsubsection*.60}%
 \contentsline {subsection}{\numberline {6.2.6}Model Configuration}{51}{subsection.6.2.6}%
 \contentsline {subsection}{\numberline {6.2.7}Fine-Tuned Model vs Baseline Comparison}{51}{subsection.6.2.7}%
 \contentsline {subsubsection}{Evaluation Protocol}{51}{subsubsection*.62}%
-\contentsline {subsubsection}{Hypotheses}{52}{subsubsection*.63}%
+\contentsline {subsubsection}{Hypotheses}{51}{subsubsection*.63}%
 \contentsline {subsubsection}{Comparative Results}{52}{subsubsection*.64}%
 \contentsline {subsubsection}{Cost and Deployment Analysis}{52}{subsubsection*.66}%
 \contentsline {subsection}{\numberline {6.2.8}Result Interpretation}{53}{subsection.6.2.8}%
 \contentsline {subsubsection}{State-Match Scoring Artifact}{53}{subsubsection*.68}%
-\contentsline {chapter}{\numberline {7}Conclusion}{55}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Summary}{55}{section.7.1}%
-\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{55}{subsection.7.1.1}%
-\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{56}{subsection.7.1.2}%
-\contentsline {subsection}{\numberline {7.1.3}Benchmark Artifact Outcomes}{56}{subsection.7.1.3}%
-\contentsline {subsection}{\numberline {7.1.4}Main Findings}{56}{subsection.7.1.4}%
-\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{57}{subsection.7.1.5}%
-\contentsline {section}{\numberline {7.2}Limitations}{57}{section.7.2}%
-\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{57}{subsection.7.2.1}%
-\contentsline {subsection}{\numberline {7.2.2}Behavioral Reliability Limitations}{57}{subsection.7.2.2}%
-\contentsline {subsection}{\numberline {7.2.3}Operational Scope Limitations}{58}{subsection.7.2.3}%
-\contentsline {subsection}{\numberline {7.2.4}Security and Governance Limitations}{58}{subsection.7.2.4}%
-\contentsline {subsection}{\numberline {7.2.5}Performance and Scalability Limitations}{58}{subsection.7.2.5}%
-\contentsline {subsection}{\numberline {7.2.6}Model and Scoring Limitations}{58}{subsection.7.2.6}%
-\contentsline {subsection}{\numberline {7.2.7}Limitation Mitigation Plan}{59}{subsection.7.2.7}%
-\contentsline {section}{\numberline {7.3}Future Work}{59}{section.7.3}%
-\contentsline {subsection}{\numberline {7.3.1}Priority 1: Reliability Hardening}{59}{subsection.7.3.1}%
-\contentsline {subsection}{\numberline {7.3.2}Priority 2: Real Cluster Validation}{59}{subsection.7.3.2}%
-\contentsline {subsection}{\numberline {7.3.3}Priority 3: Security and Governance Readiness}{60}{subsection.7.3.3}%
-\contentsline {subsection}{\numberline {7.3.4}Priority 4: Multi-Turn Behavioral Evaluation}{60}{subsection.7.3.4}%
-\contentsline {subsection}{\numberline {7.3.5}Priority 5: Web-Grounded Retrieval Reproducibility}{60}{subsection.7.3.5}%
-\contentsline {subsection}{\numberline {7.3.6}Priority 6: Open-Weight Model Parity}{61}{subsection.7.3.6}%
-\contentsline {subsection}{\numberline {7.3.7}Summary Roadmap}{61}{subsection.7.3.7}%
-\contentsline {chapter}{References}{61}{subsection.7.3.7}%
+\contentsline {subsection}{\numberline {6.2.9}Architecture Ablation: Monolithic vs.\ Observer/Operator}{54}{subsection.6.2.9}%
+\contentsline {subsubsection}{Disentangling Routing Bias from Task Quality}{55}{subsubsection*.72}%
+\contentsline {subsubsection}{Safety Enforcement Analysis}{56}{subsubsection*.75}%
+\contentsline {subsubsection}{Summary}{56}{subsubsection*.76}%
+\contentsline {chapter}{\numberline {7}Conclusion}{58}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Summary}{58}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{58}{subsection.7.1.1}%
+\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{59}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Benchmark Artifact Outcomes}{59}{subsection.7.1.3}%
+\contentsline {subsection}{\numberline {7.1.4}Main Findings}{60}{subsection.7.1.4}%
+\contentsline {subsection}{\numberline {7.1.5}Source Code Availability}{60}{subsection.7.1.5}%
+\contentsline {section}{\numberline {7.2}Limitations}{60}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Evaluation Realism Limitations}{60}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Evaluation--Architecture Coupling}{61}{subsection.7.2.2}%
+\contentsline {subsection}{\numberline {7.2.3}Behavioral Reliability Limitations}{61}{subsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.2.4}Operational Scope Limitations}{61}{subsection.7.2.4}%
+\contentsline {subsection}{\numberline {7.2.5}Security and Governance Limitations}{62}{subsection.7.2.5}%
+\contentsline {subsection}{\numberline {7.2.6}Performance and Scalability Limitations}{62}{subsection.7.2.6}%
+\contentsline {subsection}{\numberline {7.2.7}Model and Scoring Limitations}{62}{subsection.7.2.7}%
+\contentsline {subsection}{\numberline {7.2.8}Limitation Mitigation Plan}{62}{subsection.7.2.8}%
+\contentsline {section}{\numberline {7.3}Future Work}{63}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Priority 1: Reliability Hardening}{63}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Priority 2: Real Cluster Validation}{63}{subsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.3.3}Priority 3: Security and Governance Readiness}{63}{subsection.7.3.3}%
+\contentsline {subsection}{\numberline {7.3.4}Priority 4: Multi-Turn Behavioral Evaluation}{64}{subsection.7.3.4}%
+\contentsline {subsection}{\numberline {7.3.5}Priority 5: Web-Grounded Retrieval Reproducibility}{64}{subsection.7.3.5}%
+\contentsline {subsection}{\numberline {7.3.6}Priority 6: Open-Weight Model Parity}{64}{subsection.7.3.6}%
+\contentsline {subsection}{\numberline {7.3.7}Summary Roadmap}{65}{subsection.7.3.7}%
+\contentsline {chapter}{References}{65}{subsection.7.3.7}%

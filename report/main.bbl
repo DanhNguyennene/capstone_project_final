@@ -1299,7 +1299,6 @@
       \field{journaltitle}{arXiv preprint arXiv:2307.16789}
       \field{title}{{ToolLLM}: Facilitating Large Language Models to Master 16000+ Real-world {APIs}}
       \field{year}{2023}
-      \true{nocite}
     \endentry
     \entry{fastapi2024}{misc}{}{}
       \name{author}{1}{}{%

@@ -7,13 +7,13 @@ This section details the concrete training configuration that realizes the fine-
 
 The base model (Qwen2.5-14B-Instruct, 48 transformer layers) is loaded in 4-bit NormalFloat (NF4) quantization with double quantization enabled, reducing GPU memory from approximately 28\,GB to under 10\,GB. Computation uses bfloat16 precision for numerical stability.
 
-A LoRA adapter with rank $r{=}64$ and scaling factor $\alpha{=}128$ is attached to the final 12 transformer layers (layers 36--47), targeting all linear projections: query, key, value, and output attention projections plus the MLP gate, up, and down projections. This yields approximately 180M trainable parameters---about 1.3\% of the full model.
+A LoRA adapter with rank $r{=}64$ and scaling factor $\alpha{=}128$ is attached to all 48 transformer layers, targeting all linear projections: query, key, value, and output attention projections plus the MLP gate, up, and down projections. This yields approximately 480M trainable parameters---about 3.2\% of the full model. Applying LoRA across all layers (rather than only the upper 12) was found necessary to fully override the base model's pretrained prior for CLI-style tool invocations.
 
 \subsection{Data Formatting}
 
 Each training sample is rendered through Qwen2.5's native chat template. The per-sample \texttt{tools} field is passed directly to the template engine so that tool definitions appear in the token stream exactly as they would at inference time. The tokenizer applies the chat template with \texttt{add\_generation\_prompt=False} to produce a complete input--output sequence.
 
-Loss masking ensures the model is trained only to generate assistant responses and tool calls. System prompts, user messages, and tool-response observations are masked from gradient computation. Sequences exceeding 6{,}144 tokens are truncated from the left, preserving the most recent tool interactions when early context overflows---this is preferable to right-truncation because the critical tool-calling patterns typically appear in the later turns of multi-tool traces.
+Loss masking ensures the model is trained only to generate assistant responses and tool calls. System prompts, user messages, and tool-response observations are masked from gradient computation. Sequences exceeding 8{,}192 tokens are truncated from the left, preserving the most recent tool interactions when early context overflows---this is preferable to right-truncation because the critical tool-calling patterns typically appear in the later turns of multi-tool traces.
 
 \subsection{Training Procedure}
 
@@ -29,35 +29,41 @@ Loss masking ensures the model is trained only to generate assistant responses a
         Base model & Qwen2.5-14B-Instruct \\
         Quantization & NF4 + double quantization \\
         LoRA rank / alpha & 64 / 128 \\
-        Target layers & 36--47 (of 48) \\
+        Target layers & All 48 layers \\
         Target modules & q/k/v/o\_proj, gate/up/down\_proj \\
-        Trainable parameters & $\sim$180M (1.3\%) \\
+        Trainable parameters & $\sim$480M (3.2\%) \\
         \hline
+        Training samples & 3{,}329 total (2{,}625 unique) \\
+        & (2{,}436 Observer + 893 Operator) \\
+        Teacher model & GPT-5-mini (distilled traces) \\
         Epochs & 3 \\
         Effective batch size & 16 (micro-batch 1 $\times$ grad accum 16) \\
-        Max sequence length & 6{,}144 tokens \\
+        Max sequence length & 8{,}192 tokens \\
         Learning rate & $1 \times 10^{-4}$ \\
-        LR schedule & Cosine with 3\% warmup \\
+        LR schedule & Cosine with 5\% warmup \\
         Optimizer & AdamW (8-bit state) \\
         Truncation & Left \\
         Gradient checkpointing & Enabled (non-reentrant) \\
         \hline
         Hardware & 1$\times$ NVIDIA A40 (46\,GB) \\
-        Training time & $\sim$17.5 hours \\
-        Peak VRAM & $\sim$43\,GB / 46\,GB \\
         \hline
     \end{tabular}
 \end{table}
 
-Training uses the AdamW optimizer with 8-bit quantized state to reduce optimizer memory. Gradient checkpointing trades recomputation for memory savings, allowing the full 6{,}144-token sequences to fit within the 46\,GB A40 GPU at batch size 1. The cosine learning rate schedule with warmup avoids early instability from the relatively high learning rate.
+Training uses the AdamW optimizer with 8-bit quantized state to reduce optimizer memory. Gradient checkpointing trades recomputation for memory savings, allowing the full 8{,}192-token sequences to fit within the 46\,GB A40 GPU at batch size 1. The cosine learning rate schedule with warmup avoids early instability from the relatively high learning rate.
 
 \subsection{Training Monitoring}
 
-Training progress is tracked via Weights \& Biases. Key metrics include training loss (cross-entropy on masked assistant tokens) and gradient norm. The loss curve is expected to show rapid initial descent as the model learns tool-call formatting, followed by slower convergence as it refines argument accuracy and handoff timing.
+Training progress is tracked via Weights \& Biases. Key metrics include training loss (cross-entropy on masked assistant tokens) and gradient norm. The loss curve shows rapid initial descent as the model learns tool-call formatting, followed by slower convergence as it refines argument accuracy and handoff timing.
 
-\begin{figure}[H]
-    \centering
-    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2em}\textit{Placeholder: Training loss curve from W\&B showing convergence over 3 epochs}\vspace{2em}}}
-    \caption{Fine-Tuning Training Loss Curve}
-    \label{fig:training-loss}
-\end{figure}
+\subsubsection{Data Quality Note}
+
+Post-hoc auditing revealed that 704 samples (21.1\%) are exact duplicates introduced by the data generation pipeline when distinct test IDs produced identical message sequences. The effective unique training set is 2{,}625 samples rather than 3{,}329. Duplication disproportionately affects Operator samples (54\% in duplicate groups vs.\ 23\% for Observer), concentrated in the \texttt{bulk} and \texttt{action} categories. At 3 epochs of training, duplicated samples are seen 6--15 times total rather than the intended 3, creating a mild overweighting of simple tool-execution patterns. Deduplication before training would have been preferable and is noted as a pipeline deficiency.
+
+% Training loss curve - insert after training completes
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{images/training_loss_curve.png}
+%     \caption{Fine-Tuning Training Loss Over Steps}
+%     \label{fig:training-loss-curve}
+% \end{figure}

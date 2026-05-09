@@ -15,9 +15,10 @@
 \contentsline {figure}{\numberline {4.6}{\ignorespaces Training Data Augmentation Pipeline}}{34}{figure.caption.35}%
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {5.1}{\ignorespaces Slurm Agent Chat Interface}}{40}{figure.caption.44}%
-\contentsline {figure}{\numberline {5.2}{\ignorespaces Fine-Tuning Training Loss Curve}}{43}{figure.caption.46}%
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{45}{figure.caption.49}%
 \contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{46}{figure.caption.50}%
 \contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{46}{figure.caption.51}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Per-Category Pass Rate: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}}{55}{figure.caption.71}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Routing-Neutral Comparison: Observer-Only Tasks Where Both Architectures Score routing=1.0}}{56}{figure.caption.74}%
 \addvspace {10\p@ }

@@ -36,14 +36,3 @@ The evaluation path uses the same backend behavior as manual interaction. The ev
 
 An auxiliary evaluation backend provides controls for running single cases, running the full benchmark, stopping a run, and exporting result artifacts. An optional inspection view can display these artifacts, but the thesis treats the artifact itself as the evidence: dataset row, source state, target state, expected tools, observed tools, routing behavior, HITL behavior, response evidence, and state score.
 
-\subsection{Deployment Scripts}
-
-The repository includes script-based startup for the local development stack:
-
-\begin{itemize}
-    \item \texttt{start.sh}: launches the MCP server, agent API, and optional local interface preview,
-    \item \texttt{start\_eval\_server.sh}: launches the evaluation backend,
-    \item \texttt{restart.sh}: restarts the local stack for repeated implementation and evaluation runs.
-\end{itemize}
-
-These scripts are practical engineering support. They are included to make the implementation reproducible, while the thesis analysis focuses on the behavior of the agent and evaluation pipeline rather than interface design.

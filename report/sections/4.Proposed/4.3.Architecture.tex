@@ -56,6 +56,15 @@ The Agent Layer implements core reasoning and orchestration using a dual-agent a
 
 This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy. The Observer never holds action tools, and the Operator never runs without an explicit handoff---ensuring that the boundary between reading and mutating state is enforced by the framework rather than by prompt compliance alone.
 
+Beyond safety enforcement, the dual-agent design provides a measurable \textbf{tool-scope reduction} benefit for capacity-constrained local models. The full Slurm tool surface comprises 18 distinct tools; presenting all of them simultaneously to a 14B-parameter model degrades tool-selection accuracy as the model's attention must discriminate among semantically similar options (e.g., \texttt{sacct} vs.\ \texttt{squeue} vs.\ \texttt{sacctmgr\_list}). By partitioning tools into two focused subsets of approximately 8 tools each, each agent operates within a smaller selection space where correct tool identification is easier. Ablation experiments (Section~\ref{sec:ablation}) confirm this effect: on 378 test cases where the routing metric is neutral (no handoff required), the dual-agent configuration achieves 87.0\% pass rate versus 73.8\% for the monolithic single-agent baseline---a +13.2 percentage point improvement driven primarily by an 11.6pp gain in tool recall.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/evaluation/tool_partitioning_comparison.png}
+    \caption{Tool Partitioning: Observer/Operator (focused subsets) vs.\ Monolithic (all tools in one context). Green = read-only, red = destructive, orange = routing/confirmation.}
+    \label{fig:tool-partitioning}
+\end{figure}
+
 % TODO: Replace with actual diagram
 \begin{figure}[htbp]
     \centering
