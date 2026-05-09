@@ -33,8 +33,9 @@ source .venv/bin/activate
 pip install -q --upgrade pip setuptools wheel
 
 # Core training deps — A40 is Ampere (sm_86), CUDA 12.x
+# Pin versions to avoid transformers/torch incompatibility
 pip install -q torch --index-url https://download.pytorch.org/whl/cu124
-pip install -q transformers peft bitsandbytes accelerate datasets scipy wandb
+pip install -q transformers==4.46.3 peft==0.13.2 bitsandbytes accelerate==0.34.2 datasets scipy wandb
 
 # Flash Attention 2 — compiles from source, takes 5-10 min
 if ! python -c "import flash_attn" 2>/dev/null; then
