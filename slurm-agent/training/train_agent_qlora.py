@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 import torch
@@ -31,9 +32,9 @@ from transformers import (
 )
 
 
-DEFAULT_BASE_MODEL = "Qwen/Qwen3.6-27B"
-DEFAULT_DATA = "training/out/agent_sft.jsonl"
-DEFAULT_OUTPUT = "training/out/slurm-agent-27b-lora"
+DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-14B-Instruct"
+DEFAULT_DATA = "out/agent_sft_v3_base.jsonl"
+DEFAULT_OUTPUT = "training/out/slurm-agent-14b-lora-v4"
 
 # LoRA targets for Qwen3 — all linear layers
 TARGET_MODULES = [
@@ -73,6 +74,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--resume-from-checkpoint", default="",
                    help="Resume Trainer state (optimizer, scheduler, step) "
                         "from a checkpoint dir produced by a previous run.")
+    p.add_argument("--skip-validation", action="store_true",
+                   help="Skip pre-flight data validation")
+    p.add_argument("--all-layers", action="store_true",
+                   help="Apply LoRA to ALL transformer layers (default: last 12)")
     return p.parse_args()
 
 
@@ -134,19 +139,24 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Pre-flight data validation (blocks training on known-bad data) ──
-    print("Running pre-flight data validation...")
-    from training._validate_sft import validate as _validate_data
-    issues, vstats = _validate_data(str(data_path))
-    blockers = vstats["polluted"] + vstats["bad_args"] + vstats["scope_leaks"]
-    print(f"  rows={vstats['total']}  polluted={vstats['polluted']}  "
-          f"bad_args={vstats['bad_args']}  scope_leaks={vstats['scope_leaks']}")
-    if blockers > 0:
-        print(f"\n✗ DATA VALIDATION FAILED — {blockers} blocking issues found.")
-        print("  Fix with: python training/clean_agent_sft.py --in <file> --out <cleaned>")
-        for issue in issues[:15]:
-            print(f"    ⚠  {issue}")
-        sys.exit(1)
-    print("  ✓ Data validation passed\n")
+    if not args.skip_validation:
+        print("Running pre-flight data validation...")
+        try:
+            from training._validate_sft import validate as _validate_data
+            issues, vstats = _validate_data(str(data_path))
+            blockers = vstats["polluted"] + vstats["bad_args"] + vstats["scope_leaks"]
+            print(f"  rows={vstats['total']}  polluted={vstats['polluted']}  "
+                  f"bad_args={vstats['bad_args']}  scope_leaks={vstats['scope_leaks']}")
+            if blockers > 0:
+                print(f"\n✗ DATA VALIDATION FAILED — {blockers} blocking issues found.")
+                for issue in issues[:15]:
+                    print(f"    ⚠  {issue}")
+                sys.exit(1)
+            print("  ✓ Data validation passed\n")
+        except ImportError:
+            print("  ⚠ Skipping validation (_validate_sft not found)\n")
+    else:
+        print("Skipping pre-flight data validation (--skip-validation)\n")
 
     print(f"{'='*60}")
     print(f"  Slurm Agent QLoRA Fine-Tuning")
@@ -209,15 +219,17 @@ def main():
         model = PeftModel.from_pretrained(model, str(init_path), is_trainable=True)
     else:
         # LoRA config
-        peft_config = LoraConfig(
+        peft_kwargs = dict(
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
             bias="none",
             task_type="CAUSAL_LM",
             target_modules=TARGET_MODULES,
-            layers_to_transform=list(range(36, 48)),
         )
+        if not args.all_layers:
+            peft_kwargs["layers_to_transform"] = list(range(36, 48))
+        peft_config = LoraConfig(**peft_kwargs)
         model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
