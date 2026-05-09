@@ -33,6 +33,10 @@ echo "════════════════════════�
 # Upgrade pip
 pip install --upgrade pip setuptools wheel
 
+# Nuke any broken tensorflow stubs (some base images ship partial installs)
+pip uninstall -y tensorflow tensorflow-cpu tensorflow-gpu tf-keras \
+  tensorflow-intel tensorflow-estimator keras 2>/dev/null || true
+
 # PyTorch (CUDA 12.4, Ampere)
 pip install torch --index-url https://download.pytorch.org/whl/cu124
 
