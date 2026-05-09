@@ -29,7 +29,6 @@ if [ ! -f "$ADAPTER_DIR/adapter_model.safetensors" ]; then
   pip install huggingface_hub -q
   huggingface-cli download DanhVuiVe/slurm-agent-qwen14b-lora-v4 \
     --revision checkpoint-200 \
-    --include "adapter_model.safetensors" "adapter_config.json" "tokenizer*" "special_tokens_map.json" \
     --local-dir $ADAPTER_DIR
   echo "  Downloaded to $ADAPTER_DIR"
 else
