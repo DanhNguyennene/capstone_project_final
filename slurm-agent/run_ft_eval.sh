@@ -28,6 +28,7 @@ if [ ! -f "$ADAPTER_DIR/adapter_model.safetensors" ]; then
   echo "[0/4] Downloading adapter from HuggingFace..."
   pip install huggingface_hub -q
   huggingface-cli download DanhVuiVe/slurm-agent-qwen14b-lora-v4 \
+    --revision checkpoint-200 \
     --local-dir $ADAPTER_DIR
   echo "  Downloaded to $ADAPTER_DIR"
 else
