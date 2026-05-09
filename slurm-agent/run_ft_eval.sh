@@ -37,7 +37,7 @@ fi
 # ── 1. MCP Server ──
 echo ""
 echo "[1/4] Starting MCP server on :3002..."
-python mcp-server/slurm_mcp_sse.py > mcp.log 2>&1 &
+nohup python mcp-server/slurm_mcp_sse.py > mcp.log 2>&1 &
 MCP_PID=$!
 echo "  PID: $MCP_PID"
 sleep 5
@@ -55,7 +55,7 @@ echo ""
 echo "[2/4] Starting FT Qwen2.5-14B model server on :9000..."
 echo "  (This takes ~2-3 min to load weights + adapter)"
 export OPENAI_AGENTS_DISABLE_TRACING=1
-python evaluation/serve_ft_model.py \
+nohup python evaluation/serve_ft_model.py \
   --adapter $ADAPTER_DIR \
   --port 9000 \
   --no-4bit \
@@ -94,7 +94,7 @@ export STREAM_TIMEOUT=300
 export OPENAI_AGENTS_DISABLE_TRACING=1
 
 cd agent
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 > ../agent_ft.log 2>&1 &
+nohup python -m uvicorn main:app --host 0.0.0.0 --port 8000 > ../agent_ft.log 2>&1 &
 AGENT_PID=$!
 cd ..
 echo "  PID: $AGENT_PID"
@@ -120,11 +120,15 @@ fi
 echo "  PIDs: MCP=$MCP_PID, Model=$MODEL_PID, Agent=$AGENT_PID"
 echo ""
 
-python evaluation/scenario_eval.py \
+nohup python evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
   --test-ids-file $TEST_FILE \
-  --workers 2
+  --workers 2 \
+  > eval_ft.log 2>&1 &
+EVAL_PID=$!
+echo "  Eval running in background: PID=$EVAL_PID"
+echo "  Tail logs: tail -f eval_ft.log"
 
 echo ""
 echo "══════════════════════════════════════════"
