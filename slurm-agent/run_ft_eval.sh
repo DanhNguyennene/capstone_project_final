@@ -20,6 +20,7 @@ echo "Killing any existing processes..."
 pkill -9 -f slurm_mcp_sse.py 2>/dev/null || true
 pkill -9 -f 'main:app' 2>/dev/null || true
 pkill -9 -f serve_ft_model 2>/dev/null || true
+pkill -9 -f scenario_eval 2>/dev/null || true
 sleep 3
 
 # ── 0. Download adapter from HF ──
@@ -30,7 +31,7 @@ if [ ! -f "$ADAPTER_DIR/adapter_model.safetensors" ]; then
   huggingface-cli download DanhVuiVe/slurm-agent-qwen14b-lora-ckpt200 \
     --local-dir $ADAPTER_DIR
   echo "  Downloaded to $ADAPTER_DIR"
-else
+elsehuggingface-cli download DanhVuiVe/slurm-agent-qwen14b-lora-ckpt200 --local-dir /workspace/adapter
   echo "[0/4] Adapter already present at $ADAPTER_DIR"
 fi
 
@@ -120,7 +121,7 @@ fi
 echo "  PIDs: MCP=$MCP_PID, Model=$MODEL_PID, Agent=$AGENT_PID"
 echo ""
 
-nohup python evaluation/scenario_eval.py \
+nohup python -u evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
   --test-ids-file $TEST_FILE \
