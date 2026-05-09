@@ -58,6 +58,7 @@ export OPENAI_AGENTS_DISABLE_TRACING=1
 nohup python evaluation/serve_ft_model.py \
   --adapter $ADAPTER_DIR \
   --port 9000 \
+  --no-4bit \
   --max-new-tokens 2048 \
   > serve_ft.log 2>&1 &
 MODEL_PID=$!
@@ -123,7 +124,7 @@ python evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
   --test-ids-file $TEST_FILE \
-  --workers 1
+  --workers 2
 
 echo ""
 echo "══════════════════════════════════════════"
