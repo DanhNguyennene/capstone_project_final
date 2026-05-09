@@ -23,7 +23,7 @@ pkill -9 -f serve_ft_model 2>/dev/null || true
 sleep 3
 
 # ── 0. Download adapter from HF ──
-ADAPTER_DIR="training/out/ft_v4_adapter"
+ADAPTER_DIR="/workspace/adapter"
 if [ ! -f "$ADAPTER_DIR/adapter_model.safetensors" ]; then
   echo "[0/4] Downloading adapter from HuggingFace..."
   pip install huggingface_hub -q
