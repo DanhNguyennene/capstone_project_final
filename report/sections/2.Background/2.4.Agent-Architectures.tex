@@ -24,7 +24,7 @@ This cycle repeats until the agent determines it has sufficient information to p
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{images/react_agent_arch.png}
-    \caption{The ReAct Think-Act-Observe Loop}
+    \caption{The ReAct (Reason + Act) reasoning loop~\cite{yao2022react}. Starting from a user \textit{Query}, the agent enters an iterative cycle: it \textit{Thinks} (produces a chain-of-thought reasoning trace to determine what information is missing), \textit{Acts} (selects and invokes an external Tool such as a search engine, database, or command executor), and \textit{Observes} (reads the raw result returned by the tool). The agent then returns to the thinking phase to decide whether it has sufficient information or needs another tool call. Once the goal is met the loop exits and the agent emits a final \textit{Answer}. Grounding reasoning in real tool observations at each step suppresses hallucination by preventing the model from fabricating facts that a tool call would contradict.~\cite{aiplainenglish2024react}}
     \label{fig:react-loop}
 \end{figure}
 
