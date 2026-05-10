@@ -550,6 +550,7 @@ async def run_agent(
     main_model: str = MAIN_MODEL,
     specialist_model: str = SPECIALIST_MODEL,
     openai_parallel: bool = False,
+    request_timeout: int = 120,
 ) -> AgentTrace:
     """Send prompt to the live agent API and capture behavioral trace."""
     tools_called = []
@@ -673,7 +674,7 @@ async def run_agent(
 
     try:
         async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=120)
+            timeout=aiohttp.ClientTimeout(total=request_timeout)
         ) as session:
             saw = await _stream(payload)
 
@@ -1986,6 +1987,7 @@ async def run_eval(args):
                         main_model=args.main_model,
                         specialist_model=args.specialist_model,
                         openai_parallel=args.openai_parallel,
+                        request_timeout=args.timeout,
                     )
                 finally:
                     await clear_agent_session(args.agent_url, session_id)
@@ -2038,6 +2040,7 @@ async def run_eval(args):
                                 main_model=args.main_model,
                                 specialist_model=args.specialist_model,
                                 openai_parallel=args.openai_parallel,
+                                request_timeout=args.timeout,
                             )
                         finally:
                             await clear_agent_session(args.agent_url, session_id)
@@ -2142,6 +2145,8 @@ def main():
                    help="Judge provider: ollama, openai, azure-openai, or auto")
     p.add_argument("--openai-parallel", action="store_true",
                    help="Enable parallel tool calls when the main provider is OpenAI")
+    p.add_argument("--timeout", type=int, default=300,
+                   help="HTTP request timeout in seconds per eval case (default: 300)")
     p.add_argument("--workers", type=int, default=1,
                    help="Number of parallel test workers (default: 1 = sequential)")
     p.add_argument("--judge-workers", type=int, default=0,

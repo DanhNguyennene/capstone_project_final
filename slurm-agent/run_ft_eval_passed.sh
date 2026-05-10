@@ -47,6 +47,7 @@ export OPENAI_API_KEY=dummy
 export SLURM_AGENT_MODEL=slurm-agent
 export LLM_PROVIDER=openai
 export STREAM_TIMEOUT=300
+export USE_TRAINING_PROMPTS=1
 cd $ROOT/agent
 nohup python -m uvicorn main:app --host 0.0.0.0 --port 8000 > $ROOT/agent_ft.log 2>&1 &
 cd $ROOT
@@ -58,5 +59,6 @@ echo "[4/4] Running eval on 276 base-passed cases..."
 nohup python -u $ROOT/evaluation/scenario_eval.py \
   --main-provider openai --main-model slurm-agent \
   --test-ids-file $ROOT/evaluation/base_union_passed_ids.json \
+  --timeout 300 \
   --workers 1 > $ROOT/eval_ft_passed.log 2>&1 &
 echo "  PID: $! — tail -f $ROOT/eval_ft_passed.log"
