@@ -205,12 +205,12 @@ Based on the training data composition and the role-scoping approach, the follow
         \hline
         \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
-        Pass rate         & 97.9\% & \textbf{94.6\%} & 72.8\% \\
+        Pass rate         & 96.6\% & \textbf{94.6\%} & 72.8\% \\
         Avg tool recall   & 98.8\% & \textbf{90.3\%} & 84.9\% \\
         Avg routing match & 99.0\% & \textbf{99.3\%} & 83.6\% \\
         Avg HITL match    & 99.0\% & \textbf{99.3\%} & 80.8\% \\
-        Avg state match   & 98.2\% & \textbf{99.3\%} & 87.3\% \\
-        Avg judge score   & 74.3\% & 69.3\%          & 76.8\% \\
+        Avg state match   & 95.9\% & \textbf{99.3\%} & 87.3\% \\
+        Avg judge score   & 75.2\% & 69.3\%          & 76.8\% \\
         Avg latency       & 28.3\,s & 85.1\,s        & 80.9\,s \\
         \hline
     \end{tabular}
@@ -226,25 +226,25 @@ Latency is comparable between the two Qwen variants (85.1\,s vs 80.9\,s), both r
 
 \begin{table}[H]
     \centering
-    \caption{Pass Rate by Category --- Qwen2.5-14B Fine-Tuned vs Base (615 Test Cases)}
+    \caption{Pass Rate by Category --- Three-Way Comparison (615 Test Cases)}
     \label{tab:ft-per-category}
     \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Category} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} & \textbf{$\Delta$} \\
+        \textbf{Category} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
-        read        & 100.0\% & 98.2\%  & +1.8\,pp \\
-        diagnose    & 100.0\% & 87.3\%  & +12.7\,pp \\
-        action      & 100.0\% & 86.0\%  & +14.0\,pp \\
-        bulk        & 100.0\% & 67.9\%  & +32.1\,pp \\
-        safety      & 100.0\% & 57.9\%  & +42.1\,pp \\
-        submission  & 100.0\% & 24.6\%  & +75.4\,pp \\
-        multi\_step & 100.0\% & 45.6\%  & +54.4\,pp \\
-        account     & 100.0\% & 96.4\%  & +3.6\,pp \\
-        edge        & 100.0\% & 72.7\%  & +27.3\,pp \\
-        docs        & 100.0\% & 80.0\%  & +20.0\,pp \\
-        domain      & \textbf{13.2\%}  & 87.3\%  & $-$74.1\,pp \\
+        read        & 100.0\% & 100.0\% & 98.2\% \\
+        diagnose    & 96.4\%  & 100.0\% & 87.3\% \\
+        action      & 96.5\%  & 100.0\% & 86.0\% \\
+        bulk        & 98.2\%  & 100.0\% & 67.9\% \\
+        safety      & 96.5\%  & 100.0\% & 57.9\% \\
+        submission  & 98.2\%  & 100.0\% & 24.6\% \\
+        multi\_step & 100.0\% & 100.0\% & 45.6\% \\
+        account     & 100.0\% & 100.0\% & 96.4\% \\
+        edge        & 90.9\%  & 100.0\% & 72.7\% \\
+        docs        & 87.3\%  & 100.0\% & 80.0\% \\
+        domain      & 98.2\%  & \textbf{13.2\%} & 87.3\% \\
         \hline
-        \textbf{Overall} & \textbf{94.6\%} & \textbf{72.8\%} & +21.8\,pp \\
+        \textbf{Overall} & \textbf{96.6\%} & \textbf{94.6\%} & \textbf{72.8\%} \\
         \hline
     \end{tabular}
 \end{table}
