@@ -61,15 +61,14 @@ Beyond safety enforcement, the dual-agent design provides a measurable \textbf{t
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/tool_partitioning_comparison.png}
-    \caption{Tool Partitioning: Observer/Operator (focused subsets) vs.\ Monolithic (all tools in one context). Green = read-only, red = destructive, orange = routing/confirmation.}
+    \caption{Tool partitioning comparison: Observer/Operator split (left) versus Monolithic configuration (right). In the split design, the Observer receives only read-only tools (green) plus the handoff mechanism (orange), while the Operator receives only destructive/action tools (red) and a small set of discovery reads. The Monolithic baseline exposes all 18 tools to a single agent context. Reducing the per-agent tool count from 18 to approximately 8 narrows the selection space and directly improves tool-call accuracy for the 14B-parameter model, as quantified by the ablation experiments in Section~\ref{sec:ablation}.}
     \label{fig:tool-partitioning}
 \end{figure}
 
-% TODO: Replace with actual diagram
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/observer_operator_flow.png}
-    \caption{Observer/Operator Routing and Confirmation Flow}
+    \caption{Observer/Operator routing and confirmation flow. Every request enters the Observer, which classifies intent and either handles read-only operations directly (via Read MCP Tools) or issues a \texttt{transfer\_to\_operator} directive carrying the action, tool, targets, and scope for state-changing requests. The Operator resolves the target scope---performing a discovery read if needed---then invokes the action tool. All destructive tool calls pass through a HITL confirmation gate: approved actions execute and results are returned to the Observer via \texttt{transfer\_to\_observer}; cancelled actions are discarded. The Observer then decides whether additional tool calls are required or synthesises the final response.}
     \label{fig:observer-operator-flow}
 \end{figure}
 
@@ -93,7 +92,7 @@ A typical query flows: (1)~user submits request, (2)~Agent Layer begins ReAct re
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/request_lifecycle_flow.png}
-    \caption{Request Lifecycle Data Flow}
+    \caption{Request lifecycle data flow (sequence diagram). A user request arrives at the FastAPI server over HTTP or WebSocket. The server invokes the ReAct Agent, which classifies intent via the Router and delegates to the appropriate Observer or Operator sub-agent. The sub-agent communicates with the MCP Server over stdio, which in turn executes the relevant Slurm command against the cluster. Results propagate back up the call chain; the agent synthesises a response with embedded trace events that are streamed to the client as a Server-Sent Events (SSE) stream. Dangerous operations trigger a confirmation interruption between the sub-agent and the MCP Server before execution proceeds.}
     \label{fig:data-flow}
 \end{figure}
 

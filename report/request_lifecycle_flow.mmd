@@ -1,22 +1,34 @@
 sequenceDiagram
-    participant U as User/Frontend
+    participant U as User / Frontend
     participant API as FastAPI Server
-    participant RA as ReAct Agent
-    participant R as Router
-    participant O as Observer/Operator
-    participant MCP as MCP Server
+    participant OBS as Observer Agent
+    participant OPR as Operator Agent
+    participant MCP as MCP Server (stdio)
     participant S as Slurm Cluster
 
-    U->>API: HTTP Request / WebSocket
-    API->>RA: Invoke agent
-    RA->>R: Classify intent
-    R->>O: Delegate to sub-agent
-    O->>MCP: Tool call (via stdio)
+    U->>API: HTTP POST /v1/chat/completions
+    API->>OBS: Runner.run_streamed()
+    OBS->>OBS: ReAct loop (Think → Act → Observe)
+    OBS->>MCP: read tool call (squeue / sinfo / sacct…)
     MCP->>S: Execute command
-    S-->>MCP: Result
-    MCP-->>O: Tool response
-    O-->>RA: Sub-agent result
-    RA-->>API: Synthesized response + trace
-    API-->>U: SSE stream / JSON
+    S-->>MCP: stdout / JSON result
+    MCP-->>OBS: Tool response
 
-    Note over O,MCP: Dangerous ops trigger<br/>confirmation interruption
+    alt State-changing request
+        OBS->>OPR: SDK handoff() with _OperatorHandoffPayload
+        OPR->>MCP: discovery read (squeue / scontrol_show)
+        MCP-->>OPR: target IDs resolved
+        OPR->>API: needs_approval=True — interruption event
+        API-->>U: SSE: pending_approval event
+        U->>API: POST /confirm or /cancel
+        API->>OPR: RunState.resume(approved=True/False)
+        OPR->>MCP: Execute action tool
+        MCP->>S: scancel / scontrol / sbatch…
+        S-->>MCP: Result
+        MCP-->>OPR: Tool response
+        OPR->>OBS: SDK handoff() with results
+        OBS->>OBS: Synthesise final response
+    end
+
+    OBS-->>API: Stream events (tool_call, reasoning, text_delta)
+    API-->>U: SSE stream (OpenAI-compatible format)
