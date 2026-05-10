@@ -10,7 +10,7 @@ Most modern LLMs are based on the Transformer architecture introduced by Vaswani
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{images/transformer_architecture.png}
-    \caption{Transformer Architecture Components~\cite{vaswani2017attention}}
+    \caption{Transformer architecture as introduced by Vaswani et al.~\cite{vaswani2017attention}. The encoder (left) and decoder (right) each consist of stacked layers combining multi-head self-attention with position-wise feed-forward networks, residual connections, and layer normalisation. Inputs are first converted to token embeddings and summed with positional encodings to inject sequence-order information. The encoder builds contextual representations of the input; the decoder attends to both its own previous outputs (masked self-attention) and the encoder output (cross-attention) to generate the target sequence token by token. Although the original design is encoder-decoder, most modern LLMs use a decoder-only variant of this structure.}
     \label{fig:transformer-architecture}
 \end{figure}
 

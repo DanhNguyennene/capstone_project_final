@@ -14,12 +14,31 @@ The implementation provides a lightweight React + Vite interface for sending nat
     \item expose trace information that is useful for debugging agent behavior.
 \end{itemize}
 
-% TODO: Replace with actual screenshots
+The screenshots below are captured from a live session running the fine-tuned Qwen2.5-14B model with the trained QLoRA adapter (\texttt{DanhVuiVe/slurm-agent-qwen14b-lora-final}), demonstrating real agent behaviour produced by the fine-tuned model rather than a base or prompted baseline.
+
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.85\textwidth}{\centering\vspace{3cm}\textbf{Frontend UI Screenshot}\\[0.5em]\small Chat interface with tool steps panel, confirmation dialog, and chart rendering\vspace{3cm}}}
-    \caption{Slurm Agent Chat Interface}
-    \label{fig:frontend-ui}
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth,height=0.27\textheight,keepaspectratio]{images/UI_before_HITL.jpg}
+        \caption{The user asks ``What jobs are currently running?'' The fine-tuned LoRA model translates the query into an \texttt{squeue} call and renders the result as a table plus bulleted breakdown, showing two active jobs (\texttt{train\_model\_v1} and \texttt{inference\_batch}) for user \texttt{alice} with GPU resource details.}
+        \label{fig:ui-before-hitl}
+    \end{subfigure}
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth,height=0.27\textheight,keepaspectratio]{images/UI_during_HITL.jpg}
+        \caption{The user issues ``cancel all alice jobs.'' Because \texttt{scancel} is destructive, the HITL safety layer intercepts execution and presents the exact call---\texttt{scancel(job\_id=1001,1003)}---with explicit \textit{Confirm} and \textit{Cancel} buttons, requiring a manual decision before any state change.}
+        \label{fig:ui-during-hitl}
+    \end{subfigure}
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth,height=0.27\textheight,keepaspectratio]{images/UI_after_HITL.jpg}
+        \caption{After confirmation, \texttt{scancel} executes for job IDs 1001 and 1003. A follow-up \texttt{squeue} returns ``No such job'' for both, and the historical table shows \texttt{CANCELLED} state with exit codes and elapsed time, providing a full audit trail.}
+        \label{fig:ui-after-hitl}
+    \end{subfigure}
+    \caption{End-to-end Human-in-the-Loop (HITL) confirmation flow, powered by the fine-tuned QLoRA model. Top: read-only cluster query; Middle: destructive action intercepted for manual approval; Bottom: post-execution verification of the cancelled jobs.}
+    \label{fig:frontend-hitl-flow}
 \end{figure}
 
 This interface makes manual testing convenient, but the architectural boundary is the backend API.

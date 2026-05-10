@@ -13,14 +13,14 @@ This separation ensures that the boundary between reading cluster state and muta
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{images/agent_system_architect.drawio.png}
-    \caption{Slurm Agent System Architecture}
+    \caption{Slurm Agent System Architecture. The system is organised into four layers. (1)~\textbf{Presentation Layer}: a React-based web interface through which the user submits natural-language requests. (2)~\textbf{Agent Layer}: the reasoning core built on the OpenAI Agents SDK, comprising an Observer that interprets user intent and gathers context, an Operator that decides on actions and coordinates tool use, and a knowledge-base lookup tool for cluster documentation and notes. (3)~\textbf{Protocol Layer}: an MCP (Model Context Protocol) server that translates agent decisions into typed, validated calls to Slurm commands (\texttt{squeue}, \texttt{scancel}, etc.) and web-search tools, decoupling agent logic from execution details. (4)~\textbf{Infrastructure Layer}: the execution targets, including the LLM service (local fine-tuned model or cloud API), the Slurm cluster, the internet for external lookups, and a SQLite context store that persists session state across turns.}
     \label{fig:system-architecture}
 \end{figure}
 
 
 \subsection{Design Rationale}
 
-The main design decision is to treat Slurm interaction as a controlled operation surface rather than as open-ended command generation. A general chatbot can explain commands, but a cluster assistant must also decide when to inspect live state, when to consult documentation, when to ask for clarification, and when to refuse or delay execution until a user confirms intent. The architecture therefore combines three forms of grounding:
+The main design decision is to treat Slurm interaction as a controlled operation surface rather than as open-ended command generation. A general chatbot can explain commands, but a cluster assistant must also decide when to inspect live state, when to consult documentation, when to ask for clarification, and when to refuse or delay execution until a user confirms intent. The architecture therefore combines two forms of grounding:
 
 \begin{itemize}
     \item \textbf{Operational grounding}: current cluster facts come from Slurm tools exposed through MCP.
@@ -56,7 +56,7 @@ The Agent Layer implements core reasoning and orchestration using a dual-agent a
 
 This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy. The Observer never holds action tools, and the Operator never runs without an explicit handoff---ensuring that the boundary between reading and mutating state is enforced by the framework rather than by prompt compliance alone.
 
-Beyond safety enforcement, the dual-agent design provides a measurable \textbf{tool-scope reduction} benefit for capacity-constrained local models. The full Slurm tool surface comprises 18 distinct tools; presenting all of them simultaneously to a 14B-parameter model degrades tool-selection accuracy as the model's attention must discriminate among semantically similar options (e.g., \texttt{sacct} vs.\ \texttt{squeue} vs.\ \texttt{sacctmgr\_list}). By partitioning tools into two focused subsets of approximately 8 tools each, each agent operates within a smaller selection space where correct tool identification is easier. Ablation experiments (Section~\ref{sec:ablation}) confirm this effect: on 378 test cases where the routing metric is neutral (no handoff required), the dual-agent configuration achieves 87.0\% pass rate versus 73.8\% for the monolithic single-agent baseline---a +13.2 percentage point improvement driven primarily by an 11.6pp gain in tool recall.
+Beyond safety enforcement, the dual-agent design provides a measurable \textbf{tool-scope reduction} benefit for capacity-constrained local models. The full Slurm tool surface comprises 18 distinct tools; presenting all of them simultaneously to a 14B-parameter model degrades tool-selection accuracy as the model's attention must discriminate among semantically similar options (e.g., \texttt{sacct} vs.\ \texttt{squeue} vs.\ \texttt{sacctmgr\_list}). By partitioning tools into two focused subsets of approximately 8 tools each, each agent operates within a smaller selection space where correct tool identification is easier. Ablation experiments in Section~\ref{sec:ablation} quantify this effect.
 
 \begin{figure}[H]
     \centering
@@ -79,11 +79,11 @@ The MCP Protocol Layer wraps each Slurm command as a typed tool with parameter v
 
 \subsubsection{Infrastructure Layer}
 
-External systems: LLM provider (local Ollama or cloud API), Slurm cluster (real or mock), local documentation corpus, web search service, and SQLite context database.
+The Infrastructure Layer provides external execution targets and supporting services. It includes: (1)~the LLM provider (local Ollama, self-hosted fine-tuned model via OpenAI-compatible endpoint, or cloud API), (2)~the Slurm cluster itself (real CLI access or mock scenario engine for evaluation), (3)~a local documentation corpus indexed for retrieval, (4)~a web search service for fallback queries, and (5)~a SQLite context database for session persistence.
 
 \subsection{Communication Patterns}
 
-Key patterns: (1)~request-response for queries, (2)~structured event stream for status/tool/trace output, (3)~tool invocation via MCP, (4)~confirmation interruption for dangerous operations.
+The system uses four communication patterns: (1)~request-response for simple queries where the agent returns a single grounded answer, (2)~structured event streaming (SSE) for real-time status updates, tool-call progress, and reasoning trace events, (3)~tool invocation via MCP where the agent sends typed requests with validated parameters and receives structured JSON responses, and (4)~confirmation interruption where the event stream pauses mid-execution to present pending actions and await user approval before resuming.
 
 
 \subsection{Data Flow}
