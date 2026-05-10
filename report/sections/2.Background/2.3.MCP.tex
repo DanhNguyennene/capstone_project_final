@@ -12,7 +12,7 @@ MCP uses a client-server model. A server declares the capabilities it provides, 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/mcp_architecture.png}
-    \caption{Model Context Protocol Architecture~\cite{hou2025mcp}}
+    \caption{Model Context Protocol (MCP) architecture, introduced by Anthropic in late 2024~\cite{hou2025mcp}. \textit{Without MCP} (top), every AI application must implement a separate, bespoke integration for each data source or tool---a fragmented approach that is costly to build and brittle to maintain. \textit{With MCP} (bottom), a standardised client-server protocol acts as a universal gateway: the AI application runs an \textbf{MCP Client} that communicates with one or more \textbf{MCP Servers}, each of which exposes a specific data source or capability (databases, file systems, web services, command-line tools) through a common interface. Once a server is built it is immediately compatible with any MCP-capable host, eliminating per-integration custom code and enabling a reusable, composable tool ecosystem.}
     \label{fig:mcp-architecture}
 \end{figure}
 
