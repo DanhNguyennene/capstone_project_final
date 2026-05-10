@@ -50,7 +50,7 @@ export OPENAI_API_KEY=dummy
 export SLURM_AGENT_MODEL=slurm-agent
 export LLM_PROVIDER=openai
 export STREAM_TIMEOUT=300
-cd agent && nohup python -m uvicorn main:app --host 0.0.0.0 --port 8000 > ../agent_ft.log 2>&1 & cd ..
+nohup python -m uvicorn agent.main:app --host 0.0.0.0 --port 8000 > agent_ft.log 2>&1 &
 sleep 10
 curl -s http://localhost:8000/health > /dev/null && echo "  Agent ✓" || { tail -20 agent_ft.log; exit 1; }
 
