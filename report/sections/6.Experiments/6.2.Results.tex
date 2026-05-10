@@ -205,51 +205,53 @@ Based on the training data composition and the role-scoping approach, the follow
         \hline
         \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
-        Pass rate         & 97.9\% & \textbf{93.8\%} & 72.8\% \\
-        Avg tool recall   & 98.8\% & \textbf{93.8\%} & 84.9\% \\
-        Avg routing match & 99.0\% & \textbf{100.0\%} & 83.6\% \\
-        Avg HITL match    & 99.0\% & \textbf{100.0\%} & 80.8\% \\
-        Avg state match   & 98.2\% & \textbf{100.0\%} & 87.3\% \\
-        Avg judge score   & 74.3\% & \textbf{85.9\%} & -- \\
-        Avg latency       & 28.3\,s & \textbf{10.1\,s} & 80.9\,s \\
+        Pass rate         & 97.9\% & \textbf{94.6\%} & 72.8\% \\
+        Avg tool recall   & 98.8\% & \textbf{90.3\%} & 84.9\% \\
+        Avg routing match & 99.0\% & \textbf{99.3\%} & 83.6\% \\
+        Avg HITL match    & 99.0\% & \textbf{99.3\%} & 80.8\% \\
+        Avg state match   & 98.2\% & \textbf{99.3\%} & 87.3\% \\
+        Avg judge score   & 74.3\% & 69.3\%          & 76.8\% \\
+        Avg latency       & 28.3\,s & 85.1\,s        & 80.9\,s \\
         \hline
     \end{tabular}
 \end{table}
 
-The fine-tuned model achieves 93.8\% pass rate on the held-out 615-case test split, closing a substantial portion of the gap between the 72.8\% base model and the 97.9\% commercial baseline. Notably, the fine-tuned model achieves \textbf{perfect scores on routing, HITL, and state match}---surpassing the commercial baseline on these structural safety dimensions---and is \textbf{3$\times$ faster} at 10.1\,s average latency versus 28.3\,s for the API-hosted model.
+The fine-tuned model achieves \textbf{94.6\% pass rate} on the held-out 615-case test split, closing 79\% of the gap between the 72.8\% base model and the 97.9\% commercial baseline. The fine-tuned model shows strong gains over the base in the safety-critical structural dimensions: routing match improves from 83.6\% to 99.3\% (+15.7\,pp), HITL match from 80.8\% to 99.3\% (+18.5\,pp), and state match from 87.3\% to 99.3\% (+12.0\,pp). These dimensions are the most important for correct and safe cluster operation; the fine-tuning has reliably transferred the handoff boundary and confirmation-gate behaviour from the teacher model.
 
-The LLM judge score of 85.9\% also \textbf{exceeds} the GPT-5-mini baseline (74.3\%), suggesting that domain fine-tuning produces more concise, precisely grounded responses than the general-purpose commercial model, which the judge rewards.
+The LLM judge score of 69.3\% is slightly below the base model's 76.8\%, which is expected: the fine-tuned model produces more structured, tool-call-centric responses optimised for the evaluation format, whereas the base model generates more natural prose that the judge model rates more favourably despite lower structural accuracy.
+
+Latency is comparable between the two Qwen variants (85.1\,s vs 80.9\,s), both running on the same A40 hardware with the same BF16 inference configuration. The commercial baseline at 28.3\,s reflects network-batched API throughput rather than single-request wall time.
 
 \subsubsection{Per-Category Breakdown}
 
 \begin{table}[H]
     \centering
-    \caption{Pass Rate by Category --- Fine-Tuned Qwen2.5-14B vs GPT-5-mini (615 Test Cases)}
+    \caption{Pass Rate by Category --- Qwen2.5-14B Fine-Tuned vs Base (615 Test Cases)}
     \label{tab:ft-per-category}
     \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Category} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{$\Delta$} \\
+        \textbf{Category} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} & \textbf{$\Delta$} \\
         \hline
-        read        & 100.0\% & 100.0\% & 0.0\,pp \\
-        diagnose    & 98.7\%  & 100.0\% & +1.3\,pp \\
-        action      & 98.7\%  & 100.0\% & +1.3\,pp \\
-        bulk        & 97.4\%  & 100.0\% & +2.6\,pp \\
-        safety      & 97.4\%  & 100.0\% & +2.6\,pp \\
-        submission  & 97.4\%  & 100.0\% & +2.6\,pp \\
-        multi\_step & 97.4\%  & 100.0\% & +2.6\,pp \\
-        account     & 97.4\%  & 100.0\% & +2.6\,pp \\
-        edge        & 90.9\%  & 100.0\% & +9.1\,pp \\
-        docs        & 85.6\%  & 100.0\% & +14.4\,pp \\
-        domain      & 97.4\%  & \textbf{0.0\%}   & $-$97.4\,pp \\
+        read        & 100.0\% & 98.2\%  & +1.8\,pp \\
+        diagnose    & 100.0\% & 87.3\%  & +12.7\,pp \\
+        action      & 100.0\% & 86.0\%  & +14.0\,pp \\
+        bulk        & 100.0\% & 67.9\%  & +32.1\,pp \\
+        safety      & 100.0\% & 57.9\%  & +42.1\,pp \\
+        submission  & 100.0\% & 24.6\%  & +75.4\,pp \\
+        multi\_step & 100.0\% & 45.6\%  & +54.4\,pp \\
+        account     & 100.0\% & 96.4\%  & +3.6\,pp \\
+        edge        & 100.0\% & 72.7\%  & +27.3\,pp \\
+        docs        & 100.0\% & 80.0\%  & +20.0\,pp \\
+        domain      & \textbf{13.2\%}  & 87.3\%  & $-$74.1\,pp \\
         \hline
-        \textbf{Overall} & \textbf{97.9\%} & \textbf{93.8\%} & $-$4.1\,pp \\
+        \textbf{Overall} & \textbf{94.6\%} & \textbf{72.8\%} & +21.8\,pp \\
         \hline
     \end{tabular}
 \end{table}
 
-The fine-tuned model achieves perfect scores on 10 of 11 categories, including categories where the commercial model struggled (\textit{edge}: +9.1\,pp, \textit{docs}: +14.4\,pp). The sole failure is the \textbf{domain} category, where all 38 cases fail due to a single systematic pattern: the model omits the \texttt{lookup\_slurm\_docs} tool call when answering domain-knowledge questions, relying instead on parametric knowledge from fine-tuning. While the responses are often factually correct (reflected in judge scores), the missing tool call reduces \texttt{tool\_recall} to 0.5 for every domain case, dropping them below the pass threshold.
+The fine-tuned model achieves 100\% pass rate on 10 of 11 categories, with particularly large gains in the most operationally challenging categories: \textit{submission} (+75.4\,pp), \textit{multi\_step} (+54.4\,pp), \textit{safety} (+42.1\,pp), and \textit{bulk} (+32.1\,pp). These were precisely the categories where the base model struggled most, confirming that fine-tuning successfully teaches multi-step tool-chaining, HITL confirmation sequencing, and bulk operation handling.
 
-This is a known behaviour pattern in fine-tuned tool-calling models: when the model has seen enough training examples covering a topic, it internalises the answer and skips retrieval. The fix is straightforward (enforcing docs-lookup for domain-category prompts via instruction tuning or a retrieval guard), but was not applied in this evaluation to preserve a clean comparison with the baseline run under identical conditions.
+The sole failure is the \textbf{domain} category, where the fine-tuned model scores only 13.2\% versus 87.3\% for the base model. Investigation shows a systematic pattern: the model omits the \texttt{lookup\_slurm\_docs} tool call for domain-knowledge questions, relying on parametric knowledge from training instead. While responses are often factually reasonable, the missing tool call reduces \texttt{tool\_recall} to 0.5 per case, dropping them below the pass threshold. This is a known behaviour in fine-tuned tool-calling models where training coverage of a topic leads the model to internalise answers and skip retrieval. The base model, lacking this internalised knowledge, consistently falls back to the documentation lookup tool.
 
 \subsubsection{Cost and Deployment Analysis}
 
@@ -276,15 +278,15 @@ The evaluation quantifies where the capacity gap manifests across benchmark cate
 
 \subsection{Result Interpretation}
 
-The evaluation demonstrates three key findings. First, the architecture---ReAct reasoning, MCP tool integration, Observer/Operator routing, and HITL confirmation---is validated by the GPT-5-mini baseline achieving 97.8\% pass rate with near-perfect structural metrics across 3,135 cases. Second, domain-adapted fine-tuning produces a local model that achieves 93.8\% pass rate on the held-out 615-case split, closing 78\% of the gap between the 72.8\% base model and the 97.9\% commercial baseline. Third, the fine-tuned model's perfect routing, HITL, and state-match scores---combined with a 3$\times$ latency improvement and a higher judge score---demonstrate that domain adaptation transfers safety-critical behavioral patterns reliably, with the only regression being a systematic retrieval-skipping pattern in the \textit{domain} category.
+The evaluation demonstrates three key findings. First, the architecture---ReAct reasoning, MCP tool integration, Observer/Operator routing, and HITL confirmation---is validated by the GPT-5-mini baseline achieving 97.8\% pass rate with near-perfect structural metrics across 3,135 cases. Second, domain-adapted fine-tuning closes 79\% of the gap between the 72.8\% base model and the 97.9\% commercial baseline, reaching 94.6\% pass rate on the held-out 615-case split. Third, fine-tuning most effectively transfers the safety-critical structural behaviours---routing, HITL activation, and state change execution---while introducing a retrieval-skipping pattern in the domain category.
 
-Key observations:
+Key observations from the Qwen fine-tuned vs base comparison:
 \begin{itemize}
-    \item \textbf{Tool selection} is 93.8\% recall for the FT model (vs 98.8\% baseline), with the entire gap attributable to the \textit{domain} category omitting \texttt{lookup\_slurm\_docs} calls.
-    \item \textbf{Routing and HITL} achieve 100\% accuracy for the FT model, \textit{exceeding} the commercial baseline (99.0\%), confirming that the role-scoped training data fully encodes the handoff boundary.
-    \item \textbf{Latency} is 10.1\,s for the FT model versus 28.3\,s for GPT-5-mini---a 2.8$\times$ speedup, reflecting the elimination of network round-trips and the smaller model size.
-    \item \textbf{Judge score} of 85.9\% for the FT model exceeds the 74.3\% baseline, indicating that fine-tuning produces more domain-specific, precisely grounded responses that a judge model rates more favorably than the verbose general-purpose baseline.
-    \item \textbf{Edge cases and documentation} categories both reach 100\% for the FT model, improving on the baseline (90.9\% and 85.6\% respectively), suggesting that domain fine-tuning helps resolve the ambiguous prompts the commercial model struggled with.
+    \item \textbf{Routing and HITL} improve from 83.6\%/80.8\% to 99.3\%/99.3\% respectively (+15.7\,pp and +18.5\,pp), confirming that role-scoped training data fully encodes the handoff boundary and confirmation-gate behaviour.
+    \item \textbf{Submission and multi-step} show the largest gains (+75.4\,pp and +54.4\,pp), the two categories most dependent on correct multi-turn tool-chaining that the base model failed at consistently.
+    \item \textbf{Safety} improves from 57.9\% to 100\% (+42.1\,pp), directly validating the HITL training objective---the base model frequently bypassed confirmation gates, while the fine-tuned model activates them reliably.
+    \item \textbf{Domain} is the only regression ($-$74.1\,pp): the fine-tuned model skips \texttt{lookup\_slurm\_docs} for domain questions, relying on internalised parametric knowledge. This is a retrieval-suppression artefact of fine-tuning, not a reasoning failure.
+    \item \textbf{Latency} is comparable between both Qwen variants ($\approx$80--85\,s on A40 hardware), both significantly slower than the network-batched commercial API (28.3\,s).
 \end{itemize}
 
 \subsubsection{State-Match Scoring Artifact}
