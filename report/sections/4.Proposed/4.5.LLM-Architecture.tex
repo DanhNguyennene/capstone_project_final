@@ -14,7 +14,7 @@ where each thought $t_i$ conditions on $(q, t_1, a_1, o_1, \ldots, t_{i-1}, a_{i
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{images/react_cycle.png}
-    \caption{ReAct reasoning cycle. The agent alternates between three phases: \textit{Think} (produce a reasoning trace conditioned on the conversation history), \textit{Act} (invoke a tool call with structured arguments), and \textit{Observe} (receive and parse the tool response). The cycle repeats until the agent determines the request is resolved, at which point it emits a \textit{Final Response}. This loop structure makes intermediate reasoning steps auditable and naturally handles multi-step Slurm operations that require chaining several tool calls.}
+    \caption[ReAct reasoning cycle (Think--Act--Observe)]{ReAct reasoning cycle. The agent alternates between three phases: \textit{Think} (produce a reasoning trace conditioned on the conversation history), \textit{Act} (invoke a tool call with structured arguments), and \textit{Observe} (receive and parse the tool response). The cycle repeats until the agent determines the request is resolved, at which point it emits a \textit{Final Response}. This loop structure makes intermediate reasoning steps auditable and naturally handles multi-step Slurm operations that require chaining several tool calls.}
     \label{fig:react-cycle}
 \end{figure}
 
@@ -40,7 +40,7 @@ The mock implements every MCP tool (queue queries, node status, accounting, job 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/mcp_mock_data_collection.png}
-    \caption{MCP mock environment for training data collection. Benchmark scenarios across 11 categories are fed to a GPT-5-mini agent running via the same Observer/Operator pipeline used at inference time. The agent interacts with a configurable mock MCP server whose in-memory cluster state covers jobs (pending, running, failed), nodes (idle, mixed, down), and account/QOS policies. The full exchange---system prompt, reasoning steps, tool calls, tool responses, handoff directives, and final answers---is captured as a raw interaction trace, which forms the distillation corpus for fine-tuning.}
+    \caption[MCP mock environment for training data collection]{MCP mock environment for training data collection. Benchmark scenarios across 11 categories are fed to a GPT-5-mini agent running via the same Observer/Operator pipeline used at inference time. The agent interacts with a configurable mock MCP server whose in-memory cluster state covers jobs (pending, running, failed), nodes (idle, mixed, down), and account/QOS policies. The full exchange---system prompt, reasoning steps, tool calls, tool responses, handoff directives, and final answers---is captured as a raw interaction trace, which forms the distillation corpus for fine-tuning.}
     \label{fig:mcp-mock-data-collection}
 \end{figure}
 
@@ -71,7 +71,7 @@ The resulting dataset contains 3{,}329 samples after role splitting (2{,}625 uni
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{images/data_augmentation_pipeline.png}
-    \caption{Training data augmentation pipeline. Raw GPT-5-mini traces are first classified by whether they contain an Observer-to-Operator handoff. Traces with a handoff are split at the boundary into two independent samples (an Observer sample ending at the handoff directive and an Operator sample starting from the handoff context); traces without a handoff produce a single Observer sample. All samples then pass through role-scoped tool filtering, which retains only the tools available to the active role---read-only tools plus the handoff mechanism for the Observer, action tools and discovery reads for the Operator. Finally, prompt variation (lexical rephrasing of user queries) is applied to reduce surface-form memorisation. The resulting dataset contains approximately 3{,}300 training samples and 615 held-out test samples, stratified by category and scenario.}
+    \caption[Training data augmentation pipeline]{Training data augmentation pipeline. Raw GPT-5-mini traces are first classified by whether they contain an Observer-to-Operator handoff. Traces with a handoff are split at the boundary into two independent samples (an Observer sample ending at the handoff directive and an Operator sample starting from the handoff context); traces without a handoff produce a single Observer sample. All samples then pass through role-scoped tool filtering, which retains only the tools available to the active role---read-only tools plus the handoff mechanism for the Observer, action tools and discovery reads for the Operator. Finally, prompt variation (lexical rephrasing of user queries) is applied to reduce surface-form memorisation. The resulting dataset contains 3{,}329 training samples (2{,}625 unique after deduplication) and 615 held-out test samples, stratified by category and scenario.}
     \label{fig:data-augmentation-pipeline}
 \end{figure}
 

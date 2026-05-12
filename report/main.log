@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  10 MAY 2026 00:28
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  11 MAY 2026 00:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1010,9 +1010,7 @@ Package: listings 2025/11/14 1.11b (Carsten Heinz)
     but found:
         2025/11/14 1.11b (Carsten Heinz)
     so I'm assuming it got fixed.
-(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/graphics\lscape.sty
-Package: lscape 2020/05/28 v3.02 Landscape Pages (DPC)
-)
+
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.st
 y
 Package: hyperref 2025-07-12 v7.01o Hypertext links for LaTeX
@@ -1137,7 +1135,7 @@ Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
 \c@LT@chunks=\count486
 \LT@p@ftn=\toks43
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 34.
+Package hyperref Info: Option `colorlinks' set `true' on input line 33.
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/caption\subcaption.s
 ty
@@ -1315,26 +1313,26 @@ File: pgflibraryplotmarks.code.tex 2025-08-29 v3.1.11a (3.1.11a)
  (main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 51.
+LaTeX Font Info:    ... okay on input line 51.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: xetex
@@ -1377,63 +1375,63 @@ Package fontspec Info:
 
 \symlegacymaths=\mathgroup6
 LaTeX Font Info:    Overwriting symbol font `legacymaths' in version `bold'
-(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 52.
-LaTeX Font Info:    Redeclaring math accent \acute on input line 52.
-LaTeX Font Info:    Redeclaring math accent \grave on input line 52.
-LaTeX Font Info:    Redeclaring math accent \ddot on input line 52.
-LaTeX Font Info:    Redeclaring math accent \tilde on input line 52.
-LaTeX Font Info:    Redeclaring math accent \bar on input line 52.
-LaTeX Font Info:    Redeclaring math accent \breve on input line 52.
-LaTeX Font Info:    Redeclaring math accent \check on input line 52.
-LaTeX Font Info:    Redeclaring math accent \hat on input line 52.
-LaTeX Font Info:    Redeclaring math accent \dot on input line 52.
-LaTeX Font Info:    Redeclaring math accent \mathring on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Delta on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Theta on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Xi on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Pi on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Phi on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Psi on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \Omega on input line 52.
-LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 52.
-LaTeX Font Info:    Redeclaring symbol font `operators' on input line 52.
+(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 51.
+LaTeX Font Info:    Redeclaring math accent \acute on input line 51.
+LaTeX Font Info:    Redeclaring math accent \grave on input line 51.
+LaTeX Font Info:    Redeclaring math accent \ddot on input line 51.
+LaTeX Font Info:    Redeclaring math accent \tilde on input line 51.
+LaTeX Font Info:    Redeclaring math accent \bar on input line 51.
+LaTeX Font Info:    Redeclaring math accent \breve on input line 51.
+LaTeX Font Info:    Redeclaring math accent \check on input line 51.
+LaTeX Font Info:    Redeclaring math accent \hat on input line 51.
+LaTeX Font Info:    Redeclaring math accent \dot on input line 51.
+LaTeX Font Info:    Redeclaring math accent \mathring on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Delta on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Theta on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Xi on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Pi on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Phi on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Psi on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \Omega on input line 51.
+LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 51.
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 51.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `normal' on input line 52.
+(Font)              `operators' in the math version `normal' on input line 51.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  OT1/cmr/m/n --> TU/TimesNewRoman(0)/m/n on input line 5
-2.
+1.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `bold' on input line 52.
+(Font)              `operators' in the math version `bold' on input line 51.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/m/n on input line 
-52.
+51.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/m/n on 
-input line 52.
+input line 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
 (Font)                  OT1/cmr/m/it --> TU/TimesNewRoman(0)/m/it on input line
- 52.
+ 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/b/n on input line 
-52.
+51.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 52.
+(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 52.
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 51.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/b/n on 
-input line 52.
+input line 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/cmr/bx/it --> TU/TimesNewRoman(0)/b/it on input lin
-e 52.
+e 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 52.
+(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 51.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 52.
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 51.
 Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
 
@@ -1450,10 +1448,10 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'main.bbl' found.
  (main.bbl)
-Package biblatex Info: Reference section=0 on input line 52.
-Package biblatex Info: Reference segment=0 on input line 52.
+Package biblatex Info: Reference section=0 on input line 51.
+Package biblatex Info: Reference segment=0 on input line 51.
 \c@lstlisting=\count501
-Package hyperref Info: Link coloring ON on input line 52.
+Package hyperref Info: Link coloring ON on input line 51.
  (main.out) (main.out)
 \@outlinefile=\write5
 \openout5 = `main.out'.
@@ -1491,7 +1489,10 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ]) (sections/abstract.tex [3
 
 ]
-Overfull \hbox (0.68369pt too wide) in paragraph at lines 8--9
+File: images/agent_system_architect.drawio.png Graphic file (type bmp)
+<images/agent_system_architect.drawio.png>
+
+Overfull \hbox (0.68369pt too wide) in paragraph at lines 14--15
 \TU/TimesNewRoman(0)/m/n/12 ation surface spanning monitoring, diagnosis, submi
 ssion, job control, accounting, QoS/resource
  []
@@ -1524,8 +1525,8 @@ Chapter 1.
 (sections/1.Introduction/1.1.Motivation.tex [1
 
 ])
-(sections/1.Introduction/1.2.Scope-Goals.tex [2]) [3]
-(sections/1.Introduction/1.3.Challenges.tex
+(sections/1.Introduction/1.2.Scope-Goals.tex [2])
+(sections/1.Introduction/1.3.Challenges.tex [3]
 Overfull \hbox (7.48245pt too wide) in paragraph at lines 14--15
 []\TU/TimesNewRoman(0)/b/n/12 Solutions: \TU/TimesNewRoman(0)/m/n/12 The system
  separates read-only observation from state-changing operation through
@@ -1537,14 +1538,20 @@ Overfull \hbox (13.55501pt too wide) in paragraph at lines 14--15
  inspection, diagnosis, accounting/resource-
  []
 
-[4] [5]) (sections/1.Introduction/1.4.Thesis-structure.tex) [6]
+[4])
+Overfull \hbox (13.93362pt too wide) in paragraph at lines 44--85
+\TU/TimesNewRoman(0)/m/n/12 server/Operator architecture partitions the 18-tool
+ surface into two focused subsets—approximately
+ []
+
+(sections/1.Introduction/1.4.Thesis-structure.tex [5]) [6]
 Chapter 2.
 (sections/2.Background/2.1.Slurm.tex
 File: images/slurm_resource_management.png Graphic file (type bmp)
 <images/slurm_resource_management.png>
  [7
 
-]
+] [8]
 Overfull \hbox (17.14465pt too wide) in paragraph at lines 37--38
 \TU/TimesNewRoman(0)/m/n/12 reservations, and configuration state. Other comman
 ds, including \TU/lmtt/m/n/12 sbatch\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/
@@ -1552,24 +1559,24 @@ ds, including \TU/lmtt/m/n/12 sbatch\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/
 /m/n/12 , \TU/lmtt/m/n/12 scancel\TU/TimesNewRoman(0)/m/n/12 ,
  []
 
-) [8] (sections/2.Background/2.2.LLM.tex
+) (sections/2.Background/2.2.LLM.tex [9]
 File: images/transformer_architecture.png Graphic file (type bmp)
 <images/transformer_architecture.png>
- [9] [10] [11] [12]
+ [10] [11] [12]
 File: images/qlora.png Graphic file (type bmp)
 <images/qlora.png>
  [13])
-(sections/2.Background/2.3.MCP.tex
+(sections/2.Background/2.3.MCP.tex [14]
 File: images/mcp_architecture.png Graphic file (type bmp)
 <images/mcp_architecture.png>
- [14] [15] [16])
-(sections/2.Background/2.4.Agent-Architectures.tex [17]
+ [15] [16])
+(sections/2.Background/2.4.Agent-Architectures.tex
 File: images/react_agent_arch.png Graphic file (type bmp)
 <images/react_agent_arch.png>
- [18]) [19]
+ [17]) [18] [19]
 Chapter 3.
 (sections/related_work.tex
-Overfull \hbox (15.34248pt too wide) in paragraph at lines 12--13
+Overfull \hbox (15.34248pt too wide) in paragraph at lines 11--12
 \TU/TimesNewRoman(0)/m/n/12 LLMs as services on Slurm-backed GPUs but does not 
 use LLMs to \TU/TimesNewRoman(0)/m/it/12 manage \TU/TimesNewRoman(0)/m/n/12 the
  cluster. LangChain-
@@ -1592,19 +1599,23 @@ uring execution
 File: images/agent_system_architect.drawio.png Graphic file (type bmp)
 <images/agent_system_architect.drawio.png>
  [26] [27]
+File: images/evaluation/tool_partitioning_comparison.png Graphic file (type bmp
+)
+<images/evaluation/tool_partitioning_comparison.png>
 File: images/observer_operator_flow.png Graphic file (type bmp)
 <images/observer_operator_flow.png>
+ [28]
 File: images/request_lifecycle_flow.png Graphic file (type bmp)
 <images/request_lifecycle_flow.png>
- [28])
-(sections/4.Proposed/4.4.Module-Specifications.tex
+)
+[29] (sections/4.Proposed/4.4.Module-Specifications.tex
 Overfull \hbox (2.94756pt too wide) in paragraph at lines 10--11
 \TU/lmtt/m/n/12 sreport\TU/TimesNewRoman(0)/m/n/12 ), configuration display (\T
 U/lmtt/m/n/12 scontrol_show\TU/TimesNewRoman(0)/m/n/12 ), documentation (\TU/lm
 tt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 ), and
  []
 
-[29]
+[30]
 Overfull \hbox (8.87894pt too wide) in paragraph at lines 18--19
 []\TU/TimesNewRoman(0)/b/n/12 Tool Classification\TU/TimesNewRoman(0)/m/n/12 : 
 Tools are dynamically classified at startup into three categories—\TU/TimesNewR
@@ -1619,16 +1630,17 @@ U/TimesNewRoman(0)/m/it/12 dangerous \TU/TimesNewRoman(0)/m/n/12 (state-modifyi
 ng,
  []
 
-[30]) (sections/4.Proposed/4.5.LLM-Architecture.tex
+[31]) (sections/4.Proposed/4.5.LLM-Architecture.tex
 File: images/react_cycle.png Graphic file (type bmp)
 <images/react_cycle.png>
- [31]
+ [32] [33]
 File: images/mcp_mock_data_collection.png Graphic file (type bmp)
 <images/mcp_mock_data_collection.png>
- [32]
+ [34]
 File: images/data_augmentation_pipeline.png Graphic file (type bmp)
 <images/data_augmentation_pipeline.png>
- [33]) [34]
+ [35]
+[36]) [37]
 Chapter 5.
 (sections/5.Implementation/5.1.Agent-Backend.tex
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.st
@@ -1637,7 +1649,7 @@ File: lstlang1.sty 2025/11/14 1.11b listings language file
 )
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
 nput line 19.
- [35
+ [38
 
 ]
 Overfull \hbox (13.0112pt too wide) in paragraph at lines 52--53
@@ -1652,7 +1664,7 @@ Overfull \hbox (4.80472pt too wide) in paragraph at lines 68--69
  query is encoded using the all-MiniLM-L6-v2 sentence-transformer
  []
 
-[36]
+[39]
 Overfull \hbox (14.44817pt too wide) in paragraph at lines 77--78
 \TU/TimesNewRoman(0)/m/n/12 To avoid a GPU-intensive embedding pass at server s
 tartup, a build script (\TU/lmtt/m/n/12 build_embeddings.py\TU/TimesNewRoman(0)
@@ -1674,41 +1686,65 @@ Overfull \hbox (11.6141pt too wide) in paragraph at lines 91--92
 der the same agent framework, a lightweight
  []
 
-) [37] (sections/5.Implementation/5.2.MCP-Server.tex
+) [40] (sections/5.Implementation/5.2.MCP-Server.tex
 Overfull \hbox (2.15326pt too wide) in paragraph at lines 12--13
 []\TU/TimesNewRoman(0)/b/n/12 Consistent output\TU/TimesNewRoman(0)/m/n/12 : Ex
 plicit format flags (\TU/lmtt/m/n/12 --format\TU/TimesNewRoman(0)/m/n/12 , \TU/
 lmtt/m/n/12 --parsable2\TU/TimesNewRoman(0)/m/n/12 ) produce pipe-delimited
  []
 
-[38]) (sections/5.Implementation/5.3.Frontend.tex [39]
-Overfull \hbox (86.58327pt too wide) in paragraph at lines 29--30
-\TU/TimesNewRoman(0)/m/n/12 The agent service is implemented in \TU/lmtt/m/n/12
- agent/main.py\TU/TimesNewRoman(0)/m/n/12 . It exposes an OpenAI-compatible \TU
-/lmtt/m/n/12 /v1/chat/completions
+[41]) (sections/5.Implementation/5.3.Frontend.tex [42]
+File: images/UI_before_HITL.jpg Graphic file (type bmp)
+<images/UI_before_HITL.jpg>
+File: images/UI_during_HITL.jpg Graphic file (type bmp)
+<images/UI_during_HITL.jpg>
+ [43]
+File: images/UI_after_HITL.jpg Graphic file (type bmp)
+<images/UI_after_HITL.jpg>
+ [44]
+File: images/UI_before_WEB.jpg Graphic file (type bmp)
+<images/UI_before_WEB.jpg>
+File: images/UI_after_WEB.jpg Graphic file (type bmp)
+<images/UI_after_WEB.jpg>
+ [45]
+File: images/UI_before_RAG.jpg Graphic file (type bmp)
+<images/UI_before_RAG.jpg>
+File: images/UI_after_RAG.jpg Graphic file (type bmp)
+<images/UI_after_RAG.jpg>
+
+Underfull \hbox (badness 1365) in paragraph at lines 70--70
+[]\TU/TimesNewRoman(0)/m/n/12 Figure 5.7: |Documentation Lookup (2/2) — Final r
+esponse: the Observer produces a
  []
 
-[40]
-Overfull \hbox (10.51762pt too wide) in paragraph at lines 35--36
+[46]
+Overfull \hbox (18.60326pt too wide) in paragraph at lines 76--77
+\TU/TimesNewRoman(0)/m/n/12 The agent service is implemented in \TU/lmtt/m/n/12
+ agent/main.py\TU/TimesNewRoman(0)/m/n/12 . It exposes an OpenAI-compatible \TU
+/lmtt/m/n/12 /v1/chat/
+ []
+
+
+Overfull \hbox (10.51762pt too wide) in paragraph at lines 82--83
 \TU/TimesNewRoman(0)/m/n/12 cases from \TU/lmtt/m/n/12 evaluation/dataset.json\
 TU/TimesNewRoman(0)/m/n/12 , resets the mock Slurm state to the case’s \TU/lmtt
 /m/n/12 source_state\TU/TimesNewRoman(0)/m/n/12 ,
  []
 
-) (sections/5.Implementation/5.4.Fine-Tuning.tex [41] [42]) [43]
+[47]) (sections/5.Implementation/5.4.Fine-Tuning.tex [48]) [49] [50]
 Chapter 6.
-(sections/6.Experiments/6.1.Testing-Approach.tex [44
+(sections/6.Experiments/6.1.Testing-Approach.tex [51
 
 ]
 File: images/evaluation/category_bar_large.png Graphic file (type bmp)
 <images/evaluation/category_bar_large.png>
 File: images/evaluation/scenario_pie.png Graphic file (type bmp)
 <images/evaluation/scenario_pie.png>
- [45]
+ [52]
 File: images/evaluation/dataset_distribution_heatmap.png Graphic file (type bmp
 )
 <images/evaluation/dataset_distribution_heatmap.png>
- [46])
+ [53])
 (sections/6.Experiments/6.2.Results.tex
 Overfull \hbox (7.10825pt too wide) in paragraph at lines 4--5
 \TU/TimesNewRoman(0)/m/n/12 fine-tuning data, and (3) the three-way comparative
@@ -1720,7 +1756,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 21--22
 []|\TU/TimesNewRoman(0)/m/n/12 healthy, failed, pending, mixed, de-
  []
 
-[47] [48]
+[54] [55]
 Overfull \hbox (70.56755pt too wide) in paragraph at lines 70--71
 []\TU/TimesNewRoman(0)/m/n/12 No Observer sample contains calls to destructive 
 tools (\TU/lmtt/m/n/12 scancel\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 sco
@@ -1733,65 +1769,68 @@ Overfull \hbox (9.52629pt too wide) in paragraph at lines 118--128
  [][] 
  []
 
-[49] [50] [51] [52] [53]
+[56] [57] [58] [59] [60] [61]
 File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
 <images/evaluation/ablation_per_category.png>
- [54]
+ [62]
+File: images/evaluation/judge_score_comparison.png Graphic file (type bmp)
+<images/evaluation/judge_score_comparison.png>
+ [63]
 File: images/evaluation/ablation_observer_only.png Graphic file (type bmp)
 <images/evaluation/ablation_observer_only.png>
- [55]
-Overfull \hbox (2.06335pt too wide) in paragraph at lines 360--361
+
+Overfull \hbox (2.06335pt too wide) in paragraph at lines 394--395
 \TU/TimesNewRoman(0)/m/n/12 (+38.2pp) both require the agent to distinguish bet
 ween \TU/lmtt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/
 n/12 sacctmgr_list\TU/TimesNewRoman(0)/m/n/12 ,
  []
 
-[56]) [57]
+[64]) [65]
 Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex [58
+(sections/7.Conclusion/7.1.Summary.tex [66
 
-] [59])
-(sections/7.Conclusion/7.2.Limitations.tex [60]
-Overfull \hbox (6.79634pt too wide) in paragraph at lines 27--28
-[]\TU/TimesNewRoman(0)/b/n/12 submission\TU/TimesNewRoman(0)/m/n/12 : batch scr
-ipts, dependencies, GPU/GRES requests, and reservation constraints, 
+] [67])
+(sections/7.Conclusion/7.2.Limitations.tex [68])
+Overfull \hbox (6.37569pt too wide) in paragraph at lines 20--138
+\TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
+as-judge scoring introduces model-dependent
+ []
+
+(sections/references.tex) [69]
+Overfull \hbox (1.72935pt too wide) in paragraph at lines 139--139
+[]\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
+ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
+] [] [] [] [][] [] [][][][][][][][][][][][] []
  []
 
 
-Overfull \hbox (1.49287pt too wide) in paragraph at lines 34--35
-[]\TU/TimesNewRoman(0)/b/n/12 Training data duplication. \TU/TimesNewRoman(0)/m
-/n/12 The distillation pipeline produced 704 duplicate samples (21.1%
- []
-
-[61]) (sections/7.Conclusion/7.3.Future-Work.tex [62] [63]) [64]
-(sections/references.tex) [65]
-Overfull \hbox (23.71375pt too wide) in paragraph at lines 142--142
+Overfull \hbox (23.71375pt too wide) in paragraph at lines 139--139
 []\TU/TimesNewRoman(0)/m/n/12 Anthropic. \TU/TimesNewRoman(0)/m/it/12 Model Con
 text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] [] 
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[66
+[70
 
 ]
-Overfull \hbox (3.9435pt too wide) in paragraph at lines 142--142
+Overfull \hbox (3.9435pt too wide) in paragraph at lines 139--139
 []\TU/TimesNewRoman(0)/m/n/12 Patrick Lewis et al. “Retrieval-augmented generat
 ion for knowledge-intensive NLP tasks”.
  []
 
-
-Overfull \hbox (0.3274pt too wide) in paragraph at lines 142--142
+[71]
+Overfull \hbox (0.3274pt too wide) in paragraph at lines 139--139
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[67] [68]
-Overfull \hbox (56.17505pt too wide) in paragraph at lines 142--142
+[72]
+Overfull \hbox (56.17505pt too wide) in paragraph at lines 139--139
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[69] 
+[73] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1799,18 +1838,18 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2025-12-24>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 69AED6AB4921D54BEDA4C57BAA6AC3D0;23756.
+(rerunfilecheck)             Checksum: F811B39CB84DECD37DA234AF1334BE2E;20085.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 45450 strings out of 402987
- 1047872 string characters out of 5447904
- 2055237 words of memory out of 5000000
- 73404 multiletter control sequences out of 15000+600000
+ 45507 strings out of 402987
+ 1050119 string characters out of 5447904
+ 2055526 words of memory out of 5000000
+ 73458 multiletter control sequences out of 15000+600000
  638297 words of font info for 116 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 110i,10n,107p,2021b,4977s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,10n,107p,2021b,4973s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (82 pages).
+Output written on main.pdf (86 pages).

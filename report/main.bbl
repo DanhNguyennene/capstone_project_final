@@ -75,6 +75,29 @@
       \verb 10.1145/3731599.3767349
       \endverb
     \endentry
+    \entry{aiplainenglish2024react}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=86b1226deee15bdc740dd1e8bc79bfa0}{%
+           family={{AI Plain English}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{fullhash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{fullhashraw}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{bibnamehash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{authorbibnamehash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{authornamehash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{authorfullhash}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \strng{authorfullhashraw}{86b1226deee15bdc740dd1e8bc79bfa0}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://ai.plainenglish.io/built-with-langgraph-13-react-agent-1138973e9252}}
+      \field{note}{Accessed: 2026-05-10}
+      \field{title}{Built with LangGraph \#13: ReAct Agent}
+      \field{year}{2024}
+    \endentry
     \entry{anthropic2024mcp}{misc}{}{}
       \name{author}{1}{}{%
         {{hash=f431db65cea024a5f19eab835afefee2}{%

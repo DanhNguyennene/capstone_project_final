@@ -9,11 +9,10 @@ The Slurm Agent is organized as a four-layer stack. At the top, a thin \textbf{I
 
 This separation ensures that the boundary between reading cluster state and mutating it is an explicit architectural seam rather than an implicit convention. Read-only inspection flows entirely within the Observer path, while any state-changing operation must cross into the Operator path and pass through a confirmation gate before reaching the MCP tool layer.
 
-% TODO: Replace with actual diagram
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{images/agent_system_architect.drawio.png}
-    \caption{Slurm Agent System Architecture. The system is organised into four layers. (1)~\textbf{Presentation Layer}: a React-based web interface through which the user submits natural-language requests. (2)~\textbf{Agent Layer}: the reasoning core built on the OpenAI Agents SDK, comprising an Observer that interprets user intent and gathers context, an Operator that decides on actions and coordinates tool use, and a knowledge-base lookup tool for cluster documentation and notes. (3)~\textbf{Protocol Layer}: an MCP (Model Context Protocol) server that translates agent decisions into typed, validated calls to Slurm commands (\texttt{squeue}, \texttt{scancel}, etc.) and web-search tools, decoupling agent logic from execution details. (4)~\textbf{Infrastructure Layer}: the execution targets, including the LLM service (local fine-tuned model or cloud API), the Slurm cluster, the internet for external lookups, and a SQLite context store that persists session state across turns.}
+    \caption[Slurm Agent system architecture (four-layer stack)]{Slurm Agent System Architecture. The system is organised into four layers. (1)~\textbf{Presentation Layer}: a React-based web interface through which the user submits natural-language requests. (2)~\textbf{Agent Layer}: the reasoning core built on the OpenAI Agents SDK, comprising an Observer that interprets user intent and gathers context, an Operator that decides on actions and coordinates tool use, and a knowledge-base lookup tool for cluster documentation and notes. (3)~\textbf{Protocol Layer}: an MCP (Model Context Protocol) server that translates agent decisions into typed, validated calls to Slurm commands (\texttt{squeue}, \texttt{scancel}, etc.) and web-search tools, decoupling agent logic from execution details. (4)~\textbf{Infrastructure Layer}: the execution targets, including the LLM service (local fine-tuned model or cloud API), the Slurm cluster, the internet for external lookups, and a SQLite context store that persists session state across turns.}
     \label{fig:system-architecture}
 \end{figure}
 
@@ -56,19 +55,19 @@ The Agent Layer implements core reasoning and orchestration using a dual-agent a
 
 This division is central because incorrect execution can waste compute time, interrupt other users, or change shared cluster policy. The Observer never holds action tools, and the Operator never runs without an explicit handoff---ensuring that the boundary between reading and mutating state is enforced by the framework rather than by prompt compliance alone.
 
-Beyond safety enforcement, the dual-agent design provides a measurable \textbf{tool-scope reduction} benefit for capacity-constrained local models. The full Slurm tool surface comprises 18 distinct tools; presenting all of them simultaneously to a 14B-parameter model degrades tool-selection accuracy as the model's attention must discriminate among semantically similar options (e.g., \texttt{sacct} vs.\ \texttt{squeue} vs.\ \texttt{sacctmgr\_list}). By partitioning tools into two focused subsets of approximately 8 tools each, each agent operates within a smaller selection space where correct tool identification is easier. Ablation experiments in Section~\ref{sec:ablation} quantify this effect.
+Beyond safety enforcement, the dual-agent design provides a measurable \textbf{tool-scope reduction} benefit for capacity-constrained local models. The full Slurm tool surface comprises 18 distinct tools; presenting all of them simultaneously to a 14B-parameter model degrades tool-selection accuracy as the model's attention must discriminate among semantically similar options (e.g., \texttt{sacct} vs.\ \texttt{squeue} vs.\ \texttt{sacctmgr\_list}). By partitioning tools into two focused subsets---approximately 10 read-only tools for the Observer and approximately 8 action tools for the Operator---each agent operates within a smaller selection space where correct tool identification is easier. Ablation experiments in Section~\ref{sec:ablation} quantify this effect.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/tool_partitioning_comparison.png}
-    \caption{Tool partitioning comparison: Observer/Operator split (left) versus Monolithic configuration (right). In the split design, the Observer receives only read-only tools (green) plus the handoff mechanism (orange), while the Operator receives only destructive/action tools (red) and a small set of discovery reads. The Monolithic baseline exposes all 18 tools to a single agent context. Reducing the per-agent tool count from 18 to approximately 8 narrows the selection space and directly improves tool-call accuracy for the 14B-parameter model, as quantified by the ablation experiments in Section~\ref{sec:ablation}.}
+    \caption[Tool partitioning: Observer/Operator split vs.\ Monolithic]{Tool partitioning comparison: Observer/Operator split (left) versus Monolithic configuration (right). In the split design, the Observer receives only read-only tools (green) plus the handoff mechanism (orange), while the Operator receives only destructive/action tools (red) and a small set of discovery reads. The Monolithic baseline exposes all 18 tools to a single agent context. Reducing the per-agent tool count from 18 to approximately 8 narrows the selection space and directly improves tool-call accuracy for the 14B-parameter model, as quantified by the ablation experiments in Section~\ref{sec:ablation}.}
     \label{fig:tool-partitioning}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/observer_operator_flow.png}
-    \caption{Observer/Operator routing and confirmation flow. Every request enters the Observer, which classifies intent and either handles read-only operations directly (via Read MCP Tools) or issues a \texttt{transfer\_to\_operator} directive carrying the action, tool, targets, and scope for state-changing requests. The Operator resolves the target scope---performing a discovery read if needed---then invokes the action tool. All destructive tool calls pass through a HITL confirmation gate: approved actions execute and results are returned to the Observer via \texttt{transfer\_to\_observer}; cancelled actions are discarded. The Observer then decides whether additional tool calls are required or synthesises the final response.}
+    \caption[Observer/Operator routing and HITL confirmation flow]{Observer/Operator routing and confirmation flow. Every request enters the Observer, which classifies intent and either handles read-only operations directly (via Read MCP Tools) or issues a \texttt{transfer\_to\_operator} directive carrying the action, tool, targets, and scope for state-changing requests. The Operator resolves the target scope---performing a discovery read if needed---then invokes the action tool. All destructive tool calls pass through a HITL confirmation gate: approved actions execute and results are returned to the Observer via \texttt{transfer\_to\_observer}; cancelled actions are discarded. The Observer then decides whether additional tool calls are required or synthesises the final response.}
     \label{fig:observer-operator-flow}
 \end{figure}
 
@@ -80,24 +79,11 @@ The MCP Protocol Layer wraps each Slurm command as a typed tool with parameter v
 
 The Infrastructure Layer provides external execution targets and supporting services. It includes: (1)~the LLM provider (local Ollama, self-hosted fine-tuned model via OpenAI-compatible endpoint, or cloud API), (2)~the Slurm cluster itself (real CLI access or mock scenario engine for evaluation), (3)~a local documentation corpus indexed for retrieval, (4)~a web search service for fallback queries, and (5)~a SQLite context database for session persistence.
 
-\subsection{Communication Patterns}
-
-The system uses four communication patterns: (1)~request-response for simple queries where the agent returns a single grounded answer, (2)~structured event streaming (SSE) for real-time status updates, tool-call progress, and reasoning trace events, (3)~tool invocation via MCP where the agent sends typed requests with validated parameters and receives structured JSON responses, and (4)~confirmation interruption where the event stream pauses mid-execution to present pending actions and await user approval before resuming.
-
-
-\subsection{Data Flow}
-
-A typical query flows: (1)~user submits request, (2)~Agent Layer begins ReAct reasoning, (3)~delegates to Observer or Operator, (4)~sub-agent invokes MCP tools, (5)~results propagate back, (6)~agent synthesizes response with trace events. For dangerous operations, an additional confirmation step interrupts the flow before execution.
+\subsection{Data Flow and Deployment}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/request_lifecycle_flow.png}
-    \caption{Request lifecycle data flow (sequence diagram). A user request arrives at the FastAPI server over HTTP or WebSocket. The server invokes the ReAct Agent, which classifies intent via the Router and delegates to the appropriate Observer or Operator sub-agent. The sub-agent communicates with the MCP Server over stdio, which in turn executes the relevant Slurm command against the cluster. Results propagate back up the call chain; the agent synthesises a response with embedded trace events that are streamed to the client as a Server-Sent Events (SSE) stream. Dangerous operations trigger a confirmation interruption between the sub-agent and the MCP Server before execution proceeds.}
+    \caption[Request lifecycle data flow]{Request lifecycle data flow (sequence diagram). A user request arrives at the FastAPI server over HTTP or WebSocket. The server invokes the ReAct Agent, which classifies intent via the Router and delegates to the appropriate Observer or Operator sub-agent. The sub-agent communicates with the MCP Server over stdio, which in turn executes the relevant Slurm command against the cluster. Results propagate back up the call chain; the agent synthesises a response with embedded trace events that are streamed to the client as a Server-Sent Events (SSE) stream. Dangerous operations trigger a confirmation interruption between the sub-agent and the MCP Server before execution proceeds.}
     \label{fig:data-flow}
 \end{figure}
-
-
-
-\subsection{Deployment Architecture}
-
-The system supports local development (all components on one machine) and distributed deployment (interface, backend, and MCP server on separate hosts, with MCP on a Slurm management node).

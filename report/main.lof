@@ -1,24 +1,32 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Typical Resource Management using Slurm~\blx@tocontentsinit {0}\cite {abhishek2022dynamic}}}{7}{figure.caption.10}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Transformer Architecture Components~\blx@tocontentsinit {0}\cite {vaswani2017attention}}}{10}{figure.caption.11}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\blx@tocontentsinit {0}\cite {dettmers2023qlora}}}{14}{figure.caption.14}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Model Context Protocol Architecture~\blx@tocontentsinit {0}\cite {hou2025mcp}}}{15}{figure.caption.15}%
-\contentsline {figure}{\numberline {2.5}{\ignorespaces The ReAct Think-Act-Observe Loop}}{18}{figure.caption.17}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Slurm master-worker architecture}}{8}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Transformer encoder-decoder architecture~\blx@tocontentsinit {0}\cite {vaswani2017attention}}}{10}{figure.caption.12}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Full fine-tuning vs.\ LoRA vs.\ QLoRA~\blx@tocontentsinit {0}\cite {dettmers2023qlora}}}{14}{figure.caption.15}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Model Context Protocol (MCP) architecture~\blx@tocontentsinit {0}\cite {hou2025mcp}}}{15}{figure.caption.16}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces The ReAct reasoning loop~\blx@tocontentsinit {0}\cite {yao2022react}}}{18}{figure.caption.18}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent System Architecture}}{26}{figure.caption.22}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces Observer/Operator Routing and Confirmation Flow}}{28}{figure.caption.25}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces Request Lifecycle Data Flow}}{29}{figure.caption.28}%
-\contentsline {figure}{\numberline {4.4}{\ignorespaces ReAct Reasoning Cycle}}{31}{figure.caption.30}%
-\contentsline {figure}{\numberline {4.5}{\ignorespaces MCP Mock Environment for Training Data Collection}}{32}{figure.caption.32}%
-\contentsline {figure}{\numberline {4.6}{\ignorespaces Training Data Augmentation Pipeline}}{34}{figure.caption.35}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Slurm Agent system architecture (four-layer stack)}}{26}{figure.caption.23}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Tool partitioning: Observer/Operator split vs.\ Monolithic}}{28}{figure.caption.26}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Observer/Operator routing and HITL confirmation flow}}{29}{figure.caption.27}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Request lifecycle data flow}}{30}{figure.caption.30}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces ReAct reasoning cycle (Think--Act--Observe)}}{33}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces MCP mock environment for training data collection}}{34}{figure.caption.34}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Training data augmentation pipeline}}{36}{figure.caption.37}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Slurm Agent Chat Interface}}{40}{figure.caption.44}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces HITL Flow (1/3) --- Read-only query}}{43}{figure.caption.46}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces HITL Flow (2/3) --- Confirmation intercept}}{44}{figure.caption.47}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces HITL Flow (3/3) --- Post-execution verification}}{44}{figure.caption.48}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Web Search (1/2) --- Tool execution phase}}{45}{figure.caption.49}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Web Search (2/2) --- Final response}}{46}{figure.caption.50}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Documentation Lookup (1/2) --- Retrieval phase}}{46}{figure.caption.51}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Documentation Lookup (2/2) --- Final response}}{47}{figure.caption.52}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{45}{figure.caption.49}%
-\contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{46}{figure.caption.50}%
-\contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{46}{figure.caption.51}%
-\contentsline {figure}{\numberline {6.4}{\ignorespaces Per-Category Pass Rate: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}}{55}{figure.caption.71}%
-\contentsline {figure}{\numberline {6.5}{\ignorespaces Routing-Neutral Comparison: Observer-Only Tasks Where Both Architectures Score routing=1.0}}{56}{figure.caption.74}%
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Dataset Distribution by Category (3,135 total cases)}}{52}{figure.caption.57}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Dataset Distribution by Scenario}}{53}{figure.caption.58}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Category $\times $ Scenario Heatmap}}{53}{figure.caption.59}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Per-Category Pass Rate: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}}{63}{figure.caption.81}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces LLM judge score: three configurations (615 test cases)}}{63}{figure.caption.82}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces Routing-neutral comparison: Observer-only tasks}}{64}{figure.caption.85}%
 \addvspace {10\p@ }

@@ -40,7 +40,7 @@ operator = Agent(
 )
 \end{lstlisting}
 
-The Observer uses \texttt{tool\_choice="auto"} (the model decides whether to call a tool or respond directly), while the Operator uses \texttt{tool\_choice="required"} (every turn must invoke a tool---either an action or the handoff back). The MCP server instances expose disjoint tool sets: the Observer sees only read-only commands (\texttt{squeue}, \texttt{sinfo}, \texttt{sacct}, \texttt{scontrol show}), while the Operator receives action tools (\texttt{scancel}, \texttt{scontrol update}, \texttt{sbatch}) plus a subset of read tools for target discovery.
+The Observer uses \texttt{tool\_choice="auto"} (the model decides whether to call a tool or respond directly), while the Operator uses \texttt{tool\_choice="required"} (every turn must invoke a tool---either an action or the handoff back). The MCP server instances expose strictly partitioned tool sets: the Observer sees only read-only commands (\texttt{squeue}, \texttt{sinfo}, \texttt{sacct}, \texttt{scontrol show}), while the Operator receives action tools (\texttt{scancel}, \texttt{scontrol update}, \texttt{sbatch}) plus a small subset of read tools for target discovery before acting.
 
 \subsection{Safety and Confirmation Pipeline}
 

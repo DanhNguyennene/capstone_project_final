@@ -1,28 +1,28 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{20}{table.caption.18}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{20}{table.caption.19}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.19}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.20}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.21}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{30}{table.caption.29}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.20}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.21}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.22}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{31}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{39}{table.caption.43}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Fine-Tuning Hyperparameters}}{42}{table.caption.45}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{42}{table.caption.45}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Fine-Tuning Hyperparameters}}{49}{table.caption.53}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{44}{table.caption.47}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{45}{table.caption.48}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{48}{table.caption.52}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Training Data Summary}}{48}{table.caption.54}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Training Run Configuration}}{49}{table.caption.57}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{50}{table.caption.58}%
-\contentsline {table}{\numberline {6.7}{\ignorespaces Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}}{50}{table.caption.59}%
-\contentsline {table}{\numberline {6.8}{\ignorespaces Evaluation Model Stack}}{51}{table.caption.61}%
-\contentsline {table}{\numberline {6.9}{\ignorespaces Three-Way Model Comparison (615 Test Cases)}}{52}{table.caption.65}%
-\contentsline {table}{\numberline {6.10}{\ignorespaces Deployment Cost Comparison}}{52}{table.caption.67}%
-\contentsline {table}{\numberline {6.11}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B (615 Test Cases)}}{54}{table.caption.69}%
-\contentsline {table}{\numberline {6.12}{\ignorespaces Per-Category Pass Rate --- Monolithic Ablation}}{54}{table.caption.70}%
-\contentsline {table}{\numberline {6.13}{\ignorespaces Routing-Neutral Comparison (378 Observer-Only Cases)}}{55}{table.caption.73}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{51}{table.caption.55}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{52}{table.caption.56}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{55}{table.caption.60}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Training Data Summary}}{55}{table.caption.62}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Training Run Configuration}}{56}{table.caption.65}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{57}{table.caption.66}%
+\contentsline {table}{\numberline {6.7}{\ignorespaces Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}}{57}{table.caption.67}%
+\contentsline {table}{\numberline {6.8}{\ignorespaces Evaluation Model Stack}}{58}{table.caption.69}%
+\contentsline {table}{\numberline {6.9}{\ignorespaces Three-Way Model Comparison (615 Test Cases)}}{59}{table.caption.73}%
+\contentsline {table}{\numberline {6.10}{\ignorespaces Pass Rate by Category --- Three-Way Comparison (615 Test Cases)}}{60}{table.caption.75}%
+\contentsline {table}{\numberline {6.11}{\ignorespaces Deployment Cost Comparison}}{60}{table.caption.77}%
+\contentsline {table}{\numberline {6.12}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B (615 Test Cases)}}{62}{table.caption.79}%
+\contentsline {table}{\numberline {6.13}{\ignorespaces Per-Category Pass Rate --- Monolithic Ablation}}{62}{table.caption.80}%
+\contentsline {table}{\numberline {6.14}{\ignorespaces Routing-Neutral Comparison (378 Observer-Only Cases)}}{64}{table.caption.84}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Benchmark Artifact Highlights}}{59}{table.caption.77}%

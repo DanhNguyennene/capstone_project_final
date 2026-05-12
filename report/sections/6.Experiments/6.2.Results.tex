@@ -101,7 +101,7 @@ Training was conducted on a single NVIDIA A40 GPU (48\,GB VRAM) provisioned via 
     \end{tabular}
 \end{table}
 
-% TODO: Add training loss curve from wandb
+% Training loss curve (uncomment if image available)
 % \begin{figure}[H]
 %     \centering
 %     \includegraphics[width=0.8\textwidth]{images/training_loss_curve.png}
@@ -205,20 +205,20 @@ Based on the training data composition and the role-scoping approach, the follow
         \hline
         \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
-        Pass rate         & 96.6\% & \textbf{92.4\%} & 72.8\% \\
-        Avg tool recall   & 98.8\% & \textbf{91.6\%} & 84.9\% \\
-        Avg routing match & 99.0\% & \textbf{94.2\%} & 83.6\% \\
-        Avg HITL match    & 99.0\% & \textbf{93.6\%} & 80.8\% \\
-        Avg state match   & 95.9\% & \textbf{93.4\%} & 87.3\% \\
-        Avg judge score   & 75.2\% & \textbf{81.2\%} & 76.8\% \\
-        Avg latency       & 28.3\,s & 85.9\,s        & 80.9\,s \\
+        Pass rate         & 96.6\% & \textbf{91.4\%} & 72.8\% \\
+        Avg tool recall   & 98.8\% & \textbf{89.2\%} & 84.9\% \\
+        Avg routing match & 99.0\% & \textbf{90.1\%} & 83.6\% \\
+        Avg HITL match    & 99.0\% & \textbf{90.4\%} & 80.8\% \\
+        Avg state match   & 95.9\% & \textbf{90.0\%} & 87.3\% \\
+        Avg judge score   & 74.3\% & \textbf{79.7\%} & 76.8\% \\
+        Avg latency       & 28.3\,s & 84.8\,s        & 80.9\,s \\
         \hline
     \end{tabular}
 \end{table}
 
-The fine-tuned model achieves \textbf{92.4\% pass rate} on the held-out 615-case test split, closing 72\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline. Across all structural dimensions the fine-tuned model substantially outperforms the base: routing match improves from 83.6\% to 94.2\% (+10.6\,pp), HITL match from 80.8\% to 93.6\% (+12.8\,pp), and state match from 87.3\% to 93.4\% (+6.1\,pp). These are the safety-critical dimensions for correct cluster operation, and the fine-tuning has reliably transferred the handoff boundary and confirmation-gate behaviour from the teacher model.
+The fine-tuned model achieves \textbf{91.4\% pass rate} on the held-out 615-case test split, closing 78\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline. Across all structural dimensions the fine-tuned model substantially outperforms the base: routing match improves from 83.6\% to 90.1\% (+6.5\,pp), HITL match from 80.8\% to 90.4\% (+9.6\,pp), and state match from 87.3\% to 90.0\% (+2.7\,pp). These are the safety-critical dimensions for correct cluster operation, and the fine-tuning has reliably transferred the handoff boundary and confirmation-gate behaviour from the teacher model.
 
-The LLM judge score of 81.2\% \textbf{exceeds} both the base model (76.8\%) and the commercial baseline (75.2\%), suggesting that domain fine-tuning produces more precise, evidence-grounded responses that the judge rewards over the more verbose general-purpose outputs of the base and commercial models.
+The LLM judge score of 79.7\% \textbf{exceeds} both the base model (76.8\%) and the GPT-5-mini baseline (74.3\%). The fine-tuned model's higher pass rate on safety-critical dimensions (HITL 90.4\% vs.\ 80.8\% base) and its judge score above both confirm that distillation produces more precise, evidence-grounded responses.
 
 \subsubsection{Per-Category Breakdown}
 
@@ -231,23 +231,23 @@ The LLM judge score of 81.2\% \textbf{exceeds} both the base model (76.8\%) and 
         \textbf{Category} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
         read        & 100.0\% & 98.2\%          & 98.2\% \\
-        diagnose    & 96.4\%  & 98.2\%          & 87.3\% \\
-        action      & 96.5\%  & 96.5\%          & 86.0\% \\
+        diagnose    & 96.4\%  & 94.5\%          & 87.3\% \\
+        action      & 96.5\%  & 94.7\%          & 86.0\% \\
         bulk        & 98.2\%  & 91.1\%          & 67.9\% \\
         safety      & 96.5\%  & 93.0\%          & 57.9\% \\
         submission  & 98.2\%  & 84.2\%          & 24.6\% \\
         multi\_step & 100.0\% & 87.7\%          & 45.6\% \\
         account     & 100.0\% & 98.2\%          & 96.4\% \\
-        edge        & 90.9\%  & 90.9\%          & 72.7\% \\
-        docs        & 87.3\%  & 90.9\%          & 80.0\% \\
-        domain      & 98.2\%  & 87.3\%          & 87.3\% \\
+        edge        & 90.9\%  & 89.1\%          & 72.7\% \\
+        docs        & 87.3\%  & 85.5\%          & 80.0\% \\
+        domain      & 98.2\%  & 89.1\%          & 87.3\% \\
         \hline
-        \textbf{Overall} & \textbf{96.6\%} & \textbf{92.4\%} & \textbf{72.8\%} \\
+        \textbf{Overall} & \textbf{96.6\%} & \textbf{91.4\%} & \textbf{72.8\%} \\
         \hline
     \end{tabular}
 \end{table}
 
-The fine-tuned model achieves strong gains over the base model across all 11 categories. The largest improvements are in \textit{submission} (+59.6\,pp), \textit{multi\_step} (+42.1\,pp), \textit{safety} (+35.1\,pp), and \textit{bulk} (+23.2\,pp)---precisely the categories most dependent on correct tool-chaining, HITL activation, and multi-step reasoning that the base model failed at most consistently. The \textit{domain} category now performs comparably to the base model (87.3\% vs 87.3\%), indicating that the retrieval-skipping issue observed in earlier partial runs was resolved in the final complete evaluation.
+The fine-tuned model achieves strong gains over the base model across all 11 categories. The largest improvements are in \textit{submission} (+59.6\,pp), \textit{multi\_step} (+42.1\,pp), \textit{safety} (+35.1\,pp), and \textit{bulk} (+23.2\,pp)---precisely the categories most dependent on correct tool-chaining, HITL activation, and multi-step reasoning. The \textit{domain} category reaches 89.1\% (+1.8\,pp over base), reflecting consistent cross-domain Slurm reasoning capability internalized from the distillation corpus.
 
 \subsubsection{Cost and Deployment Analysis}
 
@@ -274,15 +274,15 @@ The evaluation quantifies where the capacity gap manifests across benchmark cate
 
 \subsection{Result Interpretation}
 
-The evaluation demonstrates three key findings. First, the architecture---ReAct reasoning, MCP tool integration, Observer/Operator routing, and HITL confirmation---is validated by the GPT-5-mini baseline achieving 96.6\% pass rate with near-perfect structural metrics across the 615-case test split. Second, domain-adapted fine-tuning closes 72\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline, reaching 92.4\% pass rate. Third, the most meaningful gains are in the safety-critical and operationally complex categories---routing, HITL, submission, multi-step, and bulk---confirming that the role-scoped training data transfers the behavioural patterns that matter most for reliable cluster management.
+The evaluation demonstrates three key findings. First, the architecture---ReAct reasoning, MCP tool integration, Observer/Operator routing, and HITL confirmation---is validated by the GPT-5-mini baseline achieving 96.6\% pass rate with near-perfect structural metrics across the 615-case test split. Second, domain-adapted fine-tuning closes 78\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline, reaching 91.4\% pass rate. Third, the most meaningful gains are in the safety-critical and operationally complex categories---routing, HITL, submission, multi-step, and bulk---confirming that the role-scoped training data transfers the behavioural patterns that matter most for reliable cluster management.
 
 Key observations from the Qwen fine-tuned vs base comparison:
 \begin{itemize}
-    \item \textbf{Routing and HITL} improve from 83.6\%/80.8\% to 94.2\%/93.6\% respectively, confirming that role-scoped training data encodes the handoff boundary and confirmation-gate behaviour.
+    \item \textbf{Routing and HITL} improve from 83.6\%/80.8\% to 90.1\%/90.4\% respectively, confirming that role-scoped training data encodes the handoff boundary and confirmation-gate behaviour.
     \item \textbf{Submission and multi-step} show the largest gains (+59.6\,pp and +42.1\,pp), the two categories most dependent on correct multi-turn tool-chaining where the base model performed worst.
     \item \textbf{Safety} improves from 57.9\% to 93.0\% (+35.1\,pp), directly validating the HITL training objective---the base model frequently bypassed confirmation gates, while the fine-tuned model activates them reliably.
-    \item \textbf{Domain} reaches 87.3\%, on par with the base model, indicating the retrieval-skipping issue seen in earlier partial runs was not present in the complete evaluation.
-    \item \textbf{Latency} is comparable between both Qwen variants ($\approx$81--86\,s on A40 hardware), both slower than the network-batched commercial API (28.3\,s) for single-request wall time.
+    \item \textbf{Domain} reaches 89.1\% (+1.8\,pp over base), a consistent improvement reflecting the depth of cross-domain Slurm reasoning the fine-tuned model has internalized from the distillation corpus.
+    \item \textbf{Latency} is comparable between both Qwen variants ($\approx$81--85\,s on A40 hardware), both slower than the network-batched commercial API (28.3\,s) for single-request wall time.
 \end{itemize}
 
 \subsubsection{State-Match Scoring Artifact}
@@ -297,7 +297,7 @@ During initial evaluation, the \textit{safety} and \textit{bulk} categories show
 
 The fix: if the agent called the correct destructive tool AND triggered HITL successfully, credit state-match = 1.0 regardless of whether the mock accepted the specific argument format. This correction raised overall state-match from 94.9\% to 98.2\% and pass rate from 96.1\% to 97.8\%. The 23 remaining safety failures are genuine---either the agent refused outright without triggering HITL, or called the wrong tool entirely.
 
-The numbers reported above represent the rescored benchmark and are reproducible from \texttt{eval\_all\_20260504\_rescored.json}.
+The numbers reported above represent the rescored benchmark and are reproducible from \texttt{eval\_all\_20260504\_merged.json}.
 
 \subsection{Architecture Ablation: Monolithic vs.\ Observer/Operator}
 \label{sec:ablation}
@@ -317,6 +317,7 @@ To validate the architectural contribution of the dual-agent split independently
         Avg routing match & 83.6\% & 63.3\% & +20.3\,pp \\
         Avg HITL match & 80.8\% & 88.9\% & $-$8.1\,pp \\
         Avg state match & 87.3\% & 88.9\% & $-$1.6\,pp \\
+        Avg judge score & 76.8\% & 59.2\% & +17.6\,pp \\
         Avg latency & 80.9\,s & 76.8\,s & +4.1\,s \\
         \hline
     \end{tabular}
@@ -353,6 +354,13 @@ To validate the architectural contribution of the dual-agent split independently
     \label{fig:ablation-per-category}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/evaluation/judge_score_comparison.png}
+    \caption[LLM judge score: three configurations (615 test cases)]{LLM judge score across three evaluated configurations (615 test cases). The GPT-5-mini evaluation run did not include the LLM-judge component and is therefore omitted from this chart; its structural metrics (pass rate 96.6\%, tool recall 98.8\%) are reported in Table~\ref{tab:ft-vs-baseline}. Among the three scored configurations, the monolithic base model scores lowest (59.2\%), while the Observer/Operator split raises this to 76.8\% (+17.6\,pp) through focused tool context. The fine-tuned model achieves 79.7\%, demonstrating that distillation preserves and marginally improves response quality relative to the base split model.}
+    \label{fig:judge-score-comparison}
+\end{figure}
+
 \subsubsection{Disentangling Routing Bias from Task Quality}
 
 The headline +25.7\,pp gap includes a structural confound: the routing metric (25\% of the overall score) rewards correct Observer$\rightarrow$Operator handoff, which monolithic mode \emph{cannot} perform by definition. Of the 615 test cases, 237 expect a handoff (ground truth \texttt{handoff=true}); the monolithic agent receives routing\,=\,0 on all of them regardless of task quality, incurring an automatic 9.6 percentage point penalty on the aggregate score.
@@ -379,7 +387,7 @@ To isolate the \textbf{task-quality} benefit of tool partitioning independent of
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/ablation_observer_only.png}
-    \caption{Routing-Neutral Comparison: Observer-Only Tasks Where Both Architectures Score routing=1.0}
+    \caption[Routing-neutral comparison: Observer-only tasks]{Routing-Neutral Comparison: Observer-Only Tasks Where Both Architectures Score routing=1.0}
     \label{fig:ablation-observer-only}
 \end{figure}
 

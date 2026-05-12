@@ -117,3 +117,49 @@ plt.tight_layout()
 plt.savefig('report/images/evaluation/ablation_observer_only.png', dpi=200, bbox_inches='tight')
 plt.close()
 print("Saved: report/images/evaluation/ablation_observer_only.png")
+
+# ============================================================
+# CHART 3: Judge Score comparison across all 4 configurations
+# ============================================================
+ft   = json.load(open('slurm-agent/evaluation/results/qwen14b_lora_final_test615_tmp.json'))
+gpt5 = json.load(open('slurm-agent/evaluation/results/gpt5mini_test615_tmp.json'))
+
+configs = [
+    ('Base Qwen2.5-14B\n(Monolithic)',    mono['metrics']['avg_judge_score'],  '#FF9800'),
+    ('Base Qwen2.5-14B\n(Observer/Op.)', split['metrics']['avg_judge_score'],  '#2196F3'),
+    ('FT Qwen2.5-14B\n(Observer/Op.)',   ft['metrics']['avg_judge_score'],     '#4CAF50'),
+]
+# Note: GPT-5-mini evaluation was conducted without the LLM-judge component (judge_score=0.0),
+# so it is excluded from this chart. Pass rate and structural metrics are reported in Table 6.3.
+
+labels  = [c[0] for c in configs]
+scores  = [c[1] * 100 for c in configs]
+colours = [c[2] for c in configs]
+
+fig3, ax3 = plt.subplots(figsize=(8, 5))
+bars = ax3.bar(range(len(configs)), scores, color=colours, edgecolor='white', linewidth=0.5, width=0.55)
+
+ax3.set_ylabel('Judge Score (%)', fontsize=11)
+ax3.set_title('LLM Judge Score: Architecture & Model Comparison\n(3 Configurations, 615 Test Cases; GPT-5-mini judge not evaluated)', fontsize=10, fontweight='bold')
+ax3.set_xticks(range(len(configs)))
+ax3.set_xticklabels(labels, fontsize=10)
+ax3.set_ylim(0, 100)
+ax3.grid(axis='y', alpha=0.3)
+ax3.spines['top'].set_visible(False)
+ax3.spines['right'].set_visible(False)
+
+for bar, score in zip(bars, scores):
+    ax3.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 1.2,
+             f'{score:.1f}%', ha='center', va='bottom', fontsize=11, fontweight='bold')
+
+# Bracket showing architecture gain (mono → base split)
+mono_s, split_s = scores[0], scores[1]
+ax3.annotate('', xy=(1, split_s + 2), xytext=(0, mono_s + 2),
+             arrowprops=dict(arrowstyle='<->', color='#555', lw=1.4))
+ax3.text(0.5, max(mono_s, split_s) + 7,
+         f'+{split_s - mono_s:.1f}pp\n(arch. gain)', ha='center', fontsize=9, color='#555')
+
+plt.tight_layout()
+plt.savefig('report/images/evaluation/judge_score_comparison.png', dpi=200, bbox_inches='tight')
+plt.close()
+print("Saved: report/images/evaluation/judge_score_comparison.png")

@@ -12,7 +12,7 @@ The \textbf{slurmctld} daemon is the central controller. It tracks nodes, partit
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/slurm_resource_management.png}
-    \caption{Slurm master-worker architecture. Client commands (\texttt{sbatch}, \texttt{srun}, \texttt{squeue}) submit requests to the central \texttt{slurmctld} controller daemon, which schedules work and dispatches it to per-node \texttt{slurmd} daemons on compute nodes. An optional \texttt{slurmdbd} accounting daemon records job history in a persistent database for later retrieval via \texttt{sacct}. A secondary \texttt{slurmctld} can be configured for high availability, and the controller may communicate with external clusters for multi-cluster management~\cite{abhishek2022dynamic}.}
+    \caption[Slurm master-worker architecture]{Slurm master-worker architecture. Client commands (\texttt{sbatch}, \texttt{srun}, \texttt{squeue}) submit requests to the central \texttt{slurmctld} controller daemon, which schedules work and dispatches it to per-node \texttt{slurmd} daemons on compute nodes. An optional \texttt{slurmdbd} accounting daemon records job history in a persistent database for later retrieval via \texttt{sacct}. A secondary \texttt{slurmctld} can be configured for high availability, and the controller may communicate with external clusters for multi-cluster management~\cite{abhishek2022dynamic}.}
     \label{fig:slurm-architecture}
 \end{figure}
 

@@ -1,6 +1,218 @@
 # Slurm Agent — AI-Powered HPC Cluster Management
 
-> An intelligent agent system for Slurm cluster management using LLMs + Model Context Protocol (MCP).
+> An intelligent dual-agent system for Slurm HPC cluster management using LLMs, the Model Context Protocol (MCP), and a domain-fine-tuned open-weight model.
+
+[![Model](https://img.shields.io/badge/🤗%20Model-DanhVuiVe%2Fslurm--agent--qwen14b--lora--final-blue)](https://huggingface.co/DanhVuiVe/slurm-agent-qwen14b-lora-final)
+[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+---
+
+## Overview
+
+The Slurm Agent translates natural-language requests into grounded Slurm scheduler interactions. It combines:
+
+- **Observer/Operator dual-agent architecture** — read-only inspection is separated from state-changing operations at the framework level
+- **Human-in-the-Loop (HITL) confirmation** — all destructive tool calls (cancel, hold, drain, modify) require explicit user approval before execution
+- **MCP tool layer** — 67 typed Slurm tools with parameter validation and dual real/mock execution modes
+- **Domain fine-tuned model** — Qwen2.5-14B-Instruct + QLoRA adapter trained on GPT-5-mini distilled traces, achieving **91.4% pass rate** on a 615-case held-out benchmark
+- **Hybrid RAG** — local Slurm documentation retrieval (BM25 + semantic, RRF fusion) with web search fallback
+
+---
+
+## Fine-Tuned Model
+
+The domain-adapted model is publicly available on Hugging Face:
+
+**[DanhVuiVe/slurm-agent-qwen14b-lora-final](https://huggingface.co/DanhVuiVe/slurm-agent-qwen14b-lora-final)**
+
+| Property | Value |
+|---|---|
+| Base model | Qwen2.5-14B-Instruct |
+| Adapter type | QLoRA (r=64, α=128) |
+| Target layers | All 48 transformer layers |
+| Trainable params | ~480M (3.2%) |
+| Training data | 3,329 samples (GPT-5-mini distillation) |
+| Training hardware | 1× NVIDIA A40 48 GB |
+| Training time | ~22 hours |
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+
+base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-14B-Instruct", load_in_4bit=True)
+model = PeftModel.from_pretrained(base, "DanhVuiVe/slurm-agent-qwen14b-lora-final")
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-14B-Instruct")
+```
+
+---
+
+## Benchmark Results
+
+All three configurations evaluated on an identical 615-case held-out test split (stratified 80/20, seed=42):
+
+| Metric | GPT-5-mini | **Qwen2.5-14B (FT)** | Qwen2.5-14B (Base) | Monolithic (Base) |
+|---|---|---|---|---|
+| Pass rate | 96.6% | **91.4%** | 72.8% | 47.2% |
+| Tool recall | 98.8% | **89.2%** | 84.9% | 77.5% |
+| Routing match | 99.0% | **90.1%** | 83.6% | 63.3% |
+| HITL match | 99.0% | **90.4%** | 80.8% | 88.9% |
+| Judge score | 75.2% | **79.7%** | 76.8% | 59.2% |
+| Latency | 28.3 s | 84.8 s | 80.9 s | 76.8 s |
+
+The fine-tuned model closes **78% of the gap** between the base model and the commercial API baseline while running entirely on local infrastructure.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│  Interface Layer  (React + Vite)                │
+│  → submits prompts, relays confirm/cancel       │
+├─────────────────────────────────────────────────┤
+│  Agent Layer  (OpenAI Agents SDK)               │
+│  ┌──────────────┐      ┌──────────────────────┐ │
+│  │   Observer   │─────▶│      Operator        │ │
+│  │ (read-only)  │handoff│ (state-changing)    │ │
+│  │ ~10 tools    │◀─────│ ~8 tools + HITL gate │ │
+│  └──────────────┘      └──────────────────────┘ │
+├─────────────────────────────────────────────────┤
+│  Protocol Layer  (MCP Server, 67 tools)         │
+│  → real mode: Slurm CLI subprocess              │
+│  → mock mode: in-memory resettable state        │
+├─────────────────────────────────────────────────┤
+│  Infrastructure                                 │
+│  Slurm cluster · LLM endpoint · SQLite · Docs  │
+└─────────────────────────────────────────────────┘
+```
+
+The Observer handles all read-only operations (queue inspection, diagnosis, documentation, web search). When a state-changing operation is required, it hands off to the Operator via the SDK `handoff()` mechanism. The Operator executes destructive tools only after the user confirms the pending action.
+
+---
+
+## Screenshots
+
+All screenshots are from a live session using the fine-tuned `DanhVuiVe/slurm-agent-qwen14b-lora-final` adapter.
+
+### HITL Safety Flow
+
+| Before | During | After |
+|---|---|---|
+| ![Read query](docs/images/UI_before_HITL.jpg) | ![Confirmation gate](docs/images/UI_during_HITL.jpg) | ![Post-execution](docs/images/UI_after_HITL.jpg) |
+| Read-only query: `squeue` returns active jobs | Destructive `scancel` intercepted — user must confirm | Confirmed: jobs cancelled, follow-up `squeue` verifies CANCELLED state |
+
+### Web Search Integration
+
+| Tool execution | Final response |
+|---|---|
+| ![Web search calls](docs/images/UI_before_WEB.jpg) | ![CUDA OOM answer](docs/images/UI_after_WEB.jpg) |
+| Observer calls `web_search` + `web_fetch` for CUDA OOM error | Structured troubleshooting guide from retrieved sources |
+
+### Documentation Lookup (RAG)
+
+| Retrieval phase | Final response |
+|---|---|
+| ![Docs retrieval](docs/images/UI_before_RAG.jpg) | ![Partition guide](docs/images/UI_after_RAG.jpg) |
+| Observer calls `lookup_slurm_docs`, extracts partition config snippets | Grounded partition-selection guide from local corpus |
+
+---
+
+## Quick Start
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/DanhNguyennene/specialized_project_slurm_agent
+cd slurm-agent
+pip install -r agent/requirements.txt
+pip install -r mcp-server/requirements.txt
+```
+
+### 2. Configure environment
+
+```bash
+cp config/agent.env.example .env
+# Set OPENAI_API_KEY or point OPENAI_BASE_URL to local model server
+```
+
+### 3. Start MCP server
+
+```bash
+# Mock mode (for development/evaluation)
+python mcp-server/slurm_mcp_sse.py --mock
+
+# Real mode (requires Slurm on PATH)
+python mcp-server/slurm_mcp_sse.py
+```
+
+### 4. Start agent backend
+
+```bash
+cd agent
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### 5. Run with fine-tuned model
+
+```bash
+# Serve the fine-tuned model locally (requires A40 or equivalent)
+python evaluation/serve_ft_model.py --port 9000
+
+# Point the agent at it
+export OPENAI_BASE_URL=http://localhost:9000/v1
+export OPENAI_API_KEY=dummy
+export SLURM_AGENT_MODEL=slurm-agent
+```
+
+---
+
+## Evaluation
+
+```bash
+# Run full 615-case benchmark (fine-tuned model)
+bash run_ft_eval.sh
+
+# Run ablation (monolithic vs Observer/Operator)
+bash run_ablation_monolithic.sh
+
+# Inspect results
+python evaluation/eval_ui.html  # open in browser
+```
+
+---
+
+## Project Structure
+
+```
+slurm-agent/
+├── agent/                  # FastAPI backend + OpenAI Agents SDK orchestration
+│   ├── main.py             # /v1/chat/completions endpoint
+│   └── flow/               # Observer, Operator, instructions, tools
+├── mcp-server/             # 67 typed Slurm MCP tools (real + mock)
+├── evaluation/             # Benchmark dataset, eval harness, scoring
+│   ├── dataset.json        # 3,135 test cases (11 categories × 5 scenarios)
+│   └── results/            # Evaluation result JSON files
+├── training/               # QLoRA fine-tuning scripts
+├── frontend/               # React + Vite UI
+├── docs/                   # Documentation + screenshots
+│   └── images/             # UI screenshots
+└── config/                 # Environment templates + deployment
+```
+
+---
+
+## Citation
+
+```bibtex
+@misc{slurmagent2026,
+  title  = {Slurm Agent: An AI-Powered HPC Cluster Management System with Observer/Operator Architecture},
+  author = {Danh Nguyen},
+  year   = {2026},
+  url    = {https://github.com/DanhNguyennene/specialized_project_slurm_agent}
+}
+```
+
 
 ## Project Structure
 

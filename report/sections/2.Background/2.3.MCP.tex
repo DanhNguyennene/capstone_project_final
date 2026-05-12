@@ -12,49 +12,27 @@ MCP uses a client-server model. A server declares the capabilities it provides, 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/mcp_architecture.png}
-    \caption{Model Context Protocol (MCP) architecture, introduced by Anthropic in late 2024~\cite{hou2025mcp}. \textit{Without MCP} (top), every AI application must implement a separate, bespoke integration for each data source or tool---a fragmented approach that is costly to build and brittle to maintain. \textit{With MCP} (bottom), a standardised client-server protocol acts as a universal gateway: the AI application runs an \textbf{MCP Client} that communicates with one or more \textbf{MCP Servers}, each of which exposes a specific data source or capability (databases, file systems, web services, command-line tools) through a common interface. Once a server is built it is immediately compatible with any MCP-capable host, eliminating per-integration custom code and enabling a reusable, composable tool ecosystem.}
+    \caption[Model Context Protocol (MCP) architecture~\cite{hou2025mcp}]{Model Context Protocol (MCP) architecture, introduced by Anthropic in late 2024~\cite{hou2025mcp}. \textit{Without MCP} (top), every AI application must implement a separate, bespoke integration for each data source or tool---a fragmented approach that is costly to build and brittle to maintain. \textit{With MCP} (bottom), a standardised client-server protocol acts as a universal gateway: the AI application runs an \textbf{MCP Client} that communicates with one or more \textbf{MCP Servers}, each of which exposes a specific data source or capability (databases, file systems, web services, command-line tools) through a common interface. Once a server is built it is immediately compatible with any MCP-capable host, eliminating per-integration custom code and enabling a reusable, composable tool ecosystem.}
     \label{fig:mcp-architecture}
 \end{figure}
 
 The protocol does not define the internal logic of a tool. Instead, it defines how the tool is described, discovered, invoked, and returned to the host application. This makes MCP suitable for wrapping existing systems such as Slurm command-line utilities.
 
-\subsection{Core Components}
+\subsection{Core Components and Capabilities}
 
 MCP architecture contains three main roles:
 
 \begin{itemize}
-    \item \textbf{MCP Hosts}: applications that users interact with directly, such as chat interfaces, IDE extensions, or desktop assistants. The host manages the user interface and coordinates the model's access to external capabilities.
-    \item \textbf{MCP Clients}: protocol clients that maintain connections between the host and one or more servers. They perform capability discovery, forward requests, and receive server responses.
+    \item \textbf{MCP Hosts}: applications that users interact with directly, such as chat interfaces, IDE extensions, or desktop assistants.
+    \item \textbf{MCP Clients}: protocol clients that maintain connections between the host and one or more servers, performing capability discovery and forwarding requests.
     \item \textbf{MCP Servers}: domain-specific services that expose capabilities. In this project, a Slurm MCP server exposes selected scheduler operations as named tools with defined input schemas.
 \end{itemize}
 
-This separation improves reuse. The same Slurm-oriented server can be connected to different host applications, and the host does not need to know the implementation details of each Slurm command.
+Servers can expose three capability categories: \textbf{Resources} (readable data such as logs or status), \textbf{Tools} (executable operations with typed schemas), and \textbf{Prompts} (reusable workflow templates). For the Slurm Agent, tools are the primary capability---they allow Slurm operations to be represented as explicit function calls rather than free-form shell commands.
 
-\subsection{Capabilities}
+\subsection{Tool Definition and Deployment}
 
-MCP servers can expose three categories of capability:
-
-\begin{itemize}
-    \item \textbf{Resources}: readable data sources such as files, documents, logs, or generated status information.
-    \item \textbf{Tools}: executable operations with names, descriptions, and input schemas.
-    \item \textbf{Prompts}: reusable prompt templates for domain-specific workflows.
-\end{itemize}
-
-For Slurm Agent, tools are the main capability. They allow operations such as listing jobs, inspecting nodes, reading accounting data, or preparing a state-changing request to be represented as explicit function calls. Resources and prompts can support the interaction by providing documentation or task-specific guidance, but operational access is primarily controlled through tools.
-
-\subsection{Tool Definition and Invocation}
-
-MCP tools are described with metadata and JSON Schema input definitions. A tool declaration normally includes a tool name, a natural-language description, and a schema that specifies accepted parameters. When the model selects a tool, the client sends a \texttt{tools/call} request with the tool name and arguments. The server validates the input, performs the underlying operation, and returns a structured result or error.
-
-This pattern is useful for Slurm because it avoids asking the model to construct arbitrary shell commands. Instead of generating a raw \texttt{squeue} or \texttt{scontrol} string, the model can call a specific tool such as a job-listing operation with typed filters. The server is then responsible for translating validated parameters into the appropriate Slurm command and formatting the result.
-
-Typed tool invocation supports the safety model used in this thesis. Read-only tools can be made available for observation, while tools that may affect cluster state can be separated into a different interaction mode and require explicit user confirmation before execution.
-
-\subsection{Transport and Deployment}
-
-MCP can run over local or network transports. Local servers are commonly launched as subprocesses and communicate through standard input and output. Network deployments use HTTP-based transport so that a server can be hosted separately from the user-facing application.
-
-The transport mechanism affects deployment, scaling, and process management, but it does not change the logical tool interface. A Slurm tool has the same schema and meaning whether the MCP server is launched locally during development or exposed through a network service in an integrated application.
+MCP tools are described with a name, a natural-language description, and a JSON Schema input definition. When the model selects a tool, the client sends a \texttt{tools/call} request; the server validates inputs, executes the underlying operation, and returns a structured result or error. This avoids asking the model to construct arbitrary shell commands: instead of generating a raw \texttt{squeue} string, the model calls a typed job-listing tool with validated filters. Read-only tools can be made available for observation while state-changing tools are separated into a different interaction mode requiring user confirmation. MCP supports both local deployment (server launched as a subprocess over stdio) and network deployment (HTTP transport), without changing the logical tool interface.
 
 \subsection{Security Considerations}
 

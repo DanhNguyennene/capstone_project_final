@@ -7,7 +7,7 @@ This section specifies the operational workflow of each functional module. Each 
 
 The Observer is the primary entry point for all requests and handles read-only operations. It follows a ReAct loop: (1)~classify user intent, (2)~select and invoke read-only MCP tools, (3)~chain additional tool calls if evidence is insufficient, (4)~synthesize a grounded response. If a state-changing operation is detected, the Observer produces a structured handoff containing the classified intent, gathered evidence, and target identifiers, then transfers control to the Operator.
 
-The Observer accesses 40+ read-only tools spanning queue inspection (\texttt{squeue}), node status (\texttt{sinfo}), job history (\texttt{sacct}), scheduler diagnostics (\texttt{sdiag}, \texttt{sprio}), resource statistics (\texttt{sstat}, \texttt{sreport}), configuration display (\texttt{scontrol\_show}), documentation (\texttt{lookup\_slurm\_docs}), and web search.
+The Observer accesses read-only tools spanning queue inspection (\texttt{squeue}), node status (\texttt{sinfo}), job history (\texttt{sacct}), scheduler diagnostics (\texttt{sdiag}, \texttt{sprio}), resource statistics (\texttt{sstat}, \texttt{sreport}), configuration display (\texttt{scontrol\_show}), documentation (\texttt{lookup\_slurm\_docs}), and web search. At runtime, the Observer sees approximately 10 tools from the agent's 18-tool surface; the full MCP server exposes 67 tool endpoints including variants and utilities.
 
 \subsection{Operator Module}
 
@@ -50,7 +50,7 @@ The MCP server provides 67 typed tools organized into functional groups. Table~\
 
 \subsection{Documentation Retrieval}
 
-A local corpus of ~130 pages of official Slurm documentation enables grounded answers without relying on LLM parametric memory. The \texttt{lookup\_slurm\_docs} tool performs keyword-based lookup against an indexed corpus. When local docs are insufficient, the agent falls back to \texttt{web\_search} and \texttt{fetch\_web\_content} for external sources.
+A local corpus of 273 official Slurm documentation pages enables grounded answers without relying on LLM parametric memory. The \texttt{lookup\_slurm\_docs} tool performs keyword-based lookup against an indexed corpus. When local docs are insufficient, the agent falls back to \texttt{web\_search} and \texttt{fetch\_web\_content} for external sources.
 
 \subsection{Evaluation Pipeline}
 

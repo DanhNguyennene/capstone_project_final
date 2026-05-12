@@ -125,7 +125,7 @@ nohup python -u evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
   --test-ids-file $TEST_FILE \
-  --workers 2 \
+  --workers 1 \
   > eval_ft.log 2>&1 &
 EVAL_PID=$!
 echo "  Eval running in background: PID=$EVAL_PID"

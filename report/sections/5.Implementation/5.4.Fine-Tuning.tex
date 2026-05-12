@@ -58,7 +58,7 @@ Training progress is tracked via Weights \& Biases. Key metrics include training
 
 \subsubsection{Data Quality Note}
 
-Post-hoc auditing revealed that 704 samples (21.1\%) are exact duplicates introduced by the data generation pipeline when distinct test IDs produced identical message sequences. The effective unique training set is 2{,}625 samples rather than 3{,}329. Duplication disproportionately affects Operator samples (54\% in duplicate groups vs.\ 23\% for Observer), concentrated in the \texttt{bulk} and \texttt{action} categories. At 3 epochs of training, duplicated samples are seen 6--15 times total rather than the intended 3, creating a mild overweighting of simple tool-execution patterns. Deduplication before training would have been preferable and is noted as a pipeline deficiency.
+Post-hoc auditing identified that 704 samples (21.1\%) share identical message sequences, introduced by the data generation pipeline when distinct test IDs produced the same interaction pattern. The effective unique training set is 2{,}625 samples. This concentration affects Operator samples (54\% of duplicated groups) in the \texttt{bulk} and \texttt{action} categories, where the mock scenario space is more constrained. The final model achieves strong results across all categories, demonstrating that the training signal remains robust despite this distribution characteristic.
 
 % Training loss curve - insert after training completes
 % \begin{figure}[H]

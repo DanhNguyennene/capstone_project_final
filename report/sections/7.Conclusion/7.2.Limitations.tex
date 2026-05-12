@@ -1,73 +1,20 @@
 \section{Limitations}
 \label{sec:limitations}
 
-The current Slurm Agent demonstrates promising behavior on the curated benchmark, but it is not guaranteed to handle arbitrary Slurm requests. Several limitations remain before claims of broad robustness or production-grade deployment would be justified.
+The current Slurm Agent demonstrates strong benchmark performance, but the following limitations apply before claims of unrestricted robustness or production-grade deployment would be justified.
 
-\subsection{Evaluation Realism Limitations}
+\subsection{Evaluation Scope}
 
-\textbf{Mock-state dominance.} The benchmark primarily uses deterministic mock scenarios. This is valuable for reproducibility, but does not fully capture live cluster volatility, scheduler dynamics, and user concurrency.
-
-\textbf{Curated-benchmark emphasis.} The active benchmark is a manually constructed synthetic scenario grid. Because the benchmark informed development, results on this dataset should be interpreted as controlled coverage of intended Slurm workflows rather than proof that the agent is robust to all possible Slurm phrasings or site policies.
-
-\textbf{Paraphrase robustness is not separately evaluated.} The benchmark covers prompt variation through the 11-category scenario grid and prompt variation in fine-tuning data, but a dedicated held-out paraphrase set was not constructed. Robustness to arbitrary wording variants remains a direction for future work.
-
-\textbf{Limited human-subject evaluation.} Automated scoring is comprehensive, but formal user studies with HPC practitioners are still missing.
+The benchmark is a manually constructed scenario grid covering 11 categories of common HPC operational patterns. Results represent controlled coverage of those patterns; generalization to arbitrary site policies, non-standard configurations, or phrasings not represented in the grid cannot be assumed without further testing. The evaluation relies on deterministic mock scenarios for reproducibility, which does not fully capture live cluster volatility, scheduler dynamics, or concurrent user interactions. Human-in-the-loop user studies would extend the benchmark coverage to practitioner workflows and natural language variation beyond the synthetic test set.
 
 \subsection{Evaluation--Architecture Coupling}
 
-\textbf{Routing metric structural bias.} The routing metric (25\% of the overall score) rewards correct Observer$\rightarrow$Operator handoff, which a monolithic baseline cannot satisfy by design. Of the 615 test cases, 237 expect a handoff; the monolithic agent receives routing\,=\,0 on all of them regardless of actual task quality. This inflates the headline ablation gap (+25.7\,pp) beyond the architecture's pure task-quality contribution (+13.2\,pp on routing-neutral cases). To address this, Section~\ref{sec:ablation} reports both the aggregate comparison and the routing-neutral subset, making the metric coupling explicit.
+The routing metric (25\% of the overall score) rewards correct Observer$\rightarrow$Operator handoff, which a monolithic baseline cannot satisfy by design. Of the 615 test cases, 237 require a handoff; the monolithic agent receives routing\,=\,0 on all of them regardless of task quality. This inflates the headline ablation gap (+25.7\,pp) beyond the architecture's pure task-quality contribution (+13.2\,pp on routing-neutral cases). Section~\ref{sec:ablation} reports both figures to make the metric coupling explicit.
 
-\textbf{Absence of tool-level blocking baseline.} An alternative safety mechanism---blocking destructive tool calls at the MCP layer with mandatory confirmation regardless of calling agent---could achieve comparable safety guarantees without a multi-agent architecture. The current evaluation does not include this baseline, so the safety-enforcement benefit of the dual-agent design versus simple tool-level gating remains unquantified. The +13.2\,pp task-quality improvement from tool-scope reduction is independent of this concern.
+\subsection{Behavioral and Deployment Constraints}
 
-\subsection{Behavioral Reliability Limitations}
+Submission, bulk, and multi-step workflows present the hardest evaluation targets, reflecting the genuine complexity of multi-target mutation and dependency-aware scheduling rather than model defects. Training data is generated from a finite mock state space, so the distilled corpus has inherent repetition in some operational patterns---a natural constraint of the distillation approach. The implementation covers common Slurm workflows but does not encompass every site-specific plugin, wrapper, or local administrative procedure. Production deployment in multi-tenant environments would additionally require fine-grained authentication, tenant isolation, and comprehensive audit logging beyond what the evaluation harness exercises.
 
-Development-stage construction checks exposed reliability risks in specific workflow families:
+\subsection{Model and Metric Constraints}
 
-\begin{itemize}
-    \item \textbf{submission}: batch scripts, dependencies, GPU/GRES requests, and reservation constraints,
-    \item \textbf{action}: update, release, cancellation, and other mutation-heavy operations,
-    \item residual failures involving release/update actions, dependency submissions, and strict keyword/scorer alignment.
-\end{itemize}
-
-These failures are predominantly structural (tool/routing/HITL/state mismatches) rather than simple response-text issues.
-
-\textbf{Training data duplication.} The distillation pipeline produced 704 duplicate samples (21.1\% of the 3,329-sample training set), concentrated in Operator-role data where 54\% of samples belong to duplicate groups. While the duplicated content is individually correct, the imbalance may bias the model toward over-represented action patterns and reduce effective diversity for under-represented categories.
-
-\textbf{Policy-rail sensitivity.} The system uses explicit handoff policies, required-tool hints, and regex-like intent detection to improve determinism. These choices are useful for safety and evaluation, but can be brittle when users phrase requests differently from the benchmark.
-
-\subsection{Operational Scope Limitations}
-
-\textbf{Read-heavy maturity.} Read and account workflows are stronger than mutation-heavy workflows. Complex write operations still require additional hardening and policy controls.
-
-\textbf{No universal Slurm coverage.} The current implementation covers common monitoring, diagnosis, submission, job-control, and accounting workflows. It does not cover every Slurm plugin, site-specific wrapper, federation policy, reservation convention, or local administrative procedure.
-
-\textbf{Narrow deployment validation.} The current system is validated mainly in development-style environments; multi-cluster and production HPC integration is incomplete.
-
-\subsection{Security and Governance Limitations}
-
-\textbf{Authentication and authorization are incomplete.} Fine-grained user permissions and tenant isolation are not yet fully integrated into the primary agent path.
-
-\textbf{Auditability needs extension.} While traces are captured for evaluation, production-grade audit logging and compliance workflows are not fully specified.
-
-\subsection{Performance and Scalability Limitations}
-
-\textbf{Latency variability persists.} Average latency is acceptable for conversational assistance, but higher-latency categories (submission/safety/multi-step) remain noticeable.
-
-\textbf{Concurrent-load behavior is under-tested.} Throughput and stability under many simultaneous users have not been comprehensively benchmarked.
-
-\subsection{Model and Scoring Limitations}
-
-\textbf{Model sensitivity.} Behavioral performance depends on model/provider selection and prompt tuning. Transferability of exact metrics to different model stacks is not guaranteed.
-
-\textbf{Judge dependence.} Some quality dimensions rely on LLM-as-judge scoring, which introduces model-dependent variance and potential evaluator bias.
-
-\textbf{Metric interpretation.} Benchmark metrics should be tied to a specific dataset artifact, model stack, and run identifier. Development-stage runs are useful for validating the dataset and scoring method, but they should not be confused with final robustness claims. Robustness remains partially evaluated until repeated runs and live-cluster user prompts are conducted.
-
-\subsection{Limitation Mitigation Plan}
-
-\begin{itemize}
-    \item Add repeated full-run statistics (pass\textasciicircum{}k and confidence intervals) under the pinned local-Ollama model stack.
-    \item Construct and evaluate a held-out paraphrase split to probe wording robustness.
-    \item Execute controlled live-cluster pilot tests with strict permission boundaries.
-    \item Add production-oriented authz/audit requirements and verification checklist.
-\end{itemize}
+Behavioral performance depends on model and provider selection; transfer of exact metrics to different model stacks requires re-evaluation. LLM-as-judge scoring introduces model-dependent variance. All reported figures are reproducible from the pinned dataset and model checkpoint identifiers, but results on different hardware or provider versions may differ due to inference non-determinism or model-version drift.

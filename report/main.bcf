@@ -2411,37 +2411,41 @@
     <bcf:citekey order="33" intorder="1">hou2025mcp</bcf:citekey>
     <bcf:citekey order="34" intorder="1">hou2025mcp</bcf:citekey>
     <bcf:citekey order="35" intorder="1">yao2022react</bcf:citekey>
-    <bcf:citekey order="36" intorder="1">openaiagentssdk2024</bcf:citekey>
-    <bcf:citekey order="37" intorder="1">yoo2003slurm</bcf:citekey>
-    <bcf:citekey order="37" intorder="2">slurm2024docs</bcf:citekey>
-    <bcf:citekey order="38" intorder="1">hudak2018openondemand</bcf:citekey>
-    <bcf:citekey order="39" intorder="1">jupyterhub2024</bcf:citekey>
-    <bcf:citekey order="40" intorder="1">palmer2015openxdmod</bcf:citekey>
-    <bcf:citekey order="41" intorder="1">prometheus2024</bcf:citekey>
-    <bcf:citekey order="41" intorder="2">grafana2024</bcf:citekey>
-    <bcf:citekey order="42" intorder="1">doosthosseini2024chatai</bcf:citekey>
-    <bcf:citekey order="43" intorder="1">langchainparsl2025</bcf:citekey>
-    <bcf:citekey order="44" intorder="1">fujitsu2025acb</bcf:citekey>
-    <bcf:citekey order="45" intorder="1">yao2022react</bcf:citekey>
-    <bcf:citekey order="46" intorder="1">schick2023toolformer</bcf:citekey>
-    <bcf:citekey order="47" intorder="1">cheng2024llmagents</bcf:citekey>
-    <bcf:citekey order="47" intorder="2">xi2023rise</bcf:citekey>
-    <bcf:citekey order="48" intorder="1">openaiagentssdk2024</bcf:citekey>
-    <bcf:citekey order="48" intorder="2">wu2023autogen</bcf:citekey>
-    <bcf:citekey order="49" intorder="1">anthropic2024mcp</bcf:citekey>
-    <bcf:citekey order="49" intorder="2">mcpspec2024</bcf:citekey>
-    <bcf:citekey order="50" intorder="1">zhong2017seq2sql</bcf:citekey>
-    <bcf:citekey order="51" intorder="1">yu2018spider</bcf:citekey>
-    <bcf:citekey order="52" intorder="1">wang2020ratsql</bcf:citekey>
-    <bcf:citekey order="53" intorder="1">bai2022constitutional</bcf:citekey>
-    <bcf:citekey order="53" intorder="2">ouyang2022training</bcf:citekey>
-    <bcf:citekey order="54" intorder="1">zheng2023judging</bcf:citekey>
-    <bcf:citekey order="55" intorder="1">yao2022react</bcf:citekey>
-    <bcf:citekey order="56" intorder="1">dettmers2023qlora</bcf:citekey>
-    <bcf:citekey order="57" intorder="1">reimers2019sentence</bcf:citekey>
-    <bcf:citekey order="58" intorder="1">cormack2009reciprocal</bcf:citekey>
-    <bcf:citekey order="59" intorder="1">dettmers2023qlora</bcf:citekey>
-    <bcf:citekey order="60" intorder="1" nocite="1">*</bcf:citekey>
+    <bcf:citekey order="36" intorder="1">yao2022react</bcf:citekey>
+    <bcf:citekey order="37" intorder="1">aiplainenglish2024react</bcf:citekey>
+    <bcf:citekey order="38" intorder="1">yao2022react</bcf:citekey>
+    <bcf:citekey order="39" intorder="1">aiplainenglish2024react</bcf:citekey>
+    <bcf:citekey order="40" intorder="1">openaiagentssdk2024</bcf:citekey>
+    <bcf:citekey order="41" intorder="1">yoo2003slurm</bcf:citekey>
+    <bcf:citekey order="41" intorder="2">slurm2024docs</bcf:citekey>
+    <bcf:citekey order="42" intorder="1">hudak2018openondemand</bcf:citekey>
+    <bcf:citekey order="43" intorder="1">jupyterhub2024</bcf:citekey>
+    <bcf:citekey order="44" intorder="1">palmer2015openxdmod</bcf:citekey>
+    <bcf:citekey order="45" intorder="1">prometheus2024</bcf:citekey>
+    <bcf:citekey order="45" intorder="2">grafana2024</bcf:citekey>
+    <bcf:citekey order="46" intorder="1">doosthosseini2024chatai</bcf:citekey>
+    <bcf:citekey order="47" intorder="1">langchainparsl2025</bcf:citekey>
+    <bcf:citekey order="48" intorder="1">fujitsu2025acb</bcf:citekey>
+    <bcf:citekey order="49" intorder="1">yao2022react</bcf:citekey>
+    <bcf:citekey order="50" intorder="1">schick2023toolformer</bcf:citekey>
+    <bcf:citekey order="51" intorder="1">cheng2024llmagents</bcf:citekey>
+    <bcf:citekey order="51" intorder="2">xi2023rise</bcf:citekey>
+    <bcf:citekey order="52" intorder="1">openaiagentssdk2024</bcf:citekey>
+    <bcf:citekey order="52" intorder="2">wu2023autogen</bcf:citekey>
+    <bcf:citekey order="53" intorder="1">anthropic2024mcp</bcf:citekey>
+    <bcf:citekey order="53" intorder="2">mcpspec2024</bcf:citekey>
+    <bcf:citekey order="54" intorder="1">zhong2017seq2sql</bcf:citekey>
+    <bcf:citekey order="55" intorder="1">yu2018spider</bcf:citekey>
+    <bcf:citekey order="56" intorder="1">wang2020ratsql</bcf:citekey>
+    <bcf:citekey order="57" intorder="1">bai2022constitutional</bcf:citekey>
+    <bcf:citekey order="57" intorder="2">ouyang2022training</bcf:citekey>
+    <bcf:citekey order="58" intorder="1">zheng2023judging</bcf:citekey>
+    <bcf:citekey order="59" intorder="1">yao2022react</bcf:citekey>
+    <bcf:citekey order="60" intorder="1">dettmers2023qlora</bcf:citekey>
+    <bcf:citekey order="61" intorder="1">reimers2019sentence</bcf:citekey>
+    <bcf:citekey order="62" intorder="1">cormack2009reciprocal</bcf:citekey>
+    <bcf:citekey order="63" intorder="1">dettmers2023qlora</bcf:citekey>
+    <bcf:citekey order="64" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">

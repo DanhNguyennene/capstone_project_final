@@ -15,17 +15,4 @@ The primary objective of this research is to design, implement, and evaluate an 
 
 \textbf{Goal 5: Domain-Adapted Fine-Tuning.} The project shall explore whether a smaller open-weight model can be domain-adapted to replicate the tool-calling and safety behavior of the commercial baseline. The approach uses parameter-efficient fine-tuning---LoRA adapters trained on a 4-bit quantized base model (QLoRA)---on traces distilled from the evaluation framework, with role-scoped tool exposure to prevent cross-role hallucination. The resulting model should operate entirely on local infrastructure, eliminating API cost and data-privacy concerns for production HPC environments.
 
-\subsection{Project Scope}
 
-The scope of this project encompasses the design, implementation, and evaluation of the Slurm Agent system. The following boundaries define what is included and excluded from the project:
-
-\textbf{In Scope:}
-\begin{itemize}
-    \item MCP server exposing Slurm commands as typed, risk-classified tools
-    \item Observer/Operator workflow with human-in-the-loop confirmation for state-changing operations
-    \item Web-based frontend with chart artifact rendering and local documentation retrieval
-    \item 3,135-case curated evaluation benchmark (11 categories, balanced at 285 each) with automated scoring
-    \item Domain-adapted fine-tuning of an open-weight model using LoRA adapters with 4-bit quantization (QLoRA), distilled evaluation traces, role-scoped tool exposure, and dataset augmentation
-\end{itemize}
-
-This project focuses on demonstrating the feasibility of a tool-grounded Slurm agent with explicit confirmation for state-changing actions and on contributing the dataset and evaluation system needed to measure that behavior. The intended outcome is therefore both a working natural-language Slurm assistant and a reproducible benchmark foundation for future research in AI-assisted HPC operations.

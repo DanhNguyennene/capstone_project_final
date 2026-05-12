@@ -10,7 +10,7 @@ Most modern LLMs are based on the Transformer architecture introduced by Vaswani
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{images/transformer_architecture.png}
-    \caption{Transformer architecture as introduced by Vaswani et al.~\cite{vaswani2017attention}. The encoder (left) and decoder (right) each consist of stacked layers combining multi-head self-attention with position-wise feed-forward networks, residual connections, and layer normalisation. Inputs are first converted to token embeddings and summed with positional encodings to inject sequence-order information. The encoder builds contextual representations of the input; the decoder attends to both its own previous outputs (masked self-attention) and the encoder output (cross-attention) to generate the target sequence token by token. Although the original design is encoder-decoder, most modern LLMs use a decoder-only variant of this structure.}
+    \caption[Transformer encoder-decoder architecture~\cite{vaswani2017attention}]{Transformer architecture as introduced by Vaswani et al.~\cite{vaswani2017attention}. The encoder (left) and decoder (right) each consist of stacked layers combining multi-head self-attention with position-wise feed-forward networks, residual connections, and layer normalisation. Inputs are first converted to token embeddings and summed with positional encodings to inject sequence-order information. The encoder builds contextual representations of the input; the decoder attends to both its own previous outputs (masked self-attention) and the encoder output (cross-attention) to generate the target sequence token by token. Although the original design is encoder-decoder, most modern LLMs use a decoder-only variant of this structure.}
     \label{fig:transformer-architecture}
 \end{figure}
 
@@ -104,7 +104,7 @@ where $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ with r
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{images/qlora.png}
-    \caption{Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\cite{dettmers2023qlora}}
+    \caption[Full fine-tuning vs.\ LoRA vs.\ QLoRA~\cite{dettmers2023qlora}]{Comparison of fine-tuning approaches: (left)~full fine-tuning updates all 16-bit weights with 32-bit optimizer state; (center)~LoRA freezes the base model and trains low-rank adapters; (right)~QLoRA quantizes the frozen model to 4-bit and uses paged optimizers to manage memory spikes~\cite{dettmers2023qlora}}
     \label{fig:qlora}
 \end{figure}
 

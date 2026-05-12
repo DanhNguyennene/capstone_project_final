@@ -1,13 +1,12 @@
-\section{Related Works}
 \label{sec:related-works-compact}
 
 This chapter reviews work related to natural-language assistance for Slurm-based HPC operation.
 
-\subsection{HPC Management Interfaces}
+\section{HPC Management Interfaces}
 
 Slurm provides expressive CLI tools (\texttt{squeue}, \texttt{sacct}, \texttt{sinfo}, \texttt{sbatch}, \texttt{scancel}) but assumes scheduler expertise~\cite{yoo2003slurm, slurm2024docs}. Portals such as Open OnDemand~\cite{hudak2018openondemand} and JupyterHub~\cite{jupyterhub2024} reduce barriers but still require manual parameter selection. Monitoring tools (Open XDMoD~\cite{palmer2015openxdmod}, Prometheus/Grafana~\cite{prometheus2024, grafana2024}) are observational and do not convert requests into validated actions.
 
-\subsection{LLM-Based HPC Systems}
+\section{LLM-Based HPC Systems}
 
 Recent work integrates LLMs with HPC, though with different goals. Chat~AI~\cite{doosthosseini2024chatai} deploys LLMs as services on Slurm-backed GPUs but does not use LLMs to \emph{manage} the cluster. LangChain-Parsl~\cite{langchainparsl2025} connects an LLM agent to HPC workflows via the Parsl framework but lacks HITL safety and native Slurm tool integration. Fujitsu's AI Computing Broker~\cite{fujitsu2025acb} optimizes GPU allocation across clusters at the resource-brokering layer.
 
@@ -28,18 +27,18 @@ Recent work integrates LLMs with HPC, though with different goals. Chat~AI~\cite
     \end{tabular}
 \end{table}
 
-\subsection{LLM Agents and Tool-Augmented Reasoning}
+\section{LLM Agents and Tool-Augmented Reasoning}
 
 ReAct combines reasoning traces with actions~\cite{yao2022react}. Toolformer demonstrates tool-calling patterns~\cite{schick2023toolformer}. Agent surveys identify planning, memory, tool use, and multi-agent coordination as key design dimensions~\cite{cheng2024llmagents, xi2023rise}. Frameworks such as the OpenAI Agents SDK and AutoGen provide implementation support including tool invocation, streaming, and handoff patterns~\cite{openaiagentssdk2024, wu2023autogen}. These are general-purpose; a Slurm assistant must additionally know which tools are read-only, which require confirmation, and how to interpret scheduler state.
 
-\subsection{Protocol-Based Tool Integration}
+\section{Protocol-Based Tool Integration}
 
 The Model Context Protocol (MCP) defines a standard client-server interface for exposing tools to AI applications~\cite{anthropic2024mcp, mcpspec2024}. This project applies MCP to a Slurm-specific operational setting with read/write tool separation, mock scenarios for evaluation, and traceable behavior.
 
-\subsection{Natural Language to Structured Operations}
+\section{Natural Language to Structured Operations}
 
 Semantic parsing (Seq2SQL~\cite{zhong2017seq2sql}, Spider~\cite{yu2018spider}, RAT-SQL~\cite{wang2020ratsql}) maps language to structured queries. For Slurm, the operation space is a set of scheduler tools with parameters, states, and safety policies rather than a database schema. This makes the system closer to grounded operation generation with action risk management.
 
-\subsection{Safety and Evaluation}
+\section{Safety and Evaluation}
 
 Alignment methods~\cite{bai2022constitutional, ouyang2022training} improve assistant behavior but cannot guarantee correctness in live systems. LLM-as-judge evaluation~\cite{zheng2023judging} does not verify tool-grounded workflows. The benchmark in this thesis therefore checks tool selection, routing, HITL compliance, and state transitions across 3,135 Slurm-specific scenarios.
