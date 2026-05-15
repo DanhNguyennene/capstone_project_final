@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 01:38
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 12:40
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1559,6 +1559,12 @@ Overfull \hbox (0.68369pt too wide) in paragraph at lines 8--9
 ssion, job control, accounting, QoS/resource
  []
 
+
+Overfull \hbox (16.96193pt too wide) in paragraph at lines 8--9
+\TU/TimesNewRoman(0)/m/n/12 domain-adapted fine-tuning of an open-weight model 
+(Qwen2.5-14B-Instruct) using LoRA adapters
+ []
+
 [4
 
 ]) (sections/table-of-glossary.tex [5]) (sections/contents.tex [6
@@ -1729,18 +1735,24 @@ es: \TU/lmtt/m/n/12 healthy \TU/TimesNewRoman(0)/m/n/12 (jobs running normally)
  []
 
 [41]) (sections/5.Implementation/5.3.Frontend.tex
+Overfull \hbox (50.88263pt too wide) in paragraph at lines 17--18
+\TU/TimesNewRoman(0)/m/n/12 14B-Instruct model with the trained QLoRA adapter (
+\TU/lmtt/m/n/12 DanhVuiVe/slurm-agent-qwen14b-lora-final\TU/TimesNewRoman(0)/m/
+n/12 ),
+ []
+
 File: images/UI_before_HITL.jpg Graphic file (type bmp)
 <images/UI_before_HITL.jpg>
- [42]
+[42]
 File: images/UI_during_HITL.jpg Graphic file (type bmp)
 <images/UI_during_HITL.jpg>
 File: images/UI_after_HITL.jpg Graphic file (type bmp)
 <images/UI_after_HITL.jpg>
- [43])
-(sections/5.Implementation/5.4.Fine-Tuning.tex [44] [45] [46]
+ [43]) (sections/5.Implementation/5.4.Fine-Tuning.tex [44] [45] [46]
 File: images/train_wandb.png Graphic file (type bmp)
 <images/train_wandb.png>
-) [47]
+)
+[47]
 Chapter 6.
 (sections/6.Experiments/6.1.Testing-Approach.tex
 Underfull \hbox (badness 3826) in paragraph at lines 47--47
@@ -1767,6 +1779,17 @@ p)
 File: images/evaluation/scenario_pie.png Graphic file (type bmp)
 <images/evaluation/scenario_pie.png>
  [50]) [51] (sections/6.Experiments/6.2.Results.tex
+Overfull \hbox (19.27115pt too wide) in paragraph at lines 7--8
+\TU/TimesNewRoman(0)/m/n/12 All three model configurations—GPT-5-mini, fine-tun
+ed Qwen2.5-14B-Instruct, and base Qwen2.5-
+ []
+
+
+Overfull \hbox (35.38678pt too wide) in paragraph at lines 13--26
+ [][] 
+ []
+
+
 Overfull \hbox (3.09653pt too wide) in paragraph at lines 28--29
 \TU/TimesNewRoman(0)/m/n/12 perfect structural metrics, validating that the eva
 luation framework correctly captures tool-calling
@@ -1869,10 +1892,10 @@ Package logreq Info: Writing requests to 'main.run.xml'.
 Here is how much of TeX's memory you used:
  46453 strings out of 402987
  1067925 string characters out of 5447904
- 2059678 words of memory out of 5000000
+ 2060688 words of memory out of 5000000
  74374 multiletter control sequences out of 15000+600000
  641066 words of font info for 125 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 110i,13n,131p,2021b,5000s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,13n,131p,2030b,5000s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on main.pdf (75 pages).

@@ -14,5 +14,5 @@
 \contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{49}{table.caption.48}%
 \contentsline {table}{\numberline {6.3}{\ignorespaces Three-Way Model Comparison (615-Case Held-Out Test Split)}}{52}{table.caption.51}%
 \contentsline {table}{\numberline {6.4}{\ignorespaces Deployment Cost Comparison}}{54}{table.caption.55}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B, Routing Metric Excluded (615 Test Cases)}}{55}{table.caption.56}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B-Instruct, Routing Metric Excluded (615 Test Cases)}}{55}{table.caption.56}%
 \addvspace {10\p@ }

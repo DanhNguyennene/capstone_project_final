@@ -123,8 +123,8 @@ All screenshots are from a live session using the fine-tuned `DanhVuiVe/slurm-ag
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/DanhNguyennene/specialized_project_slurm_agent
-cd slurm-agent
+git clone https://github.com/DanhNguyennene/capstone_project_final
+cd capstone_project_final/slurm-agent
 pip install -r agent/requirements.txt
 pip install -r mcp-server/requirements.txt
 ```
@@ -209,7 +209,7 @@ slurm-agent/
   title  = {Slurm Agent: An AI-Powered HPC Cluster Management System with Observer/Operator Architecture},
   author = {Danh Nguyen},
   year   = {2026},
-  url    = {https://github.com/DanhNguyennene/specialized_project_slurm_agent}
+  url    = {https://github.com/DanhNguyennene/capstone_project_final}
 }
 ```
 

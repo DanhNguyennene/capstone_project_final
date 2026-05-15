@@ -4,7 +4,7 @@
 \subsection{Three-Way Model Comparison}
 \label{sec:ft-comparison}
 
-All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B, and base Qwen2.5-14B---are evaluated on the identical 615-case held-out test split using the same evaluation harness, MCP server, and scoring methodology described in Section~\ref{sec:testing-approach}. Table~\ref{tab:ft-vs-baseline} reports the aggregate metrics after applying the state-match artefact correction described in Section~\ref{sec:state-match-artifact}.
+All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B-Instruct, and base Qwen2.5-14B-Instruct---are evaluated on the identical 615-case held-out test split using the same evaluation harness, MCP server, and scoring methodology described in Section~\ref{sec:testing-approach}. Table~\ref{tab:ft-vs-baseline} reports the aggregate metrics after applying the state-match artefact correction described in Section~\ref{sec:state-match-artifact}.
 
 \begin{table}[H]
     \centering
@@ -12,7 +12,7 @@ All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B, and base Qw
     \label{tab:ft-vs-baseline}
     \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
+        \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B-Instruct (FT)} & \textbf{Qwen2.5-14B-Instruct (Base)} \\
         \hline
         Avg overall score & 95.9\% & \textbf{88.3\%} & 85.2\% \\
         Avg tool recall   & 98.8\% & \textbf{89.2\%} & 84.9\% \\
@@ -27,7 +27,7 @@ All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B, and base Qw
 
 The GPT-5-mini commercial baseline achieves a mean weighted score of \textbf{95.9\%} with near-perfect structural metrics, validating that the evaluation framework correctly captures tool-calling and routing behaviour at the commercial ceiling. The lowest-scoring categories for GPT-5-mini are \textit{edge} (91.7\%), \textit{domain} (93.2\%), and \textit{diagnose} (94.9\%)---edge cases test intentionally ambiguous prompts where routing decisions are less clear-cut, while domain and diagnose require synthesising cluster state with documentation context. The LLM judge average of 75.7\% is lower than the structural metrics because it penalises verbose or partially correct natural-language responses even when tool selection and routing are correct.
 
-The fine-tuned Qwen2.5-14B achieves a mean weighted score of \textbf{88.3\%}, closing 29\% of the gap between the 85.2\% base model and the 95.9\% commercial baseline. The most significant improvements over the base model are in the categories that require explicit learned behaviour: \textit{submission} (+21.7\,pp, from 61.7\% to 83.4\%), \textit{multi\_step} (+13.8\,pp, from 69.5\% to 83.3\%), \textit{safety} (+11.3\,pp, from 77.3\% to 88.6\%), and \textit{bulk} (+6.8\,pp, from 79.0\% to 85.9\%). These are precisely the categories most dependent on correct tool-chaining, HITL activation sequences, and multi-step conditional reasoning---the skills targeted by the role-scoped distillation corpus. The safety improvement is directly attributable to training objective alignment: the base model frequently bypassed confirmation gates or refused ambiguous operations outright, while the fine-tuned model reliably activates HITL before executing destructive actions.
+The fine-tuned Qwen2.5-14B-Instruct achieves a mean weighted score of \textbf{88.3\%}, closing 29\% of the gap between the 85.2\% base model and the 95.9\% commercial baseline. The most significant improvements over the base model are in the categories that require explicit learned behaviour: \textit{submission} (+21.7\,pp, from 61.7\% to 83.4\%), \textit{multi\_step} (+13.8\,pp, from 69.5\% to 83.3\%), \textit{safety} (+11.3\,pp, from 77.3\% to 88.6\%), and \textit{bulk} (+6.8\,pp, from 79.0\% to 85.9\%). These are precisely the categories most dependent on correct tool-chaining, HITL activation sequences, and multi-step conditional reasoning---the skills targeted by the role-scoped distillation corpus. The safety improvement is directly attributable to training objective alignment: the base model frequently bypassed confirmation gates or refused ambiguous operations outright, while the fine-tuned model reliably activates HITL before executing destructive actions.
 
 However, the fine-tuned model \textbf{regresses modestly} on knowledge-intensive categories where the base model already performed well: \textit{domain} (--6.2\,pp), \textit{docs} (--4.5\,pp), \textit{diagnose} (--3.8\,pp), and \textit{read} (--3.1\,pp). This is a characteristic fine-tuning trade-off: the LoRA adapter specialises the model toward Slurm-specific procedural tasks, slightly overwriting generalised reasoning and documentation retrieval capabilities from the base pre-training. The overall score improvement (85.2\% $\to$ 88.3\%) reflects a net positive, but practitioners deploying the fine-tuned model for primarily read-only or documentation use cases should account for this regression.
 
@@ -36,7 +36,7 @@ Notably, the fine-tuned model's LLM judge score of \textbf{79.7\%} exceeds both 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/three_way_per_category.png}
-    \caption[Three-way per-category average score]{Three-way per-category average weighted score on the 615-case held-out test set. GPT-5-mini (purple) establishes the commercial ceiling. The fine-tuned Qwen2.5-14B (blue) closes most of the gap on task-specific categories (submission, multi\_step, safety, bulk) but regresses slightly on knowledge-intensive ones (domain, docs, diagnose). The base Qwen2.5-14B (orange) shows the largest deficits in submission, multi\_step, and safety.}
+    \caption[Three-way per-category average score]{Three-way per-category average weighted score on the 615-case held-out test set. GPT-5-mini (purple) establishes the commercial ceiling. The fine-tuned Qwen2.5-14B-Instruct (blue) closes most of the gap on task-specific categories (submission, multi\_step, safety, bulk) but regresses slightly on knowledge-intensive ones (domain, docs, diagnose). The base Qwen2.5-14B-Instruct (orange) shows the largest deficits in submission, multi\_step, and safety.}
     \label{fig:three-way-per-category}
 \end{figure}
 
@@ -55,7 +55,7 @@ The fine-tuned model operates entirely on local infrastructure, eliminating per-
     \label{tab:deployment-cost}
     \begin{tabular}{|l|c|c|}
         \hline
-        \textbf{Dimension} & \textbf{GPT-5-mini (API)} & \textbf{Qwen2.5-14B (Local)} \\
+        \textbf{Dimension} & \textbf{GPT-5-mini (API)} & \textbf{Qwen2.5-14B-Instruct (Local)} \\
         \hline
         Per-request cost & \$0.002--0.01 & \$0 (hardware amortised) \\
         Data privacy & External transmission & Fully local \\
@@ -71,11 +71,11 @@ The primary deployment trade-off is inference latency (84.8\,s vs.\ 28.3\,s) and
 \subsection{Architecture Ablation: Monolithic vs.\ Observer/Operator}
 \label{sec:ablation}
 
-To isolate the architectural contribution of the dual-agent split from model capacity, base Qwen2.5-14B is evaluated in a monolithic configuration: a single agent with all 64 tools and no handoff mechanism. The monolithic agent cannot satisfy the routing predicate on the 237 cases where ground-truth \texttt{handoff=true}, receiving \texttt{routing\_match=0} on those cases by construction. Table~\ref{tab:ablation-monolithic} therefore excludes the routing dimension and re-normalises the remaining weights (tool recall 0.467, HITL 0.333, state 0.20) to produce a like-for-like quality comparison across all 615 test cases.
+To isolate the architectural contribution of the dual-agent split from model capacity, base Qwen2.5-14B-Instruct is evaluated in a monolithic configuration: a single agent with all 64 tools and no handoff mechanism. The monolithic agent cannot satisfy the routing predicate on the 237 cases where ground-truth \texttt{handoff=true}, receiving \texttt{routing\_match=0} on those cases by construction. Table~\ref{tab:ablation-monolithic} therefore excludes the routing dimension and re-normalises the remaining weights (tool recall 0.467, HITL 0.333, state 0.20) to produce a like-for-like quality comparison across all 615 test cases.
 
 \begin{table}[H]
     \centering
-    \caption{Architecture Ablation --- Base Qwen2.5-14B, Routing Metric Excluded (615 Test Cases)}
+    \caption{Architecture Ablation --- Base Qwen2.5-14B-Instruct, Routing Metric Excluded (615 Test Cases)}
     \label{tab:ablation-monolithic}
     \begin{tabular}{|l|c|c|c|}
         \hline

@@ -180,8 +180,8 @@ capstone_project/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/DanhNguyennene/specialized_project_slurm_agent
-cd specialized_project_slurm_agent/slurm-agent
+git clone https://github.com/DanhNguyennene/capstone_project_final
+cd capstone_project_final/slurm-agent
 pip install -r agent/requirements.txt
 pip install -r mcp-server/requirements.txt
 ```
@@ -294,7 +294,7 @@ cd ..; .\compile_poster.ps1
 
 | Resource | URL |
 |---|---|
-| Source code | [github.com/DanhNguyennene/specialized_project_slurm_agent](https://github.com/DanhNguyennene/specialized_project_slurm_agent) |
+| Source code | [github.com/DanhNguyennene/capstone_project_final](https://github.com/DanhNguyennene/capstone_project_final) |
 | Fine-tuned model | [huggingface.co/DanhVuiVe/slurm-agent-qwen14b-lora-final](https://huggingface.co/DanhVuiVe/slurm-agent-qwen14b-lora-final) |
 | Base model | [huggingface.co/Qwen/Qwen2.5-14B-Instruct](https://huggingface.co/Qwen/Qwen2.5-14B-Instruct) |
 | OpenAI Agents SDK | [github.com/openai/openai-agents-python](https://github.com/openai/openai-agents-python) |
@@ -310,7 +310,7 @@ cd ..; .\compile_poster.ps1
             Observer/Operator Architecture and Domain Fine-Tuning},
   author = {Nguyen, Danh},
   year   = {2026},
-  url    = {https://github.com/DanhNguyennene/specialized_project_slurm_agent}
+  url    = {https://github.com/DanhNguyennene/capstone_project_final}
 }
 ```
 

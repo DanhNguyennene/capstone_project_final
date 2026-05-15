@@ -55,7 +55,7 @@
 \begin{itemize}
   \item \textbf{Observer/Operator Split:} Read-only Observer + state-changing Operator; destructive actions require human confirmation
   \item \textbf{Grounded RAG:} 273 official Slurm docs $\to$ 2,276 chunks; reduces hallucination
-  \item \textbf{Fine-Tuning:} Qwen2.5-14B + QLoRA from GPT-5-mini teacher traces
+  \item \textbf{Fine-Tuning:} Qwen2.5-14B-Instruct + QLoRA from GPT-5-mini teacher traces
   \item \textbf{Benchmark:} 3,135 cases, 11 categories, LLM-as-judge scoring
 \end{itemize}
 
@@ -195,7 +195,7 @@ Monolithic ablation$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 78.9\% & 59.2\% & 77
 \begin{itemize}
   \item \textbf{Observer/Operator Split:} Read-only vs.~state-changing; destructive actions require human confirmation
   \item \textbf{Grounded RAG:} 273 Slurm docs $\to$ 2,276 chunks, local retrieval reduces hallucination
-  \item \textbf{Fine-Tuning:} Qwen2.5-14B + QLoRA distilled from GPT-5-mini traces
+  \item \textbf{Fine-Tuning:} Qwen2.5-14B-Instruct + QLoRA distilled from GPT-5-mini traces
   \item \textbf{Benchmark:} 3,135 cases across 11 categories, LLM-as-judge scoring
 \end{itemize}
 
