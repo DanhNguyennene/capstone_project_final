@@ -39,7 +39,7 @@ The MCP server provides 64 typed tools organized into functional groups. Table~\
 
 \subsection{Evaluation Pipeline}
 
-Each benchmark test case $c \in \mathcal{C}$ specifies a tuple $(q_c, s_c^{\text{src}}, s_c^{\text{tgt}}, \mathcal{T}_c^*, h_c, \kappa_c)$ where $q_c$ is the natural-language request, $s_c^{\text{src}}$ and $s_c^{\text{tgt}}$ are the source and target cluster states, $\mathcal{T}_c^*$ is the expected tool set, $h_c \in \{0,1\}$ is the routing label (Observer-only vs.\ Observer$\rightarrow$Operator handoff), and $\kappa_c$ is the HITL requirement flag. The agent's response is scored across five weighted dimensions:
+Each benchmark test case $c \in \mathcal{C}$ specifies a tuple $(q_c, s_c^{\text{src}}, s_c^{\text{tgt}}, \mathcal{T}_c^*, h_c, \kappa_c)$ where $q_c$ is the natural-language request, $s_c^{\text{src}}$ and $s_c^{\text{tgt}}$ are the source and target cluster states, $\mathcal{T}_c^*$ is the expected tool set, $h_c \in \{0,1\}$ is the routing label (Observer-only vs.\ Observer$\rightarrow$Operator handoff), and $\kappa_c$ is the HITL requirement flag. The agent's response is scored across four weighted dimensions:
 
 \begin{equation}
     \text{score}(c) = w_1 \cdot \text{TR}(c) + w_2 \cdot \text{R}(c) + w_3 \cdot \text{H}(c) + w_4 \cdot \text{S}(c)
@@ -47,6 +47,8 @@ Each benchmark test case $c \in \mathcal{C}$ specifies a tuple $(q_c, s_c^{\text
 \end{equation}
 
 where the weights $(w_1, w_2, w_3, w_4) = (0.35,\, 0.25,\, 0.25,\, 0.15)$ sum to 1, and each component is defined as:
+
+The weight assignment reflects operational priority in an HPC management context: tool recall receives the highest weight (0.35) because invoking the wrong tool is the most consequential failure mode on a production cluster; routing and HITL are equally weighted (0.25 each) as both represent safety-critical decisions; state match receives the lowest weight (0.15) because it is partially redundant with correct tool invocation and is trivially satisfied for read-only categories (6 of 11).
 
 \begin{itemize}
     \item $\text{TR}(c) = |\hat{\mathcal{T}}_c \cap \mathcal{T}_c^*| \,/\, |\mathcal{T}_c^*|$ — \textbf{tool recall}: fraction of ground-truth tools invoked by the agent;
@@ -70,4 +72,4 @@ The primary evaluation metric is the mean weighted score over the test set:
     \label{eq:mean-score}
 \end{equation}
 
-All reported results are averaged over $k=3$ independent trials with temperature $= 0$, making each trial fully deterministic; the reported figure is the mean across all trials. An optional LLM-as-judge provides supplementary quality scores on a 1--5 scale reported alongside the structural metrics.
+All reported results are averaged over $k=3$ independent trials with temperature $= 0$, making each trial fully deterministic given a fixed input. Although the model produces identical outputs for identical prompts, each trial uses a fresh session with a reset mock MCP server and a distinct session identifier; averaging across trials guards against edge cases where a particular session initialisation produces an artifact response (e.g., connection timing, stream buffer boundaries). The reported figure is the mean across all trials. An optional LLM-as-judge provides supplementary quality scores on a 1--5 scale reported alongside the structural metrics.

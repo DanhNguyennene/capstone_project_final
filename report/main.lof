@@ -11,16 +11,16 @@
 \contentsline {figure}{\numberline {4.2}{\ignorespaces Observer/Operator routing and HITL confirmation flow}}{27}{figure.caption.24}%
 \contentsline {figure}{\numberline {4.3}{\ignorespaces Tool partitioning: Observer/Operator split vs.\ Monolithic}}{28}{figure.caption.26}%
 \contentsline {figure}{\numberline {4.4}{\ignorespaces Request lifecycle data flow}}{29}{figure.caption.28}%
-\contentsline {figure}{\numberline {4.5}{\ignorespaces MCP mock environment for training data collection}}{34}{figure.caption.33}%
-\contentsline {figure}{\numberline {4.6}{\ignorespaces Training data processing pipeline}}{36}{figure.caption.36}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces MCP mock environment for training data collection}}{35}{figure.caption.33}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Training data processing pipeline}}{37}{figure.caption.36}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces HITL Flow (1/3) --- Read-only query}}{43}{figure.caption.41}%
-\contentsline {figure}{\numberline {5.2}{\ignorespaces HITL Flow (2/3) --- Confirmation intercept}}{43}{figure.caption.42}%
-\contentsline {figure}{\numberline {5.3}{\ignorespaces HITL Flow (3/3) --- Post-execution verification}}{44}{figure.caption.43}%
-\contentsline {figure}{\numberline {5.4}{\ignorespaces WandB training dashboard}}{47}{figure.caption.46}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces HITL Flow (1/3) --- Read-only query}}{44}{figure.caption.41}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces HITL Flow (2/3) --- Confirmation intercept}}{44}{figure.caption.42}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces HITL Flow (3/3) --- Post-execution verification}}{45}{figure.caption.43}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces WandB training dashboard}}{48}{figure.caption.46}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {6.1}{\ignorespaces Cases per Category (285 each)}}{50}{figure.caption.49}%
-\contentsline {figure}{\numberline {6.2}{\ignorespaces Distribution by Scenario (627 cases each, uniform across all 5 scenarios)}}{51}{figure.caption.50}%
-\contentsline {figure}{\numberline {6.3}{\ignorespaces Three-way per-category average score}}{53}{figure.caption.52}%
-\contentsline {figure}{\numberline {6.4}{\ignorespaces Per-Category Average Score: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}}{56}{figure.caption.57}%
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Cases per Category (285 each)}}{51}{figure.caption.50}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Distribution by Scenario (627 cases each, uniform across all 5 scenarios)}}{52}{figure.caption.51}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Three-way per-category average score}}{55}{figure.caption.54}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Per-Category Average Score: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}}{58}{figure.caption.59}%
 \addvspace {10\p@ }

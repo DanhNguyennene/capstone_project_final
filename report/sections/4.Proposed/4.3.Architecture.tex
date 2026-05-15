@@ -86,7 +86,7 @@ Beyond safety enforcement, the dual-agent design provides a measurable \textbf{t
 
 \subsubsection{Protocol Layer}
 
-The Protocol Layer implements the Model Context Protocol (MCP) server, which exposes the full Slurm command surface as 64 typed tools organised into two access classes:
+The Protocol Layer implements the Model Context Protocol (MCP) server, which exposes the most common Slurm operations as 64 typed tools organised into two access classes:
 
 \begin{itemize}
     \item \textbf{Write-access tools} (routed through the Operator) — state-changing Slurm commands such as \texttt{sbatch}, \texttt{scancel}, \texttt{scontrol hold/release}, \texttt{scontrol update}, and accounting management. These always require an explicit HITL confirmation before the subprocess is spawned.

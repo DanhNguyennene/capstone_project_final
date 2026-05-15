@@ -8,11 +8,11 @@
 \contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{31}{table.caption.30}%
 \contentsline {table}{\numberline {4.3}{\ignorespaces MCP Tool Groups}}{32}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces Fine-Tuning Hyperparameters}}{46}{table.caption.44}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Fine-Tuning Hyperparameters}}{47}{table.caption.44}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{48}{table.caption.47}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{49}{table.caption.48}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Three-Way Model Comparison (615-Case Held-Out Test Split)}}{52}{table.caption.51}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Deployment Cost Comparison}}{54}{table.caption.55}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B-Instruct, Routing Metric Excluded (615 Test Cases)}}{55}{table.caption.56}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{49}{table.caption.47}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{50}{table.caption.48}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Three-Way Model Comparison (615-Case Held-Out Test Split)}}{53}{table.caption.52}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Deployment Cost Comparison}}{56}{table.caption.57}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B-Instruct, Routing Metric Excluded (615 Test Cases)}}{56}{table.caption.58}%
 \addvspace {10\p@ }

@@ -61,6 +61,10 @@ The curated benchmark (\texttt{dataset.json}) contains \textbf{3,135 test cases}
 
 Each case specifies: user prompt, source state, target state, expected tools, routing decision (Observer vs Operator handoff), and HITL requirement.
 
+\subsubsection{Dataset Construction}
+
+The 3,135 user prompts were generated via LLM-assisted authoring: for each category$\times$scenario combination, GPT-4 was prompted with the mock cluster state description and category definition to produce diverse natural-language requests exercising that category's target behaviour. The generated prompts were manually reviewed for correctness, deduplication, and coverage; ground-truth labels (expected tools, routing decision, HITL requirement, target state) were annotated by the researcher based on the intended system behaviour. This semi-automated approach enables large-scale coverage while preserving label quality through human verification.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{images/evaluation/dataset_distribution_category.png}

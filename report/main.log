@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 12:40
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 20:16
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1700,14 +1700,13 @@ Overfull \hbox (1.59756pt too wide) in paragraph at lines 15--34
 [31] [32]) (sections/4.Proposed/4.5.LLM-Architecture.tex [33]
 File: images/mcp_mock_data_collection.png Graphic file (type bmp)
 <images/mcp_mock_data_collection.png>
- [34]
+ [34] [35]
 Overfull \hbox (14.73834pt too wide) in paragraph at lines 55--56
 []\TU/TimesNewRoman(0)/b/n/12 Train/test split. \TU/TimesNewRoman(0)/m/n/12 The
  3,135-case benchmark is partitioned 80/20 (stratified by category $\OMS/cmsy/m
 /n/12 ^^B$ \TU/TimesNewRoman(0)/m/n/12 sce-
  []
 
-[35]
 File: images/data_augmentation_phase1.png Graphic file (type bmp)
 <images/data_augmentation_phase1.png>
 
@@ -1717,24 +1716,24 @@ Underfull \hbox (badness 7012) in paragraph at lines 68--68
 
 File: images/data_augmentation_phase2.png Graphic file (type bmp)
 <images/data_augmentation_phase2.png>
-[36]) [37]
+) [36] [37] [38]
 Chapter 5.
-(sections/5.Implementation/5.1.Agent-Backend.tex [38
+(sections/5.Implementation/5.1.Agent-Backend.tex [39
 
-] [39]
+] [40]
 Overfull \hbox (1.48962pt too wide) in paragraph at lines 48--49
 \TU/TimesNewRoman(0)/b/n/12 Streaming. \TU/TimesNewRoman(0)/m/n/12 The chat end
 point returns an OpenAI-compatible Server-Sent Events stream. Rather
  []
 
-) (sections/5.Implementation/5.2.MCP-Server.tex [40]
+) (sections/5.Implementation/5.2.MCP-Server.tex [41]
 Overfull \hbox (1.71582pt too wide) in paragraph at lines 14--15
 \TU/TimesNewRoman(0)/m/n/12 The mock server ships with five named starting stat
 es: \TU/lmtt/m/n/12 healthy \TU/TimesNewRoman(0)/m/n/12 (jobs running normally)
 , \TU/lmtt/m/n/12 failed
  []
 
-[41]) (sections/5.Implementation/5.3.Frontend.tex
+[42]) (sections/5.Implementation/5.3.Frontend.tex
 Overfull \hbox (50.88263pt too wide) in paragraph at lines 17--18
 \TU/TimesNewRoman(0)/m/n/12 14B-Instruct model with the trained QLoRA adapter (
 \TU/lmtt/m/n/12 DanhVuiVe/slurm-agent-qwen14b-lora-final\TU/TimesNewRoman(0)/m/
@@ -1743,16 +1742,16 @@ n/12 ),
 
 File: images/UI_before_HITL.jpg Graphic file (type bmp)
 <images/UI_before_HITL.jpg>
-[42]
+[43]
 File: images/UI_during_HITL.jpg Graphic file (type bmp)
 <images/UI_during_HITL.jpg>
 File: images/UI_after_HITL.jpg Graphic file (type bmp)
 <images/UI_after_HITL.jpg>
- [43]) (sections/5.Implementation/5.4.Fine-Tuning.tex [44] [45] [46]
+ [44]) (sections/5.Implementation/5.4.Fine-Tuning.tex [45] [46] [47]
 File: images/train_wandb.png Graphic file (type bmp)
 <images/train_wandb.png>
 )
-[47]
+[48]
 Chapter 6.
 (sections/6.Experiments/6.1.Testing-Approach.tex
 Underfull \hbox (badness 3826) in paragraph at lines 47--47
@@ -1769,16 +1768,22 @@ Underfull \hbox (badness 1072) in paragraph at lines 54--54
 []|\TU/TimesNewRoman(0)/m/n/10.95 Accounting, QoS, fair-share in-
  []
 
-[48
+[49
 
 ]
+Overfull \hbox (0.41933pt too wide) in paragraph at lines 66--67
+\TU/TimesNewRoman(0)/m/n/12 The 3,135 user prompts were generated via LLM-assis
+ted authoring: for each category$\OMS/cmsy/m/n/12 ^^B$\TU/TimesNewRoman(0)/m/n/
+12 scenario
+ []
+
 File: images/evaluation/dataset_distribution_category.png Graphic file (type bm
 p)
 <images/evaluation/dataset_distribution_category.png>
- [49]
+[50]
 File: images/evaluation/scenario_pie.png Graphic file (type bmp)
 <images/evaluation/scenario_pie.png>
- [50]) [51] (sections/6.Experiments/6.2.Results.tex
+ [51]) [52] (sections/6.Experiments/6.2.Results.tex
 Overfull \hbox (19.27115pt too wide) in paragraph at lines 7--8
 \TU/TimesNewRoman(0)/m/n/12 All three model configurations—GPT-5-mini, fine-tun
 ed Qwen2.5-14B-Instruct, and base Qwen2.5-
@@ -1795,7 +1800,7 @@ Overfull \hbox (3.09653pt too wide) in paragraph at lines 28--29
 luation framework correctly captures tool-calling
  []
 
-[52]
+[53]
 Overfull \hbox (3.5516pt too wide) in paragraph at lines 32--33
 []\TU/TimesNewRoman(0)/m/n/12 However, the fine-tuned model \TU/TimesNewRoman(0
 )/b/n/12 regresses modestly \TU/TimesNewRoman(0)/m/n/12 on knowledge-intensive 
@@ -1804,25 +1809,30 @@ categories where
 
 File: images/evaluation/three_way_per_category.png Graphic file (type bmp)
 <images/evaluation/three_way_per_category.png>
-[53]
-Overfull \hbox (8.51059pt too wide) in paragraph at lines 74--75
+[54] [55]
+Overfull \hbox (8.51059pt too wide) in paragraph at lines 80--81
 \TU/TimesNewRoman(0)/m/n/12 To isolate the architectural contribution of the du
 al-agent split from model capacity, base Qwen2.5-
  []
 
-[54]
-Overfull \hbox (5.5674pt too wide) in paragraph at lines 98--99
+[56]
+Overfull \hbox (5.5674pt too wide) in paragraph at lines 104--105
 []\TU/TimesNewRoman(0)/m/n/12 A recurring failure mode in the monolithic agent 
 is \TU/TimesNewRoman(0)/b/n/12 destructive action on read-only prompts\TU/Times
 NewRoman(0)/m/n/12 :
  []
 
-[55]
 File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
 <images/evaluation/ablation_per_category.png>
-) [56]
+[57]) [58]
 Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex [57
+(sections/7.Conclusion/7.1.Summary.tex
+Overfull \hbox (11.04263pt too wide) in paragraph at lines 9--10
+\TU/TimesNewRoman(0)/m/n/12 configuration inspection, documentation support, an
+d safety edge cases — grounded through
+ []
+
+[59
 
 ]
 Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
@@ -1830,13 +1840,13 @@ Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
 ed action workflows. The Observer/Operator
  []
 
-) (sections/7.Conclusion/7.2.Limitations.tex [58])
-Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--139
+) (sections/7.Conclusion/7.2.Limitations.tex [60]
+Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--17
 \TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
 as-judge scoring introduces model-dependent
  []
 
-(sections/references.tex) [59]
+) [61] (sections/references.tex) [62]
 Overfull \hbox (1.72935pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
 ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
@@ -1850,7 +1860,7 @@ text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] []
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[60
+[63
 
 ]
 Overfull \hbox (7.2249pt too wide) in paragraph at lines 140--140
@@ -1864,19 +1874,19 @@ Overfull \hbox (3.9435pt too wide) in paragraph at lines 140--140
 ion for knowledge-intensive NLP tasks”.
  []
 
-[61]
+[64]
 Overfull \hbox (0.3274pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[62]
+[65]
 Overfull \hbox (56.17505pt too wide) in paragraph at lines 140--140
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[63] 
+[66] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1884,18 +1894,18 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2025-12-24>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 09ADA0ADF644CB3134A42E9743042D59;16261.
+(rerunfilecheck)             Checksum: 98E5A8C4916E159E4D7A7C2827F5764B;16472.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 46453 strings out of 402987
- 1067925 string characters out of 5447904
+ 46475 strings out of 402987
+ 1068570 string characters out of 5447904
  2060688 words of memory out of 5000000
- 74374 multiletter control sequences out of 15000+600000
- 641066 words of font info for 125 fonts, out of 8000000 for 9000
+ 74388 multiletter control sequences out of 15000+600000
+ 642813 words of font info for 139 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  110i,13n,131p,2030b,5000s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (75 pages).
+Output written on main.pdf (78 pages).

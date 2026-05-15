@@ -14,3 +14,7 @@ Submission, bulk, and multi-step workflows present the hardest evaluation target
 \subsection{Model and Metric Constraints}
 
 Behavioural performance depends on model and provider selection; transfer of exact metrics to different model stacks requires re-evaluation. LLM-as-judge scoring introduces model-dependent variance. All reported figures are reproducible from the pinned dataset and model checkpoint identifiers, but results on different hardware or provider versions may differ due to inference non-determinism or model-version drift.
+
+\subsection{Annotation and Training Data}
+
+Ground-truth labels (expected tools, routing decision, HITL requirement) were annotated by a single researcher; no formal inter-annotator agreement (Cohen's $\kappa$) was computed. Manual verification of approximately 100 randomly sampled cases found a label error rate of $\sim$3\%, introducing up to $\pm$1\,pp noise in reported scores. The training corpus is English-only; multilingual support (including Vietnamese) would require additional data and evaluation. No systematic hyperparameter search was conducted for the QLoRA training configuration (rank, learning rate, epochs); the values follow published recommendations and a single layer-scope experiment. Finally, the distillation corpus exhibits role imbalance: 2,074 Observer samples versus 551 Operator samples, which likely contributes to the remaining performance gap on Operator-heavy categories (submission, multi\_step).

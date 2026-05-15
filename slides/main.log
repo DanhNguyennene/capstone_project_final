@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 12:41
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 20:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1932,21 +1932,15 @@ Overfull \vbox (10.69714pt too high) detected at line 154
 
 ]) (sections/conclusion.tex [32
 
-]
-Overfull \hbox (8.1213pt too wide) in paragraph at lines 11--11
-[]\TU/lmss/bx/n/10 Observer/Operator workflow \TU/lmss/m/n/10 — structural read
-/write separation with pending-
- []
-
-[33
+] [33
 
 ]
-Underfull \hbox (badness 1442) in paragraph at lines 36--36
+Underfull \hbox (badness 1442) in paragraph at lines 37--37
 []\TU/lmss/m/n/10 Training data from finite mock
  []
 
 
-Underfull \hbox (badness 2351) in paragraph at lines 36--36
+Underfull \hbox (badness 2351) in paragraph at lines 37--37
 []\TU/lmss/m/n/10 Real-cluster validation with live
  []
 

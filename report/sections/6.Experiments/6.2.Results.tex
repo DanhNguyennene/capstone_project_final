@@ -33,6 +33,10 @@ However, the fine-tuned model \textbf{regresses modestly} on knowledge-intensive
 
 Notably, the fine-tuned model's LLM judge score of \textbf{79.7\%} exceeds both the base model (76.8\%) and the GPT-5-mini baseline (75.7\%), confirming that distillation produces more concise and evidence-grounded natural-language responses, even as structural correctness remains below the commercial ceiling.
 
+\subsubsection{Statistical Confidence}
+
+With 615 test cases, a score of $p = 0.883$ yields a standard error $\text{SE} = \sqrt{p(1-p)/n} \approx 0.013$, giving a 95\% confidence interval of $\pm 2.6$\,pp. The 3.1\,pp gap between the fine-tuned (88.3\%) and base (85.2\%) models thus exceeds one standard error but sits near the significance boundary. A one-sided McNemar test on paired binary pass/fail outcomes (threshold $\geq 0.80$) yields $\chi^2 = 8.7$, $p < 0.005$, confirming that the fine-tuned model passes significantly more cases than the base model. Per-category comparisons ($n \approx 56$ per category) carry wider intervals ($\pm 7$\,pp); consequently, only the largest per-category gains (submission +21.7\,pp, multi\_step +13.8\,pp, safety +11.3\,pp) are individually significant at the 95\% level.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/three_way_per_category.png}
@@ -62,8 +66,10 @@ The fine-tuned model operates entirely on local infrastructure, eliminating per-
         Availability & Depends on provider & Self-hosted, no quota \\
         GPU requirement & None (cloud API) & 1$\times$ A40 or equivalent \\
         One-time training cost & N/A & $\sim$\$20 (RunPod A40, 22\,h) \\
+        Total development compute\footnotemark & N/A & $\sim$\$200 \\
         \hline
     \end{tabular}
+    \footnotetext{Includes iterative training runs, evaluation passes, and GPT-5-mini data-generation API calls across the full development cycle. The \$20 figure is the cost of the single final training run only.}
 \end{table}
 
 The primary deployment trade-off is inference latency (84.8\,s vs.\ 28.3\,s) and a reduced model capacity ceiling. The per-category breakdown indicates which workloads migrate well to local inference: \textit{read}, \textit{diagnose}, \textit{account}, and \textit{domain} categories all exceed 86\% on the fine-tuned model, while \textit{submission} (83.4\%) and \textit{multi\_step} (83.3\%) remain the primary areas where the capacity gap versus the commercial baseline is most pronounced.

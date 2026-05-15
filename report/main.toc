@@ -58,54 +58,57 @@
 \contentsline {subsubsection}{MCP Mock Environment for Data Collection}{34}{subsubsection*.32}%
 \contentsline {subsubsection}{Distillation from GPT-5-mini}{35}{subsubsection*.34}%
 \contentsline {subsubsection}{Data Processing}{35}{subsubsection*.35}%
-\contentsline {subsubsection}{Training Configuration}{37}{subsubsection*.37}%
-\contentsline {chapter}{\numberline {5}Implementation}{38}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Agent Backend Implementation}{38}{section.5.1}%
-\contentsline {subsection}{\numberline {5.1.1}Technology Stack}{38}{subsection.5.1.1}%
-\contentsline {subsection}{\numberline {5.1.2}Agent Topology}{38}{subsection.5.1.2}%
-\contentsline {subsection}{\numberline {5.1.3}Safety and Confirmation Pipeline}{39}{subsection.5.1.3}%
-\contentsline {subsection}{\numberline {5.1.4}Hybrid RAG Documentation Retrieval}{39}{subsection.5.1.4}%
-\contentsline {subsubsection}{Corpus Preparation}{39}{subsubsection*.38}%
-\contentsline {subsubsection}{Chunking and Indexing}{39}{subsubsection*.39}%
-\contentsline {subsubsection}{Pre-computed Embeddings}{40}{subsubsection*.40}%
-\contentsline {subsection}{\numberline {5.1.5}Runtime Services}{40}{subsection.5.1.5}%
-\contentsline {subsection}{\numberline {5.1.6}Fine-Tuned Model Serving}{40}{subsection.5.1.6}%
-\contentsline {section}{\numberline {5.2}MCP Server Implementation}{41}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Tool Implementation}{41}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Mock Scenarios}{41}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}Web Search Tools}{42}{subsection.5.2.3}%
-\contentsline {subsection}{\numberline {5.2.4}Transport and Deployment}{42}{subsection.5.2.4}%
-\contentsline {section}{\numberline {5.3}Frontend Implementation}{42}{section.5.3}%
-\contentsline {subsection}{\numberline {5.3.1}Interface Role in the System}{42}{subsection.5.3.1}%
-\contentsline {subsection}{\numberline {5.3.2}Agent Service API}{44}{subsection.5.3.2}%
-\contentsline {section}{\numberline {5.4}Fine-Tuning Implementation}{44}{section.5.4}%
-\contentsline {subsection}{\numberline {5.4.1}Model Preparation}{45}{subsection.5.4.1}%
-\contentsline {subsection}{\numberline {5.4.2}Data Formatting}{45}{subsection.5.4.2}%
-\contentsline {subsection}{\numberline {5.4.3}Training Procedure}{46}{subsection.5.4.3}%
-\contentsline {subsection}{\numberline {5.4.4}Training Monitoring}{46}{subsection.5.4.4}%
-\contentsline {subsubsection}{Data Quality Note}{46}{subsubsection*.45}%
-\contentsline {subsection}{\numberline {5.4.5}Released Artifacts}{47}{subsection.5.4.5}%
-\contentsline {chapter}{\numberline {6}Experiments}{48}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Testing Approach}{48}{section.6.1}%
-\contentsline {subsection}{\numberline {6.1.1}Testing Environment}{48}{subsection.6.1.1}%
-\contentsline {subsection}{\numberline {6.1.2}Benchmark Dataset}{48}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}Train/Test Split for Fine-Tuning Evaluation}{51}{subsection.6.1.3}%
-\contentsline {subsection}{\numberline {6.1.4}Scoring Methodology}{51}{subsection.6.1.4}%
-\contentsline {subsection}{\numberline {6.1.5}Execution Flow}{52}{subsection.6.1.5}%
-\contentsline {section}{\numberline {6.2}Experimental Results}{52}{section.6.2}%
-\contentsline {subsection}{\numberline {6.2.1}Three-Way Model Comparison}{52}{subsection.6.2.1}%
-\contentsline {subsubsection}{State-Match Scoring Artefact}{53}{subsubsection*.53}%
-\contentsline {subsubsection}{Cost and Deployment}{54}{subsubsection*.54}%
-\contentsline {subsection}{\numberline {6.2.2}Architecture Ablation: Monolithic vs.\ Observer/Operator}{54}{subsection.6.2.2}%
-\contentsline {subsection}{\numberline {6.2.3}Summary}{56}{subsection.6.2.3}%
-\contentsline {chapter}{\numberline {7}Conclusion}{57}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Summary}{57}{section.7.1}%
-\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{57}{subsection.7.1.1}%
-\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{58}{subsection.7.1.2}%
-\contentsline {subsection}{\numberline {7.1.3}Key Findings}{58}{subsection.7.1.3}%
-\contentsline {subsection}{\numberline {7.1.4}Public Artifacts}{58}{subsection.7.1.4}%
-\contentsline {section}{\numberline {7.2}Limitations}{58}{section.7.2}%
-\contentsline {subsection}{\numberline {7.2.1}Evaluation Scope}{59}{subsection.7.2.1}%
-\contentsline {subsection}{\numberline {7.2.2}Behavioral and Deployment Constraints}{59}{subsection.7.2.2}%
-\contentsline {subsection}{\numberline {7.2.3}Model and Metric Constraints}{59}{subsection.7.2.3}%
-\contentsline {chapter}{References}{59}{subsection.7.2.3}%
+\contentsline {subsubsection}{Training Configuration}{36}{subsubsection*.37}%
+\contentsline {chapter}{\numberline {5}Implementation}{39}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Agent Backend Implementation}{39}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Technology Stack}{39}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Agent Topology}{39}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Safety and Confirmation Pipeline}{40}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}Hybrid RAG Documentation Retrieval}{40}{subsection.5.1.4}%
+\contentsline {subsubsection}{Corpus Preparation}{40}{subsubsection*.38}%
+\contentsline {subsubsection}{Chunking and Indexing}{40}{subsubsection*.39}%
+\contentsline {subsubsection}{Pre-computed Embeddings}{41}{subsubsection*.40}%
+\contentsline {subsection}{\numberline {5.1.5}Runtime Services}{41}{subsection.5.1.5}%
+\contentsline {subsection}{\numberline {5.1.6}Fine-Tuned Model Serving}{41}{subsection.5.1.6}%
+\contentsline {section}{\numberline {5.2}MCP Server Implementation}{42}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Tool Implementation}{42}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Mock Scenarios}{42}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Web Search Tools}{43}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.4}Transport and Deployment}{43}{subsection.5.2.4}%
+\contentsline {section}{\numberline {5.3}Frontend Implementation}{43}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}Interface Role in the System}{43}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Agent Service API}{45}{subsection.5.3.2}%
+\contentsline {section}{\numberline {5.4}Fine-Tuning Implementation}{45}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Model Preparation}{46}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Data Formatting}{46}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}Training Procedure}{47}{subsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.4.4}Training Monitoring}{47}{subsection.5.4.4}%
+\contentsline {subsubsection}{Data Quality Note}{47}{subsubsection*.45}%
+\contentsline {subsection}{\numberline {5.4.5}Released Artifacts}{48}{subsection.5.4.5}%
+\contentsline {chapter}{\numberline {6}Experiments}{49}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Testing Approach}{49}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Testing Environment}{49}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Benchmark Dataset}{49}{subsection.6.1.2}%
+\contentsline {subsubsection}{Dataset Construction}{50}{subsubsection*.49}%
+\contentsline {subsection}{\numberline {6.1.3}Train/Test Split for Fine-Tuning Evaluation}{52}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Scoring Methodology}{52}{subsection.6.1.4}%
+\contentsline {subsection}{\numberline {6.1.5}Execution Flow}{53}{subsection.6.1.5}%
+\contentsline {section}{\numberline {6.2}Experimental Results}{53}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Three-Way Model Comparison}{53}{subsection.6.2.1}%
+\contentsline {subsubsection}{Statistical Confidence}{54}{subsubsection*.53}%
+\contentsline {subsubsection}{State-Match Scoring Artefact}{55}{subsubsection*.55}%
+\contentsline {subsubsection}{Cost and Deployment}{55}{subsubsection*.56}%
+\contentsline {subsection}{\numberline {6.2.2}Architecture Ablation: Monolithic vs.\ Observer/Operator}{56}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Summary}{58}{subsection.6.2.3}%
+\contentsline {chapter}{\numberline {7}Conclusion}{59}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Summary}{59}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{59}{subsection.7.1.1}%
+\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{60}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Key Findings}{60}{subsection.7.1.3}%
+\contentsline {subsection}{\numberline {7.1.4}Public Artifacts}{60}{subsection.7.1.4}%
+\contentsline {section}{\numberline {7.2}Limitations}{60}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Evaluation Scope}{61}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Behavioral and Deployment Constraints}{61}{subsection.7.2.2}%
+\contentsline {subsection}{\numberline {7.2.3}Model and Metric Constraints}{61}{subsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.2.4}Annotation and Training Data}{61}{subsection.7.2.4}%
+\contentsline {chapter}{References}{62}{subsection.7.2.4}%
