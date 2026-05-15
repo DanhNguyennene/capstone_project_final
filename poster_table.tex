@@ -170,11 +170,11 @@ Monolithic ablation$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 78.9\% & 59.2\% & 77
 \begin{center}
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{cccc}
-  {\LARGE\bfseries\color{highlight} 91.4\%} &
-  {\LARGE\bfseries\color{highlight} 74\%} &
+  {\LARGE\bfseries\color{highlight} 88.3\%} &
+  {\LARGE\bfseries\color{highlight} 29\%} &
   {\LARGE\bfseries\color{highlight} \textasciitilde\$20} &
   {\LARGE\bfseries\color{highlight} 3,135} \\
-  FT model pass rate & Gap closed to commercial API & Fine-tuning cost & Benchmark cases \\
+  FT model avg weighted score & Gap closed to commercial API & Fine-tuning cost & Benchmark cases \\
 \end{tabular}
 \end{center}
 
@@ -214,21 +214,21 @@ Monolithic ablation$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 78.9\% & 59.2\% & 77
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{lcccccc}
 \toprule
-\textbf{Model} & \textbf{Pass} & \textbf{Tool} & \textbf{HITL} & \textbf{State} & \textbf{Judge} & \textbf{Latency} \\
+\textbf{Model} & \textbf{Avg Score} & \textbf{Tool} & \textbf{HITL} & \textbf{State} & \textbf{Judge} & \textbf{Latency} \\
 \midrule
-GPT-5-mini        & 97.9\% & 98.8\% & 99.0\% & 98.2\% & 75.7\%$^\dagger$ & 28.3s \\
+GPT-5-mini        & 95.9\% & 98.8\% & 99.0\% & 98.2\% & 75.7\%$^\dagger$ & 28.3s \\
 \rowcolor{rowbg}
-\textbf{\textcolor{highlight}{FT Qwen (ours)}}  & \textbf{\textcolor{highlight}{91.4\%}} & \textbf{\textcolor{highlight}{89.2\%}} & \textbf{\textcolor{highlight}{90.4\%}} & \textbf{\textcolor{highlight}{90.0\%}} & \textbf{\textcolor{highlight}{79.7\%}} & \textbf{\textcolor{highlight}{84.8s}} \\
-Base Qwen         & 72.8\% & 84.9\% & 90.2\% & 89.8\% & 76.8\% & 80.9s \\
-Monolithic$^\ddagger$ & 69.8\% & 77.5\% & 88.9\% & 88.9\% & 75.2\% & 76.8s \\
+\textbf{\textcolor{highlight}{FT Qwen (ours)}}  & \textbf{\textcolor{highlight}{88.3\%}} & \textbf{\textcolor{highlight}{89.2\%}} & \textbf{\textcolor{highlight}{90.4\%}} & \textbf{\textcolor{highlight}{90.0\%}} & \textbf{\textcolor{highlight}{79.7\%}} & \textbf{\textcolor{highlight}{84.8s}} \\
+Base Qwen         & 85.2\% & 84.9\% & 90.2\% & 89.8\% & 76.8\% & 80.9s \\
+Monolithic$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 88.9\% & 75.2\% & 76.8s \\
 \bottomrule
 \multicolumn{7}{l}{\tiny $^\dagger$ Judge score from full 3,135-case baseline run.\quad $^\ddagger$ Routing metric excluded; monolithic cannot perform handoff by construction. Remaining weights re-normalised.}
 \end{tabular}
 
 \vspace{0.1cm}
 \begin{itemize}
-  \item FT model closes \textbf{74\% of the gap} to the commercial API baseline
-  \item Observer/Operator split beats monolithic by \textbf{+2.9pp pass rate} (routing-excluded; +\textbf{13.8\,pp} on routing-neutral cases)
+  \item FT model closes \textbf{29\% of the gap} to the commercial API baseline (avg weighted score)
+  \item Observer/Operator split beats monolithic by \textbf{+6.1\,pp avg score} (routing-excluded; +\textbf{10.2\,pp} on routing-neutral cases)
   \item FT judge score (79.7\%) \textbf{exceeds both} base (76.8\%) and commercial (75.7\%)
 \end{itemize}
 
@@ -240,7 +240,7 @@ Monolithic$^\ddagger$ & 69.8\% & 77.5\% & 88.9\% & 88.9\% & 75.2\% & 76.8s \\
   \item Observer/Operator safety workflow with HITL confirmation
   \item Grounded RAG layer over 273 official Slurm documentation pages
   \item 3,135-case curated benchmark across 11 categories
-  \item Cost-effective open-weight fine-tuning (\textasciitilde\$20, 91.4\% pass rate)
+  \item Cost-effective open-weight fine-tuning (\textasciitilde\$20, \textbf{88.3\% avg weighted score})
   \item Trace-oriented evaluation stack with LLM-as-judge scoring
 \end{itemize}
 

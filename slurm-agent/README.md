@@ -15,7 +15,7 @@ The Slurm Agent translates natural-language requests into grounded Slurm schedul
 - **Observer/Operator dual-agent architecture** — read-only inspection is separated from state-changing operations at the framework level
 - **Human-in-the-Loop (HITL) confirmation** — all destructive tool calls (cancel, hold, drain, modify) require explicit user approval before execution
 - **MCP tool layer** — 67 typed Slurm tools with parameter validation and dual real/mock execution modes
-- **Domain fine-tuned model** — Qwen2.5-14B-Instruct + QLoRA adapter trained on GPT-5-mini distilled traces, achieving **91.4% pass rate** on a 615-case held-out benchmark
+- **Domain fine-tuned model** — Qwen2.5-14B-Instruct + QLoRA adapter trained on GPT-5-mini distilled traces, achieving **88.3% avg weighted score** on a 615-case held-out benchmark
 - **Hybrid RAG** — local Slurm documentation retrieval (BM25 + semantic, RRF fusion) with web search fallback
 
 ---
@@ -53,14 +53,14 @@ All three configurations evaluated on an identical 615-case held-out test split 
 
 | Metric | GPT-5-mini | **Qwen2.5-14B (FT)** | Qwen2.5-14B (Base) | Monolithic (Base) |
 |---|---|---|---|---|
-| Pass rate | 96.6% | **91.4%** | 72.8% | 69.8%† |
+| Avg weighted score | 95.9% | **88.3%** | 85.2% | 81.6%† |
 | Tool recall | 98.8% | **89.2%** | 84.9% | 77.5% |
 | Routing match | 99.0% | **90.1%** | 83.6% | 63.3% |
 | HITL match | 99.0% | **90.4%** | 80.8% | 88.9% |
 | Judge score | 75.2% | **79.7%** | 76.8% | 75.2% |
 | Latency | 28.3 s | 84.8 s | 80.9 s | 76.8 s |
 
-The fine-tuned model closes **78% of the gap** between the base model and the commercial API baseline while running entirely on local infrastructure.
+The fine-tuned model closes **29% of the gap** (avg weighted score) between the base model and the commercial API baseline while running entirely on local infrastructure.
 
 ---
 

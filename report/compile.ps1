@@ -48,7 +48,9 @@ Invoke-CheckedStep -Label "[3/4] Running xelatex (second pass)..." -Command "xel
 Invoke-CheckedStep -Label "[4/4] Running xelatex (final pass)..." -Command "xelatex" -Arguments @("-interaction=nonstopmode", "main.tex")
 
 if (Test-Path -LiteralPath "main.pdf") {
-    Write-Host "=== Done! Output: main.pdf ==="
+    $outName = "report_HK252-DATN-417_2252102.pdf"
+    Move-Item -Force -LiteralPath "main.pdf" -Destination $outName
+    Write-Host "=== Done! Output: $outName ==="
 }
 else {
     throw "Compilation failed. Check main.log for errors."
