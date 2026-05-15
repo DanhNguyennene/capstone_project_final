@@ -7,16 +7,6 @@ Slurm Workload Manager, originally introduced as the Simple Linux Utility for Re
 
 Despite its power and flexibility, HPC user-support literature highlights recurring needs for training, documentation, and assistance when researchers interact with complex computing environments \cite{sabin2020hpc}. In Slurm-based clusters, this challenge is reflected in a broad command-line interface (CLI) comprising numerous commands, each with extensive sets of options and parameters \cite{slurm2024docs}. Users must master commands such as \texttt{squeue}, \texttt{sinfo}, \texttt{sbatch}, \texttt{scontrol}, and \texttt{sacct}, along with their associated flags and output formats. This complexity is compounded by the need to write job submission scripts in Bash, which requires additional technical knowledge beyond the domain expertise of many researchers.
 
-% Placeholder: Figure showing complexity of Slurm commands
-% \begin{figure}[H]
-%     \centering
-%     \fbox{\parbox{0.8\textwidth}{\centering \textit{[Placeholder: Diagram showing the complexity of Slurm CLI commands and their relationships]}}}
-%     \caption{Overview of Slurm Command-Line Interface Complexity}
-%     \label{fig:slurm-complexity}
-% \end{figure}
-
-The learning curve associated with Slurm administration and usage creates several operational challenges. System administrators spend considerable time training new users, while researchers face delays in their work as they navigate the intricacies of job submission and monitoring. Common tasks such as checking job status, understanding resource availability, or debugging failed jobs often require consulting extensive documentation or seeking expert assistance.
-
 Recent advances in Large Language Models (LLMs) have demonstrated remarkable capabilities in natural language understanding and generation \cite{brown2020language, openai2023gpt4}. These models can interpret complex user queries, reason about multi-step tasks, and generate appropriate responses or actions. The emergence of LLM-based agents---systems that combine language models with tool-calling capabilities---has opened new possibilities for creating intelligent interfaces to complex systems \cite{xi2023rise, schick2023toolformer}.
 
 The Model Context Protocol (MCP), developed by Anthropic, provides a standardized approach for connecting LLMs to external tools and data sources \cite{anthropic2024mcp, mcpspec2024}. MCP enables the creation of modular, reusable integrations that can expose system functionality to AI agents through explicit tool interfaces. This architectural pattern separates the concerns of tool implementation from agent logic, facilitating the development of sophisticated AI-assisted applications.

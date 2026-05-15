@@ -76,7 +76,7 @@ ANALYSIS_TOOL_NAMES: Set[str] = {
     "strigger_get",
     "scontrol_show_aliases",
     "sacctmgr_show_problems",
-    "get_mock_state_snapshot",
+    # get_mock_state_snapshot excluded — eval infrastructure only, not for agents
 }
 
 # Everything else discovered on the MCP server is treated as safe.

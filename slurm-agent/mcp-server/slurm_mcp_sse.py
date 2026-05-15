@@ -107,31 +107,49 @@ class _ClusterState:
         self._log: list[str] = []    # action history for transparency
         self._initialized = False
 
+    @staticmethod
+    def _scenario_defaults(scenario: str) -> "tuple[list, dict, list]":
+        """Return (reservations, config, triggers) appropriate for *scenario*.
+        Called by both _ensure_init and reset() so state is always consistent."""
+        _res_node  = {"failed": "cpu-node-01", "debug_needed": "gpu-node-02"}.get(scenario, "cpu-node-01")
+        _res_state = "ACTIVE" if scenario in ("failed", "debug_needed") else "INACTIVE"
+        reservations = [
+            {
+                "ReservationName": "maintenance",
+                "StartTime":  "2026-05-14T00:00:00",
+                "EndTime":    "2026-05-14T08:00:00",
+                "Nodes":      _res_node,
+                "Flags":      "MAINT",
+                "Users":      "root",
+                "State":      _res_state,
+            }
+        ]
+        _debug = {"debug_needed": "debug3", "failed": "verbose"}.get(scenario, "info")
+        config = {
+            "SchedulerType": "sched/backfill",
+            "PriorityType":  "priority/multifactor",
+            "SelectType":    "select/cons_tres",
+            "SlurmctldDebug": _debug,
+            "ClusterName":   "mock-cluster",
+        }
+        # Pre-set node-failure monitoring triggers in broken scenarios
+        triggers: list[dict] = []
+        if scenario in ("failed", "debug_needed"):
+            triggers = [
+                {"id": "1", "spec": "--node --down   --program=/usr/local/bin/notify_admin.sh"},
+                {"id": "2", "spec": "--node --drain  --program=/usr/local/bin/notify_admin.sh"},
+                {"id": "3", "spec": "--node --up     --program=/usr/local/bin/node_recovered.sh"},
+            ]
+        return reservations, config, triggers
+
     def _ensure_init(self):
         if not self._initialized:
             import copy
             self._jobs  = copy.deepcopy(MOCK_JOBS.get(SCENARIO, []))
             self._nodes = copy.deepcopy(MOCK_NODES.get(SCENARIO, []))
             self._partition_overrides = {}
-            self._triggers = []
-            self._reservations = [
-                {
-                    "ReservationName": "maintenance",
-                    "StartTime": "2026-04-22T00:00:00",
-                    "EndTime": "2026-04-22T08:00:00",
-                    "Nodes": "cpu-node-01",
-                    "Flags": "MAINT",
-                    "Users": "root",
-                    "State": "INACTIVE",
-                }
-            ]
-            self._config = {
-                "SchedulerType": "sched/backfill",
-                "PriorityType": "priority/multifactor",
-                "SelectType": "select/cons_tres",
-                "SlurmctldDebug": "info",
-                "ClusterName": "mock-cluster",
-            }
+            self._reservations, self._config, self._triggers = \
+                _ClusterState._scenario_defaults(SCENARIO)
             # Determine next job id from existing max
             existing_ids = [int(j["job_id"]) for j in self._jobs if str(j.get("job_id","")).isdigit()]
             self._next_id = max(existing_ids, default=1000) + 1
@@ -542,25 +560,8 @@ class _ClusterState:
 
         # Reset supplemental mock state (can be overridden by snapshot payload)
         self._partition_overrides = {}
-        self._triggers = []
-        self._reservations = [
-            {
-                "ReservationName": "maintenance",
-                "StartTime": "2026-04-22T00:00:00",
-                "EndTime": "2026-04-22T08:00:00",
-                "Nodes": "cpu-node-01",
-                "Flags": "MAINT",
-                "Users": "root",
-                "State": "INACTIVE",
-            }
-        ]
-        self._config = {
-            "SchedulerType": "sched/backfill",
-            "PriorityType": "priority/multifactor",
-            "SelectType": "select/cons_tres",
-            "SlurmctldDebug": "info",
-            "ClusterName": "mock-cluster",
-        }
+        self._reservations, self._config, self._triggers = \
+            _ClusterState._scenario_defaults(scenario)
 
         if source_state:
             partition_overrides = source_state.get("partition_overrides")
@@ -1240,23 +1241,39 @@ def sacctmgr_list(entity: str = "user", params: str = "") -> str:
         cmd += ["--parsable2"]
         return _run_cmd(cmd)
     if entity.lower() == "user":
+        # In debug_needed charlie has exhausted his GrpCPUMins (job 5004 pending: AssocGrpCPUMinutesLimit)
+        charlie_grp = "10000/10000 (exhausted)" if SCENARIO == "debug_needed" else "10000/-"
         return (
-            "User      UID   DefaultAccount  Account   Partition  QOS     MaxCPUs\n"
-            "alice     1000  general         general   cpu        normal  64\n"
-            "bob       1001  general         general   cpu        normal  64\n"
-            "charlie   1002  general         general   gpu        normal  32\n"
-            "dave      1003  research        research  gpu        high    32"
+            "User      UID   DefaultAccount  Account   Partition  QOS     MaxCPUs  GrpCPUMins\n"
+            f"alice     1000  general         general   cpu        normal  64       -\n"
+            f"bob       1001  general         general   cpu        normal  64       -\n"
+            f"charlie   1002  general         general   gpu        normal  32       {charlie_grp}\n"
+            "dave      1003  research        research  gpu        high    32       -"
         )
     if entity.lower() in {"account", "association", "assoc"}:
+        # In debug_needed charlie's association has a GrpCPUMins limit that is now exhausted
+        charlie_mins = "10000" if SCENARIO == "debug_needed" else "-"
+        charlie_used = " (EXHAUSTED)" if SCENARIO == "debug_needed" else ""
         return (
-            "Account   User      Partition  QOS     MaxCPUs\n"
-            "general   alice     cpu        normal  64\n"
-            "general   bob       cpu        normal  64\n"
-            "general   charlie   gpu        normal  32\n"
-            "research  dave      gpu        high    32"
+            "Account   User      Partition  QOS     MaxCPUs  MaxGrpCPUMins\n"
+            "general   alice     cpu        normal  64       -\n"
+            "general   bob       cpu        normal  64       -\n"
+            f"general   charlie   gpu        normal  32       {charlie_mins}{charlie_used}\n"
+            "research  dave      gpu        high    32       -"
         )
     if entity.lower() == "qos":
-        return "normal  priority=0  MaxJobs=50  MaxWall=7-00:00:00\nhigh    priority=10  MaxJobs=5   MaxWall=1-00:00:00"
+        # In pending scenario charlie has hit QOSMaxJobsPerUserLimit — show charlie at cap
+        if SCENARIO == "pending":
+            return (
+                "Name    Priority  MaxJobs  MaxWall       GrpJobs  MaxJobsPerUser\n"
+                "normal  0         50       7-00:00:00    -        5   (charlie: 5/5 LIMIT REACHED)\n"
+                "high    10        5        1-00:00:00    -        5"
+            )
+        return (
+            "Name    Priority  MaxJobs  MaxWall       GrpJobs  MaxJobsPerUser\n"
+            "normal  0         50       7-00:00:00    -        5\n"
+            "high    10        5        1-00:00:00    -        5"
+        )
     return f"sacctmgr show {entity}: (mock result)"
 
 
@@ -1286,8 +1303,7 @@ def sacctmgr_delete(entity: str, params: str) -> str:
 
 @mcp.tool()
 def cluster_history() -> str:
-    """Show the action history log for this session — every scancel, sbatch, hold, release, update, requeue.
-    Useful for auditing what the agent has done so far in this conversation."""
+    """[INTERNAL EVAL] Action history log for this session. Not for agent use."""
     if REAL_MODE:
         return "cluster_history: not available in real mode (use slurmdbd/sacct)."
     return "=== Cluster Action History ===\n" + _STATE.history()
@@ -1295,11 +1311,10 @@ def cluster_history() -> str:
 
 @mcp.tool()
 def reset_mock_state(scenario: str = "", source_state_json: str = "") -> str:
-    """Reset mock cluster state.
+    """[INTERNAL EVAL] Reset mock cluster state to a named scenario.
     - scenario: healthy|failed|pending|mixed|debug_needed (defaults to current SCENARIO)
-    - source_state_json: optional JSON string matching dataset source_state
-      shape: {"jobs": {"1001": {...}}, "nodes": {"node1": {...}}}
-    Use this before each evaluation test to keep deterministic baselines.
+    - source_state_json: optional JSON string matching dataset source_state shape
+    Not for agent use — evaluation infrastructure only.
     """
     if REAL_MODE:
         return "reset_mock_state: unavailable in real mode"
@@ -1320,7 +1335,7 @@ def reset_mock_state(scenario: str = "", source_state_json: str = "") -> str:
 
 @mcp.tool()
 def get_mock_state_snapshot() -> str:
-    """Return current mock-state snapshot JSON (for deterministic admin terminal restore)."""
+    """[INTERNAL EVAL] Return current mock-state snapshot JSON. Not for agent use."""
     if REAL_MODE:
         return "get_mock_state_snapshot: unavailable in real mode"
     return json.dumps(_STATE.snapshot())
@@ -1333,12 +1348,23 @@ def sdiag() -> str:
     """Show Slurm scheduler diagnostics: backfill stats, cycle times, queue depth."""
     if REAL_MODE:
         return _run_cmd(["sdiag"])
-    return (
+    return (  # noqa: W503
         "sdiag — Scheduler Diagnostics\n"
         "Server threads: 3  Agent queue size: 0\n"
-        "Jobs submitted: 42  Jobs started: 38  Jobs completed: 35\n"
-        "Backfill: last cycle 0.12s  last depth: 4 jobs  last queue length: 5\n"
-        "Main sched: last cycle 0.03s\n"
+        + {
+            "healthy":      "Jobs submitted: 42  Jobs started: 38  Jobs completed: 35  Jobs failed: 0\n"
+                            "Backfill: last cycle 0.12s  last depth: 4 jobs  last queue length: 4\n",
+            "failed":       "Jobs submitted: 15  Jobs started: 15  Jobs completed: 0  Jobs failed: 4\n"
+                            "Backfill: last cycle 0.08s  last depth: 1 jobs  last queue length: 1\n",
+            "pending":      "Jobs submitted: 18  Jobs started: 5  Jobs completed: 4  Jobs failed: 0\n"
+                            "Backfill: last cycle 0.31s  last depth: 4 jobs  last queue length: 4  (high backlog)\n",
+            "mixed":        "Jobs submitted: 22  Jobs started: 18  Jobs completed: 3  Jobs failed: 1\n"
+                            "Backfill: last cycle 0.18s  last depth: 3 jobs  last queue length: 2\n",
+            "debug_needed": "Jobs submitted: 20  Jobs started: 20  Jobs completed: 0  Jobs failed: 6\n"
+                            "Backfill: last cycle 0.10s  last depth: 1 jobs  last queue length: 1  (high failure rate)\n",
+        }.get(SCENARIO, "Jobs submitted: 42  Jobs started: 38  Jobs completed: 35  Jobs failed: 0\n"
+                         "Backfill: last cycle 0.12s  last depth: 4 jobs  last queue length: 4\n")
+        + "Main sched: last cycle 0.03s\n"
     )
 
 
@@ -1359,11 +1385,22 @@ def sprio(user: str = "", partition: str = "") -> str:
         jobs = [j for j in jobs if j.get("partition") == partition]
     if not jobs:
         return "No pending jobs match the filter."
-    lines = ["JOBID    USER       PRIORITY  FAIRSHARE  AGE  QOS  PARTITION"]
+    # Priority values reflect actual pending reasons:
+    #   Dependency -> 0 (blocked), QOSMaxJobsPerUserLimit -> 0 (blocked),
+    #   Priority -> low value, Resources -> moderate
+    REASON_PRIO = {
+        "Dependency": (0,    "0.00", "blocked"),
+        "QOSMaxJobsPerUserLimit": (0, "0.00", "blocked"),
+        "Priority":   (420,  "0.35", "low"),
+        "Resources":  (750,  "0.62", "normal"),
+    }
+    lines = ["JOBID    USER       PRIORITY  FAIRSHARE  AGE  QOS  PARTITION  REASON"]
     for j in jobs:
-        jid = j.get("job_id", "?")
-        u = j.get("user", "?")
-        lines.append(f"{jid:<8} {u:<10} 1000      0.50       100  1    1")
+        jid    = j.get("job_id", "?")
+        u      = j.get("user", "?")
+        reason = j.get("reason", "Resources")
+        prio, fs, _ = REASON_PRIO.get(reason, (750, "0.62", "normal"))
+        lines.append(f"{jid:<8} {u:<10} {prio:<9} {fs:<10} 100  1    {j.get('partition','?'):<10} {reason}")
     return "\n".join(lines)
 
 
@@ -1725,17 +1762,25 @@ def sreport(report_type: str = "cluster", params: str = "") -> str:
         if params:
             cmd += params.split()
         return _run_cmd(cmd)
-    # Mock usage table
-    return (
+    # Usage numbers align with sshare EffectvUsage per scenario
+    _SREPORT = {
+        "healthy":      [("alice","research",420,168,12),("bob","general",280,0,8),("charlie","general",140,0,5)],
+        "failed":       [("alice","research",510,204,15),("bob","general",290,0,8),("charlie","general",130,0,4)],
+        "pending":      [("alice","research",820,336,24),("bob","general",210,0,6),("charlie","general",80,0,3)],
+        "mixed":        [("alice","research",560,210,16),("bob","general",310,0,9),("charlie","general",155,0,5)],
+        "debug_needed": [("alice","research",440,180,13),("bob","general",280,0,8),("charlie","general",130,0,4)],
+    }
+    data = _SREPORT.get(SCENARIO, _SREPORT["healthy"])
+    header = (
         "Cluster Usage Report (last 7 days)\n"
         f"{'User':<12} {'Account':<12} {'CPUHours':>10} {'GPUHours':>10} {'Jobs':>6}\n"
         + "-" * 54 + "\n"
-        "alice        research          420        168     12\n"
-        "bob          general           280          0      8\n"
-        "charlie      general           140          0      5\n"
-        + "-" * 54 + "\n"
-        "Total                          840        168     25\n"
     )
+    rows = "".join(f"{u:<12} {a:<12} {c:>10}        {g:>4}     {j:>2}\n" for u, a, c, g, j in data)
+    total_c = sum(r[2] for r in data)
+    total_g = sum(r[3] for r in data)
+    total_j = sum(r[4] for r in data)
+    return header + rows + "-" * 54 + f"\nTotal                          {total_c}        {total_g:>4}     {total_j}\n"
 
 
 @mcp.tool()
@@ -1794,12 +1839,15 @@ def sshare(user: str = "", account: str = "") -> str:
         if account:
             cmd += ["--accounts", account]
         return _run_cmd(cmd)
-    rows = [
-        ("root", "root", 1.000, 1.000, 0.0),
-        ("research", "alice", 0.600, 0.420, 1.8),
-        ("general", "bob", 0.300, 0.380, 0.7),
-        ("general", "charlie", 0.100, 0.200, 0.4),
-    ]
+    # Fairshare varies by scenario: pending = alice heavy usage, debug_needed = charlie at cap
+    _SSHARE = {
+        "healthy":      [("root","root",1.0,1.0,0.0),("research","alice",0.6,0.42,1.8),("general","bob",0.3,0.38,0.7),("general","charlie",0.1,0.20,0.4)],
+        "failed":       [("root","root",1.0,1.0,0.0),("research","alice",0.6,0.55,2.1),("general","bob",0.3,0.30,0.8),("general","charlie",0.1,0.15,0.3)],
+        "pending":      [("root","root",1.0,1.0,0.0),("research","alice",0.6,0.71,3.9),("general","bob",0.3,0.20,0.5),("general","charlie",0.1,0.09,0.2)],
+        "mixed":        [("root","root",1.0,1.0,0.0),("research","alice",0.6,0.50,2.4),("general","bob",0.3,0.35,0.9),("general","charlie",0.1,0.15,0.4)],
+        "debug_needed": [("root","root",1.0,1.0,0.0),("research","alice",0.6,0.44,2.0),("general","bob",0.3,0.38,0.7),("general","charlie",0.1,0.18,0.3)],
+    }
+    rows = _SSHARE.get(SCENARIO, _SSHARE["healthy"])
     if user:
         rows = [r for r in rows if r[1].lower() == user.lower()]
     if account:
@@ -2109,6 +2157,18 @@ def sacctmgr_show_problems() -> str:
     Real command: sacctmgr show problems."""
     if REAL_MODE:
         return _run_cmd(["sacctmgr", "show", "problems"])
+    if SCENARIO == "debug_needed":
+        return (
+            "Association charlie/general/gpu — GrpCPUMins limit reached "
+            "(used 10000 of 10000). Jobs will remain PENDING until next accounting window.\n"
+            "Run: sacctmgr modify user charlie set GrpCPUMins=-1 — to remove limit."
+        )
+    if SCENARIO == "pending":
+        return (
+            "QOS normal — user charlie has reached MaxJobsPerUser limit (5/5). "
+            "Additional job submissions will be held.\n"
+            "Run: sacctmgr modify qos normal set MaxJobsPerUser=0 — to remove limit."
+        )
     return "No accounting problems found."
 
 

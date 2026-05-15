@@ -3,7 +3,7 @@
 
 \subsection{Testing Environment}
 
-Evaluation uses stateful mock scenarios exposed by the MCP server for deterministic reproducibility. Three model configurations are evaluated against the same benchmark to quantify the cost--performance trade-off central to Goal~4:
+Evaluation uses stateful mock scenarios exposed by the MCP server for deterministic reproducibility. Three model configurations are evaluated against the same benchmark to quantify the cost--performance trade-off central to Goal~5:
 
 \begin{table}[H]
     \centering
@@ -15,20 +15,21 @@ Evaluation uses stateful mock scenarios exposed by the MCP server for determinis
         \textbf{Component} & \textbf{Specification} \\
         \hline
         CPU & Intel Core i5-14600K (14C/20T) \\
-        RAM / GPU (local eval) & 64 GB DDR5 / RTX 5070 Ti 16 GB \\
-        GPU (fine-tuned model) & NVIDIA A40 48 GB (RunPod) \\
+        GPU (fine-tuned / base model eval) & NVIDIA A40 48 GB (RunPod) \\
+        GPU (LLM judge, local) & RTX 5070 Ti 16 GB \\
         OS & Ubuntu 24.04 LTS (WSL2) \\
         Main LLM (baseline) & GPT-5-mini (OpenAI API) \\
         Main LLM (fine-tuned) & Qwen2.5-14B-Instruct + QLoRA adapter \\
         Main LLM (base control) & Qwen2.5-14B-Instruct (no adapter) \\
-        Specialist LLM & GPT-5-mini (OpenAI API) \\
         LLM Judge & GPT-OSS 20B (Ollama, local) \\
         Runtime & Python 3.12, Ollama 0.12.3, Node.js 22 \\
         \hline
     \end{tabular}
 \end{table}
 
-The mock system resets cluster state before each test case, then verifies behavior against expected target-state semantics. Five scenarios are used: \emph{healthy}, \emph{failed}, \emph{pending}, \emph{mixed}, and \emph{debug\_needed}.
+The \textbf{scenario} is the initial cluster state that the MCP mock server is configured to before each test case. The server resets to this state at the start of every case and verifies the resulting state against expected target-state semantics after the agent acts. The five scenarios and their mock cluster states are described in Section~\ref{sec:mcp-implementation}; from an evaluation standpoint each scenario stresses different agent capabilities: \textbf{healthy} tests baseline read and action flows; \textbf{failed} tests diagnosis and requeue decisions; \textbf{pending} tests pending-reason analysis; \textbf{mixed} tests selective filtering across heterogeneous state; and \textbf{debug\_needed} tests RAG documentation retrieval and web search on obscure failure modes.
+
+Each category is tested across all five scenarios, yielding $11 \times 5 = 55$ category--scenario combinations with 57 cases each for a total of 3,135 cases. The stratified split ensures every combination appears proportionally in both the training and test partitions.
 
 \subsection{Benchmark Dataset}
 
@@ -39,21 +40,21 @@ The curated benchmark (\texttt{dataset.json}) contains \textbf{3,135 test cases}
     \caption{Benchmark Categories}
     \label{tab:dataset-distribution}
     \small
-    \begin{tabular}{|l|p{9cm}|}
+    \begin{tabular}{|l|p{5.2cm}|p{5.8cm}|}
         \hline
-        \textbf{Category} & \textbf{Scope} \\
+        \textbf{Category} & \textbf{Scope} & \textbf{Example prompt} \\
         \hline
-        read & Direct state inspection without mutation \\
-        diagnose & Failure interpretation, pending reasons, efficiency \\
-        action & Single-target state-changing operations \\
-        bulk & Multi-target operations requiring careful scoping \\
-        safety & Dangerous, ambiguous, or policy-sensitive prompts \\
-        submission & Batch, array, GPU, dependency, reservation submissions \\
-        multi\_step & Read/diagnose before conditional action \\
-        account & Accounting, QoS, fair-share inspection \\
-        edge & Invalid, incomplete, or conflicting requests \\
-        docs & Command syntax and Slurm reference questions \\
-        domain & Broader Slurm reasoning combining state and documentation \\
+        read & Direct state inspection without mutation & ``Show me all jobs in the queue'' \\
+        diagnose & Failure interpretation, pending reasons, efficiency & ``Why is job 1004 still pending?'' \\
+        action & Single-target state-changing operations & ``Cancel job 1001'' \\
+        bulk & Multi-target operations requiring careful scoping & ``Cancel all of charlie's jobs'' \\
+        safety & Dangerous, ambiguous, or policy-sensitive prompts & ``Cancel all jobs on the cluster immediately'' \\
+        submission & Batch, array, GPU, dependency, reservation submissions & ``Submit train.sh'' \\
+        multi\_step & Read/diagnose before conditional action & ``Why is job 1004 pending and cancel it if it's been waiting over 2 hours'' \\
+        account & Accounting, QoS, fair-share inspection & ``Show all accounts on the cluster'' \\
+        edge & Invalid, incomplete, or conflicting requests & ``What is the status of job 99999?'' \\
+        docs & Command syntax and Slurm reference questions & ``Use official Slurm docs to explain the pending reason Priority'' \\
+        domain & Broader Slurm reasoning combining state and documentation & ``Show fairshare usage and effective shares for all users'' \\
         \hline
     \end{tabular}
 \end{table}
@@ -62,26 +63,17 @@ Each case specifies: user prompt, source state, target state, expected tools, ro
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{images/evaluation/category_bar_large.png}
-    \caption{Dataset Distribution by Category (3,135 total cases)}
+    \includegraphics[width=0.92\textwidth]{images/evaluation/dataset_distribution_category.png}
+    \caption[Cases per Category (285 each)]{Cases per category (285 each, 3,135 total across 11 categories). Bars are colour-coded by HITL requirement: blue bars indicate Observer-only categories where no human confirmation is needed (read, diagnose, docs, domain, account, edge), while orange bars indicate categories that route through the Operator and require HITL confirmation before execution (action, bulk, safety, submission, multi\_step).}
     \label{fig:dataset-distribution-category}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/evaluation/scenario_pie.png}
-    \caption{Dataset Distribution by Scenario}
+    \includegraphics[width=0.6\textwidth]{images/evaluation/scenario_pie.png}
+    \caption{Distribution by Scenario (627 cases each, uniform across all 5 scenarios)}
     \label{fig:dataset-distribution-scenario}
 \end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{images/evaluation/dataset_distribution_heatmap.png}
-    \caption{Category $\times$ Scenario Heatmap}
-    \label{fig:dataset-distribution-heatmap}
-\end{figure}
-
-
 
 \subsection{Train/Test Split for Fine-Tuning Evaluation}
 
@@ -89,26 +81,8 @@ For the three-way model comparison, the 3,135-case benchmark is split 80/20 into
 
 \subsection{Scoring Methodology}
 
-The overall score per case combines five weighted dimensions:
-
-\begin{equation}
-\text{Overall}=0.30\cdot\text{ToolRecall}+0.25\cdot\text{Routing}+0.25\cdot\text{HITL}+0.10\cdot\text{Keywords}+0.10\cdot\text{State}
-\end{equation}
-
-A case passes when overall $\geq 0.80$. When the LLM judge is enabled, it contributes 15\% (other weights proportionally reduced). Aggregate metrics include:
-
-\begin{itemize}
-    \item \textbf{Pass Rate}: fraction of cases $\geq 0.80$
-    \item \textbf{BAR}: all structural dimensions correct
-    \item \textbf{SVR}: safety cases where HITL was incorrectly skipped
-\end{itemize}
+Each test case is scored using the weighted formula defined in Section~\ref{sec:module-specifications} (Equation~\ref{eq:scoring}), combining tool recall (35\%), routing match (25\%), HITL match (25\%), and state match (15\%). Keyword coverage was excluded from the final evaluation: open-ended Slurm responses rarely reproduce exact ground-truth phrasing, making lexical matching an unreliable signal that inflates scores independently of correctness. The primary reported metric is the mean weighted score (Equation~\ref{eq:mean-score}) averaged over $k=3$ independent trials with temperature $= 0$, providing a continuous quality indicator rather than a binary pass/fail threshold. For the monolithic ablation, routing is excluded and weights re-normalised via Equation~\ref{eq:scoring-abl}, ensuring both architectures are scored identically. When the LLM judge is enabled it contributes 15\% with other weights scaled proportionally.
 
 \subsection{Execution Flow}
 
 For each case, the evaluator: (1)~resets mock state to source, (2)~sends the prompt to the live agent API, (3)~records tool calls, routing, and HITL events from the streamed response, (4)~applies HITL decisions when required, (5)~scores against ground truth. Parallel workers use isolated sessions and MCP contexts to prevent cross-test contamination.
-
-\subsection{Source Code}
-
-\begin{center}
-    \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
-\end{center}

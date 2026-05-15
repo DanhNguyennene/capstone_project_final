@@ -1,22 +1,7 @@
 \section{Large Language Model Architecture}
 \label{sec:llm-architecture}
 
-\subsection{ReAct Reasoning Loop}
-
-The agent follows the ReAct paradigm~\cite{yao2022react}, alternating reasoning traces with tool actions:
-
-\begin{equation}
-    (t_1, a_1, o_1), (t_2, a_2, o_2), \ldots, (t_n, a_n, o_n), r
-\end{equation}
-
-where each thought $t_i$ conditions on $(q, t_1, a_1, o_1, \ldots, t_{i-1}, a_{i-1}, o_{i-1})$. This suits HPC operations because Slurm diagnosis typically requires multiple tool calls, and the visible reasoning trace makes decisions auditable.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.75\textwidth]{images/react_cycle.png}
-    \caption[ReAct reasoning cycle (Think--Act--Observe)]{ReAct reasoning cycle. The agent alternates between three phases: \textit{Think} (produce a reasoning trace conditioned on the conversation history), \textit{Act} (invoke a tool call with structured arguments), and \textit{Observe} (receive and parse the tool response). The cycle repeats until the agent determines the request is resolved, at which point it emits a \textit{Final Response}. This loop structure makes intermediate reasoning steps auditable and naturally handles multi-step Slurm operations that require chaining several tool calls.}
-    \label{fig:react-cycle}
-\end{figure}
+The agent backbone follows the ReAct paradigm (Section~\ref{sec:agent-architectures}): at each step, the model generates a reasoning trace $t_i$, invokes a tool $a_i = (f_i, \boldsymbol{\phi}_i)$, and incorporates the environment response $o_i$ before proceeding. The two subsections below describe how prompt design and fine-tuning exploit this loop for HPC operations.
 
 \subsection{Instruction Design}
 
@@ -24,7 +9,7 @@ The \textbf{Observer} prompt defines tool categories, routing rules for Operator
 
 The \textbf{Operator} prompt defines confirmation requirements for destructive operations, scope preservation rules, discovery-read permissions, error handling, and return protocol.
 
-Both agents share the same underlying model and MCP connection but receive strictly different tool lists at runtime---the Observer sees only read-only tools plus the handoff mechanism, while the Operator sees only action tools and verification reads. This partitioning serves a dual purpose: it enforces safety boundaries by making it structurally impossible for the Observer to invoke destructive tools, and it reduces the per-agent tool count from 18 to approximately 8, directly addressing the tool-selection degradation observed in 14B-parameter models when presented with large tool surfaces. The system supports multiple LLM backends (local Ollama, OpenAI API, or a self-hosted fine-tuned model behind an OpenAI-compatible endpoint) with identical prompts across all providers, so behavioral differences reflect model capability rather than configuration drift.
+Both agents share the same underlying model and MCP connection but receive strictly different tool lists at runtime---the Observer sees only the 29 read-only MCP tools plus documentation retrieval and the handoff mechanism, while the Operator sees 35 action tools plus 5 guarded discovery reads. This partitioning serves a dual purpose: it enforces safety boundaries by making it structurally impossible for the Observer to invoke destructive tools, and it reduces each agent's tool count compared to the monolithic baseline (64 tools in one context), directly addressing the tool-selection degradation observed in 14B-parameter models when presented with large, mixed tool surfaces. The system supports multiple LLM backends (local Ollama, OpenAI API, or a self-hosted fine-tuned model behind an OpenAI-compatible endpoint) with identical prompts across all providers, so behavioral differences reflect model capability rather than configuration drift.
 
 \subsection{Domain-Adapted Fine-Tuning}
 \label{sec:fine-tuning}
@@ -52,26 +37,43 @@ This distillation approach offers two advantages over manual annotation. First, 
 
 The pipeline processes each passing trace into the student model's chat template format: a system prompt, alternating user/assistant/tool turns, with tool calls encoded as structured JSON matching the exact schema the model must generate at inference time.
 
-\subsubsection{Data Augmentation}
+\subsubsection{Data Processing}
 
-Raw distillation traces are augmented through several strategies to increase diversity and prevent overfitting:
+Successful distillation traces are processed through three steps before training:
 
 \begin{enumerate}
-    \item \textbf{Handoff splitting.} Traces involving an Observer-to-Operator handoff are split at the handoff boundary into two independent training samples. The Observer sample ends with the handoff directive; the Operator sample begins from the handoff context. This doubles the effective sample count for multi-agent flows.
+    \item \textbf{Handoff splitting.} Traces involving an Observer-to-Operator handoff are split at the handoff boundary into two independent training samples. The Observer sample ends with the handoff directive; the Operator sample begins from the handoff context. This increases Operator coverage proportionally to the frequency of multi-agent flows.
     
     \item \textbf{Role-scoped tool filtering.} Each sample carries only the tools available to its active role---Observer samples include read-only tools plus the handoff mechanism; Operator samples include only action tools and discovery reads. This teaches the model that tool availability is conditional on role, preventing cross-role hallucination (e.g., an Observer invoking \texttt{scontrol\_hold}).
     
-    \item \textbf{Prompt variation.} User queries are rephrased with minor lexical and structural changes (e.g., ``cancel job 4021'' $\rightarrow$ ``kill job 4021'', ``why is my job stuck?'' $\rightarrow$ ``job 5523 has been pending for hours, what's wrong?'') to reduce surface-form memorization while preserving intent semantics.
-    
-    \item \textbf{Scenario diversity.} The benchmark covers 11 categories (read, diagnose, action, bulk, safety, submission, multi\_step, account, edge, docs, domain) with multiple scenarios per category, ensuring the model sees the full operational surface rather than a narrow slice.
+    \item \textbf{Deduplication.} Samples sharing identical message sequences (distinct test IDs that produced the same interaction pattern) are removed, yielding 2{,}625 unique training samples. The benchmark's 11 categories (read, diagnose, action, bulk, safety, submission, multi\_step, account, edge, docs, domain) with multiple scenarios per category ensure the retained samples cover the full operational surface.
 \end{enumerate}
 
-The resulting dataset contains 3{,}329 samples after role splitting (2{,}625 unique after deduplication) and 615 held-out test samples, stratified 80/20 by category and scenario to ensure evaluation coverage mirrors training distribution.
+The resulting dataset is assembled through the following pipeline:
 
-\begin{figure}[H]
+\begin{enumerate}
+    \item \textbf{Train/test split.} The 3{,}135-case benchmark is partitioned 80/20 (stratified by category~$\times$~scenario, seed=42) into a \textbf{2{,}520-case training partition} and a \textbf{615-case held-out test partition}. GPT-5-mini traces are generated only from the training partition; the test partition is never seen during training.
+    \item \textbf{2{,}436 successful traces} are collected from the 2{,}520 training scenarios (96.7\% success rate). The remaining 84 inputs either timed out or produced malformed tool calls and are excluded.
+    \item \textbf{Role splitting at handoff boundaries.} Traces containing an Observer{\textrightarrow}Operator handoff are split into two role-specific samples; non-handoff traces produce a single Observer sample, yielding 3{,}329 raw samples total.
+    \item \textbf{Deduplication.} 704 samples with duplicate message sequences are removed, yielding \textbf{2{,}625 unique training samples} (2,074 Observer, 551 Operator). Full pipeline output is reported in Section~\ref{sec:results} (Table~\ref{tab:ft-vs-baseline}).
+\end{enumerate}
+
+The 615-case test split is held out exclusively for evaluation. All reported scores are mean weighted scores averaged over $k=3$ independent trials with temperature $= 0$; the full evaluation methodology is described in Section~\ref{sec:testing-approach}.
+
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\textwidth]{images/data_augmentation_pipeline.png}
-    \caption[Training data augmentation pipeline]{Training data augmentation pipeline. Raw GPT-5-mini traces are first classified by whether they contain an Observer-to-Operator handoff. Traces with a handoff are split at the boundary into two independent samples (an Observer sample ending at the handoff directive and an Operator sample starting from the handoff context); traces without a handoff produce a single Observer sample. All samples then pass through role-scoped tool filtering, which retains only the tools available to the active role---read-only tools plus the handoff mechanism for the Observer, action tools and discovery reads for the Operator. Finally, prompt variation (lexical rephrasing of user queries) is applied to reduce surface-form memorisation. The resulting dataset contains 3{,}329 training samples (2{,}625 unique after deduplication) and 615 held-out test samples, stratified by category and scenario.}
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/data_augmentation_phase1.png}
+        \subcaption{\textbf{Phase 1:} Of the 2,520 training scenarios, 2,436 produce successful GPT-5-mini traces (84 excluded for timeout or malformed output). These 2,436 traces are split at the Observer/Operator handoff boundary into role-specific samples, yielding 3,329 raw samples.}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/data_augmentation_phase2.png}
+        \subcaption{\textbf{Phase 2:} Each sample is filtered to retain only the tools for its active role, then deduplicated --- yielding 2,625 unique role-scoped training samples.}
+    \end{minipage}
+    \caption[Training data processing pipeline]{Training data processing pipeline: 2{,}520 training scenarios $\rightarrow$ 2{,}436 successful GPT-5-mini traces $\rightarrow$ 3{,}329 raw samples after role-split $\rightarrow$ 2{,}625 unique samples after deduplication.}
     \label{fig:data-augmentation-pipeline}
 \end{figure}
 

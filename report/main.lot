@@ -1,28 +1,18 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of LLM-Based HPC Systems}}{20}{table.caption.19}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of agent evaluation benchmarks and methodology.}}{21}{table.caption.19}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Comparison of related systems. \text {$\mathsurround \z@ \mathchar "458$}~=~fully supported; $\sim $~=~partial; $\times $~=~absent.}}{21}{table.caption.20}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{23}{table.caption.20}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{24}{table.caption.21}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Requirements Traceability to Project Goals}}{25}{table.caption.22}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces MCP Tool Groups}}{31}{table.caption.31}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Functional Requirements}}{30}{table.caption.29}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Non-Functional Requirements}}{31}{table.caption.30}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces MCP Tool Groups}}{32}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces MCP Server Tool Reference}}{42}{table.caption.45}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Fine-Tuning Hyperparameters}}{49}{table.caption.53}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Fine-Tuning Hyperparameters}}{46}{table.caption.44}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{51}{table.caption.55}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{52}{table.caption.56}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Constructed Benchmark Summary}}{55}{table.caption.60}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Training Data Summary}}{55}{table.caption.62}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Training Run Configuration}}{56}{table.caption.65}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Task Complexity: Agent vs Manual CLI}}{57}{table.caption.66}%
-\contentsline {table}{\numberline {6.7}{\ignorespaces Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}}{57}{table.caption.67}%
-\contentsline {table}{\numberline {6.8}{\ignorespaces Evaluation Model Stack}}{58}{table.caption.69}%
-\contentsline {table}{\numberline {6.9}{\ignorespaces Three-Way Model Comparison (615 Test Cases)}}{59}{table.caption.73}%
-\contentsline {table}{\numberline {6.10}{\ignorespaces Pass Rate by Category --- Three-Way Comparison (615 Test Cases)}}{60}{table.caption.75}%
-\contentsline {table}{\numberline {6.11}{\ignorespaces Deployment Cost Comparison}}{60}{table.caption.77}%
-\contentsline {table}{\numberline {6.12}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B (615 Test Cases)}}{62}{table.caption.79}%
-\contentsline {table}{\numberline {6.13}{\ignorespaces Per-Category Pass Rate --- Monolithic Ablation}}{62}{table.caption.80}%
-\contentsline {table}{\numberline {6.14}{\ignorespaces Routing-Neutral Comparison (378 Observer-Only Cases)}}{64}{table.caption.84}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Test Environment Specifications}}{48}{table.caption.47}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Benchmark Categories}}{49}{table.caption.48}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Three-Way Model Comparison (615-Case Held-Out Test Split)}}{52}{table.caption.51}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Deployment Cost Comparison}}{54}{table.caption.55}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Architecture Ablation --- Base Qwen2.5-14B, Routing Metric Excluded (615 Test Cases)}}{55}{table.caption.56}%
 \addvspace {10\p@ }

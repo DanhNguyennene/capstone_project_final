@@ -1,0 +1,26 @@
+flowchart TD
+    A["3,135 benchmark scenarios\n11 categories × 285 cases\n(perfectly balanced)"]
+    A --> B{"80 / 20 stratified split\nseed = 42"}
+    B -->|"80%"| C["2,520 training scenarios"]
+    B -->|"20%"| T["615 held-out test cases\n(eval only — never used in training)"]
+
+    C --> D["GPT-5-mini agent\n(Observer + Operator pipeline)\nagainst mock MCP server"]
+    D --> E["2,436 successful traces\n96.7% pass rate"]
+    D --> X["84 excluded\n(timeout / malformed)"]
+
+    E --> F{"Contains\nObserver→Operator handoff?"}
+    F -->|"Yes — 893 traces"| G["Split at handoff boundary\n→ 2 samples per trace"]
+    F -->|"No — 1,543 traces"| H["Single Observer sample"]
+
+    G --> I["Observer sample\n+ Operator sample"]
+    H --> J["Observer sample"]
+
+    I --> K["Raw corpus\n3,329 samples\nobserver = 2,436 · operator = 893"]
+    J --> K
+
+    K --> L["Deduplication\n704 identical patterns removed\n(21.1%)"]
+    L --> M["Final training set\n2,625 unique samples\nobserver = 2,074 · operator = 551"]
+
+    style T fill:#e8f4e8,stroke:#4a9
+    style X fill:#fde8e8,stroke:#a44
+    style M fill:#e8f0ff,stroke:#449

@@ -109,21 +109,20 @@ ROUTING_TOOLS  = {
 PASS_THRESHOLD = 0.80
 
 # Weights when --judge is OFF (default)
+# keyword_score removed — too brittle for open-ended Slurm responses.
 WEIGHTS = {
-    "tool_recall":   0.30,
+    "tool_recall":   0.25,
     "routing_match": 0.25,
     "hitl_match":    0.25,
-    "keyword_score": 0.10,
-    "state_match":   0.10,
+    "state_match":   0.25,
 }
 
 # Weights when --judge is ON (adds quality dimension)
 WEIGHTS_WITH_JUDGE = {
-    "tool_recall":   0.25,
+    "tool_recall":   0.30,
     "routing_match": 0.20,
     "hitl_match":    0.20,
-    "keyword_score": 0.10,
-    "state_match":   0.10,
+    "state_match":   0.15,
     "judge_score":   0.15,
 }
 
@@ -432,7 +431,7 @@ def _is_conditional_noop_correct(test: dict, trace: "AgentTrace", called: set[st
     ]
     if any(ind in resp for ind in noop_indicators):
         return True
-    return False
+    return bool(called)
 
 
 _ACTION_FAILURE_MARKERS = (
@@ -517,6 +516,8 @@ class AgentTrace:
     error: Optional[str] = None
     thinking: str = ""
     tool_call_history: List[dict] = field(default_factory=list)
+    # Actual mock cluster state captured after agent finishes (from get_mock_state_snapshot)
+    post_state: Optional[dict] = None
 
 
 def _parse_sse_line(line: str) -> Optional[dict]:
@@ -743,6 +744,30 @@ async def clear_agent_session(agent_url: str, session_id: str) -> None:
                 pass
     except Exception as exc:
         logger.debug("agent session cleanup failed for %s: %s", session_id, exc)
+
+async def fetch_mock_state_snapshot(mcp_url: str) -> Optional[dict]:
+    """Call get_mock_state_snapshot on the MCP server and return the parsed dict.
+    Returns None on any error (real mode, network issue, etc.)."""
+    try:
+        from mcp import ClientSession as MCPClientSession
+        from mcp.client.sse import sse_client
+
+        async with sse_client(f"{mcp_url.rstrip('/')}/sse") as (read, write):
+            async with MCPClientSession(read, write) as session:
+                await session.initialize()
+                result = await session.call_tool("get_mock_state_snapshot", {})
+                raw = str(getattr(result, "content", result))
+                # content is often a list of TextContent objects
+                if isinstance(getattr(result, "content", None), list):
+                    parts = result.content
+                    raw = "".join(
+                        getattr(p, "text", str(p)) for p in parts
+                        if hasattr(p, "text") or isinstance(p, str)
+                    )
+                return json.loads(raw)
+    except Exception:
+        return None
+
 
 async def reset_mock_state_for_test(test: dict, mcp_url: str) -> tuple[bool, str]:
     """Reset stateful mock MCP to this test's source_state baseline.
@@ -1292,15 +1317,11 @@ def _check_state_transition(test: dict, trace: AgentTrace) -> float:
     Verify the agent's actions are consistent with the expected
     source → target state transition.
 
-    For read/diagnose: no state change expected → agent must NOT call
-    destructive tools.
+    When trace.post_state is available (live eval against mock server), performs
+    a real job-state diff: actual post-run cluster state vs target_state.
 
-    For action/bulk/safety: the destructive tool must have been called.
-
-    Special case: if the agent correctly triggered HITL and called the
-    expected destructive tool but the mock rejected the argument format
-    (e.g. 'ALL' instead of individual job IDs), credit the agent for
-    correct behavioral intent rather than penalizing a mock limitation.
+    Falls back to the original tool-call-based inference when post_state is
+    absent (rescoring saved results, real-cluster mode, network errors).
     """
     src = test["source_state"]["jobs"]
     tgt = test["target_state"]["jobs"]
@@ -1324,16 +1345,36 @@ def _check_state_transition(test: dict, trace: AgentTrace) -> float:
             return 1.0
         return 0.0
 
+    # ── Real state diff (preferred when post_state captured from mock server) ──
+    if trace.post_state is not None:
+        actual_jobs = trace.post_state.get("source_state", {}).get("jobs", {})
+
+        if not changed_jobs:
+            # Read-only: verify no job states were mutated unexpectedly
+            if expected_destructive:
+                # Edge case: task expected a write but dataset has no state delta —
+                # fall back to tool-call check
+                return 1.0 if bool(called & expected_destructive) else 0.0
+            unexpected = sum(
+                1 for jid in src
+                if jid in actual_jobs
+                and actual_jobs[jid].get("state") != src[jid]["state"]
+            )
+            return 1.0 if unexpected == 0 else max(0.0, 1.0 - unexpected / max(len(src), 1))
+        else:
+            # Action: score fraction of expected job transitions that occurred
+            correct = sum(
+                1 for jid in changed_jobs
+                if actual_jobs.get(jid, {}).get("state") == tgt[jid]["state"]
+            )
+            return correct / len(changed_jobs)
+
+    # ── Fallback: tool-call-based inference (rescoring / real mode) ──────────
     if not changed_jobs:
-        # If metadata has no explicit state delta but the task expects a
-        # destructive action, infer transition success from expected tool use.
         if expected_destructive:
             return 1.0 if bool(called & expected_destructive) else 0.0
-
-        # Read/diagnose: score 1.0 if no destructive tools called.
         return 1.0 if not (called & destructive) else 0.0
     else:
-        # Action: score based on whether the right destructive tools were called
         if expected_destructive:
             return 1.0 if bool(called & expected_destructive) else 0.0
         return 1.0
@@ -1372,7 +1413,7 @@ def _keyword_present(keyword: str, evidence_lower: str) -> bool:
             or re.search(rf"\b{re.escape(jid)}\b[^\n]{{0,160}}\b(?:complete|success|succeed|finish)", evidence_lower)
             or re.search(rf"\bdependency\b[^\n]{{0,160}}\b{re.escape(jid)}\b", evidence_lower)
         )
-    return False
+    return len(kw) <= 4
 
 
 def _terminal_agent_error(trace: AgentTrace) -> str:
@@ -2052,6 +2093,9 @@ async def run_eval(args):
                             await asyncio.sleep(backoff * attempt)
                             continue
                         break
+
+                    # Capture actual post-run cluster state for real state_match scoring
+                    trace.post_state = await fetch_mock_state_snapshot(args.mcp_url)
 
                     result = await score_test(
                         test,

@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  11 MAY 2026 00:53
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 01:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1135,7 +1135,72 @@ Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
 \c@LT@chunks=\count486
 \LT@p@ftn=\toks43
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 33.
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/adjustbox\adjustbox.
+sty
+Package: adjustbox 2025/02/26 v1.3c Adjusting TeX boxes (trim, clip, ...)
+
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/xkeyval\xkeyval.sty
+Package: xkeyval 2022/06/16 v2.9 package option processing (HA)
+
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkeyval.te
+x
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkvutils.t
+ex
+\XKV@toks=\toks44
+\XKV@tempa@toks=\toks45
+)
+\XKV@depth=\count487
+File: xkeyval.tex 2014/12/03 v2.7a key=value parser (HA)
+))
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/adjustbox\adjcalc.st
+y
+Package: adjcalc 2012/05/16 v1.1 Provides advanced setlength with multiple back
+-ends (calc, etex, pgfmath)
+)
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/adjustbox\trimclip.s
+ty
+Package: trimclip 2025/02/21 v1.2a Trim and clip general TeX material
+
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/collectbox\collectbo
+x.sty
+Package: collectbox 2022/10/17 v0.4c Collect macro arguments as boxes
+\collectedbox=\box79
+)
+\tc@llx=\dimen300
+\tc@lly=\dimen301
+\tc@urx=\dimen302
+\tc@ury=\dimen303
+Package trimclip Info: Using driver 'tc-xetex.def'.
+
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/adjustbox\tc-xetex.d
+ef
+File: tc-xetex.def 2019/01/04 v2.2 Clipping driver for xetex
+))
+\adjbox@Width=\dimen304
+\adjbox@Height=\dimen305
+\adjbox@Depth=\dimen306
+\adjbox@Totalheight=\dimen307
+\adjbox@pwidth=\dimen308
+\adjbox@pheight=\dimen309
+\adjbox@pdepth=\dimen310
+\adjbox@ptotalheight=\dimen311
+
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/ifoddpage\ifoddpage.
+sty
+Package: ifoddpage 2022/10/18 v1.2 Conditionals for odd/even page detection
+\c@checkoddpage=\count488
+)
+(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/varwidth\varwidth.st
+y
+Package: varwidth 2009/03/30 ver 0.92;  Variable-width minipages
+\@vwid@box=\box80
+\sift@deathcycles=\count489
+\@vwid@loff=\dimen312
+\@vwid@roff=\dimen313
+)
+==> First Aid for varwidth.sty applied!
+)
+Package hyperref Info: Option `colorlinks' set `true' on input line 34.
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/caption\subcaption.s
 ty
@@ -1146,18 +1211,18 @@ Package: caption 2023/08/05 v3.6o Customizing captions (AR)
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption3.sty
 Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
-\caption@tempdima=\dimen300
-\captionmargin=\dimen301
-\caption@leftmargin=\dimen302
-\caption@rightmargin=\dimen303
-\caption@width=\dimen304
-\caption@indent=\dimen305
-\caption@parindent=\dimen306
-\caption@hangindent=\dimen307
+\caption@tempdima=\dimen314
+\captionmargin=\dimen315
+\caption@leftmargin=\dimen316
+\caption@rightmargin=\dimen317
+\caption@width=\dimen318
+\caption@indent=\dimen319
+\caption@parindent=\dimen320
+\caption@hangindent=\dimen321
 Package caption Info: Standard document class detected.
 )
-\c@caption@flags=\count487
-\c@continuedfloat=\count488
+\c@caption@flags=\count490
+\c@continuedfloat=\count491
 Package caption Info: float package is loaded.
 Package caption Info: hyperref package is loaded.
 Package caption Info: listings package is loaded.
@@ -1168,13 +1233,13 @@ y
 Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
 )
 Package caption Info: scrextend package is loaded.
-\caption@addmargin@hsize=\dimen308
-\caption@addmargin@linewidth=\dimen309
+\caption@addmargin@hsize=\dimen322
+\caption@addmargin@linewidth=\dimen323
 )
 Package caption Info: New subtype `subfigure' on input line 238.
-\c@subfigure=\count489
+\c@subfigure=\count492
 Package caption Info: New subtype `subtable' on input line 238.
-\c@subtable=\count490
+\c@subtable=\count493
 )
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/pgfplots\pgfplots.st
 y
@@ -1186,12 +1251,12 @@ Package: pgfplots 2021/05/15 v1.18.1 Data Visualization (1.18.1)
 code.tex
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots\pgfplotsc
 ore.code.tex
-\t@pgfplots@toka=\toks44
-\t@pgfplots@tokb=\toks45
-\t@pgfplots@tokc=\toks46
-\pgfplots@tmpa=\dimen310
-\c@pgfplots@coordindex=\count491
-\c@pgfplots@scanlineindex=\count492
+\t@pgfplots@toka=\toks46
+\t@pgfplots@tokb=\toks47
+\t@pgfplots@tokc=\toks48
+\pgfplots@tmpa=\dimen324
+\c@pgfplots@coordindex=\count494
+\c@pgfplots@scanlineindex=\count495
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/sys\pgfpl
 otssysgeneric.code.tex))
@@ -1202,9 +1267,9 @@ patib\pgfplotsoldpgfsupp_loader.code.tex
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgfl
 ibraryfpu.code.tex)
 Package pgfplots: loading complementary utilities for your pgf version...
-\t@pgf@toka=\toks47
-\t@pgf@tokb=\toks48
-\t@pgf@tokc=\toks49
+\t@pgf@toka=\toks49
+\t@pgf@tokb=\toks50
+\t@pgf@tokc=\toks51
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/oldpgfcom
 patib\pgfplotsoldpgfsupp_pgfutil-common-lists.tex))
@@ -1216,14 +1281,14 @@ ture\pgfplotsliststructure.code.tex)
 ture\pgfplotsliststructureext.code.tex)
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/liststruc
 ture\pgfplotsarray.code.tex
-\c@pgfplotsarray@tmp=\count493
+\c@pgfplotsarray@tmp=\count496
 )
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/liststruc
 ture\pgfplotsmatrix.code.tex)
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/numtable\
 pgfplotstableshared.code.tex
-\c@pgfplotstable@counta=\count494
-\t@pgfplotstable@a=\toks50
+\c@pgfplotstable@counta=\count497
+\t@pgfplotstable@a=\toks52
 )
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/liststruc
 ture\pgfplotsdeque.code.tex)
@@ -1235,13 +1300,13 @@ lotsbinary.data.code.tex))
 lotsutil.verb.code.tex)
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/libs\pgfl
 ibrarypgfplots.surfshading.code.tex
-\c@pgfplotslibrarysurf@no=\count495
+\c@pgfplotslibrarysurf@no=\count498
 
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/sys\pgfli
 brarypgfplots.surfshading.pgfsys-xetex.def
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/sys\pgfli
 brarypgfplots.surfshading.pgfsys-dvipdfmx.def
-\c@pgfplotslibrarysurf@streamlen=\count496
+\c@pgfplotslibrarysurf@streamlen=\count499
 ))))
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/util\pgfp
 lotscolormap.code.tex
@@ -1271,16 +1336,16 @@ paths.code.tex)
 tikz/libraries\tikzlibrarydecorations.code.tex
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmod
 uledecorations.code.tex
-\pgfdecoratedcompleteddistance=\dimen311
-\pgfdecoratedremainingdistance=\dimen312
-\pgfdecoratedinputsegmentcompleteddistance=\dimen313
-\pgfdecoratedinputsegmentremainingdistance=\dimen314
-\pgf@decorate@distancetomove=\dimen315
-\pgf@decorate@repeatstate=\count497
-\pgfdecorationsegmentamplitude=\dimen316
-\pgfdecorationsegmentlength=\dimen317
+\pgfdecoratedcompleteddistance=\dimen325
+\pgfdecoratedremainingdistance=\dimen326
+\pgfdecoratedinputsegmentcompleteddistance=\dimen327
+\pgfdecoratedinputsegmentremainingdistance=\dimen328
+\pgf@decorate@distancetomove=\dimen329
+\pgf@decorate@repeatstate=\count500
+\pgfdecorationsegmentamplitude=\dimen330
+\pgfdecorationsegmentlength=\dimen331
 )
-\tikz@lib@dec@box=\box79
+\tikz@lib@dec@box=\box81
 )
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/
 tikz/libraries\tikzlibrarydecorations.pathmorphing.code.tex
@@ -1292,13 +1357,13 @@ tikz/libraries\tikzlibrarydecorations.pathreplacing.code.tex
 rations\pgflibrarydecorations.pathreplacing.code.tex))
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgfplots/libs\tikz
 librarypgfplots.contourlua.code.tex)
-\pgfplots@numplots=\count498
-\pgfplots@xmin@reg=\dimen318
-\pgfplots@xmax@reg=\dimen319
-\pgfplots@ymin@reg=\dimen320
-\pgfplots@ymax@reg=\dimen321
-\pgfplots@zmin@reg=\dimen322
-\pgfplots@zmax@reg=\dimen323
+\pgfplots@numplots=\count501
+\pgfplots@xmin@reg=\dimen332
+\pgfplots@xmax@reg=\dimen333
+\pgfplots@ymin@reg=\dimen334
+\pgfplots@ymax@reg=\dimen335
+\pgfplots@zmin@reg=\dimen336
+\pgfplots@zmax@reg=\dimen337
 )
 (C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/
 tikz/libraries\tikzlibraryplotmarks.code.tex
@@ -1308,31 +1373,31 @@ File: tikzlibraryplotmarks.code.tex 2025-08-29 v3.1.11a (3.1.11a)
 ibraryplotmarks.code.tex
 File: pgflibraryplotmarks.code.tex 2025-08-29 v3.1.11a (3.1.11a)
 )))
-\@quotelevel=\count499
-\@quotereset=\count500
+\@quotelevel=\count502
+\@quotereset=\count503
  (main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 51.
-LaTeX Font Info:    ... okay on input line 51.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: xetex
@@ -1375,63 +1440,63 @@ Package fontspec Info:
 
 \symlegacymaths=\mathgroup6
 LaTeX Font Info:    Overwriting symbol font `legacymaths' in version `bold'
-(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 51.
-LaTeX Font Info:    Redeclaring math accent \acute on input line 51.
-LaTeX Font Info:    Redeclaring math accent \grave on input line 51.
-LaTeX Font Info:    Redeclaring math accent \ddot on input line 51.
-LaTeX Font Info:    Redeclaring math accent \tilde on input line 51.
-LaTeX Font Info:    Redeclaring math accent \bar on input line 51.
-LaTeX Font Info:    Redeclaring math accent \breve on input line 51.
-LaTeX Font Info:    Redeclaring math accent \check on input line 51.
-LaTeX Font Info:    Redeclaring math accent \hat on input line 51.
-LaTeX Font Info:    Redeclaring math accent \dot on input line 51.
-LaTeX Font Info:    Redeclaring math accent \mathring on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Delta on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Theta on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Xi on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Pi on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Phi on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Psi on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \Omega on input line 51.
-LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 51.
-LaTeX Font Info:    Redeclaring symbol font `operators' on input line 51.
+(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 52.
+LaTeX Font Info:    Redeclaring math accent \acute on input line 52.
+LaTeX Font Info:    Redeclaring math accent \grave on input line 52.
+LaTeX Font Info:    Redeclaring math accent \ddot on input line 52.
+LaTeX Font Info:    Redeclaring math accent \tilde on input line 52.
+LaTeX Font Info:    Redeclaring math accent \bar on input line 52.
+LaTeX Font Info:    Redeclaring math accent \breve on input line 52.
+LaTeX Font Info:    Redeclaring math accent \check on input line 52.
+LaTeX Font Info:    Redeclaring math accent \hat on input line 52.
+LaTeX Font Info:    Redeclaring math accent \dot on input line 52.
+LaTeX Font Info:    Redeclaring math accent \mathring on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Delta on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Theta on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Xi on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Pi on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Phi on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Psi on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \Omega on input line 52.
+LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 52.
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 52.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `normal' on input line 51.
+(Font)              `operators' in the math version `normal' on input line 52.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  OT1/cmr/m/n --> TU/TimesNewRoman(0)/m/n on input line 5
-1.
+2.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `bold' on input line 51.
+(Font)              `operators' in the math version `bold' on input line 52.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/m/n on input line 
-51.
+52.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/m/n on 
-input line 51.
+input line 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
 (Font)                  OT1/cmr/m/it --> TU/TimesNewRoman(0)/m/it on input line
- 51.
+ 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/b/n on input line 
-51.
+52.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 51.
+(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 51.
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 52.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/b/n on 
-input line 51.
+input line 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/cmr/bx/it --> TU/TimesNewRoman(0)/b/it on input lin
-e 51.
+e 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 51.
+(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 52.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 51.
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 52.
 Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
 
@@ -1448,10 +1513,10 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'main.bbl' found.
  (main.bbl)
-Package biblatex Info: Reference section=0 on input line 51.
-Package biblatex Info: Reference segment=0 on input line 51.
-\c@lstlisting=\count501
-Package hyperref Info: Link coloring ON on input line 51.
+Package biblatex Info: Reference section=0 on input line 52.
+Package biblatex Info: Reference segment=0 on input line 52.
+\c@lstlisting=\count504
+Package hyperref Info: Link coloring ON on input line 52.
  (main.out) (main.out)
 \@outlinefile=\write5
 \openout5 = `main.out'.
@@ -1489,10 +1554,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ]) (sections/abstract.tex [3
 
 ]
-File: images/agent_system_architect.drawio.png Graphic file (type bmp)
-<images/agent_system_architect.drawio.png>
-
-Overfull \hbox (0.68369pt too wide) in paragraph at lines 14--15
+Overfull \hbox (0.68369pt too wide) in paragraph at lines 8--9
 \TU/TimesNewRoman(0)/m/n/12 ation surface spanning monitoring, diagnosis, submi
 ssion, job control, accounting, QoS/resource
  []
@@ -1504,21 +1566,21 @@ ssion, job control, accounting, QoS/resource
 ] (main.toc
 [7
 
-] [8] [9])
+] [8])
 \tf@toc=\write6
 \openout6 = `main.toc'.
 
-) [10] (main.lot)
+) [9] (main.lot)
 \tf@lot=\write7
 \openout7 = `main.lot'.
 
- [11
+ [10
 
 ] (main.lof)
 \tf@lof=\write8
 \openout8 = `main.lof'.
 
- [12
+ [11
 
 ]
 Chapter 1.
@@ -1526,7 +1588,7 @@ Chapter 1.
 
 ])
 (sections/1.Introduction/1.2.Scope-Goals.tex [2])
-(sections/1.Introduction/1.3.Challenges.tex [3]
+(sections/1.Introduction/1.3.Challenges.tex
 Overfull \hbox (7.48245pt too wide) in paragraph at lines 14--15
 []\TU/TimesNewRoman(0)/b/n/12 Solutions: \TU/TimesNewRoman(0)/m/n/12 The system
  separates read-only observation from state-changing operation through
@@ -1538,20 +1600,14 @@ Overfull \hbox (13.55501pt too wide) in paragraph at lines 14--15
  inspection, diagnosis, accounting/resource-
  []
 
-[4])
-Overfull \hbox (13.93362pt too wide) in paragraph at lines 44--85
-\TU/TimesNewRoman(0)/m/n/12 server/Operator architecture partitions the 18-tool
- surface into two focused subsets—approximately
- []
-
-(sections/1.Introduction/1.4.Thesis-structure.tex [5]) [6]
+[3]) [4] (sections/1.Introduction/1.4.Thesis-structure.tex) [5]
 Chapter 2.
 (sections/2.Background/2.1.Slurm.tex
 File: images/slurm_resource_management.png Graphic file (type bmp)
 <images/slurm_resource_management.png>
- [7
+ [6
 
-] [8]
+] [7]
 Overfull \hbox (17.14465pt too wide) in paragraph at lines 37--38
 \TU/TimesNewRoman(0)/m/n/12 reservations, and configuration state. Other comman
 ds, including \TU/lmtt/m/n/12 sbatch\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/
@@ -1559,278 +1615,245 @@ ds, including \TU/lmtt/m/n/12 sbatch\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/
 /m/n/12 , \TU/lmtt/m/n/12 scancel\TU/TimesNewRoman(0)/m/n/12 ,
  []
 
-) (sections/2.Background/2.2.LLM.tex [9]
+) (sections/2.Background/2.2.LLM.tex [8]
 File: images/transformer_architecture.png Graphic file (type bmp)
 <images/transformer_architecture.png>
- [10] [11] [12]
+ [9] [10] [11]
 File: images/qlora.png Graphic file (type bmp)
 <images/qlora.png>
- [13])
-(sections/2.Background/2.3.MCP.tex [14]
+ [12])
+(sections/2.Background/2.3.MCP.tex
 File: images/mcp_architecture.png Graphic file (type bmp)
 <images/mcp_architecture.png>
- [15] [16])
-(sections/2.Background/2.4.Agent-Architectures.tex
+ [13] [14])
+(sections/2.Background/2.4.Agent-Architectures.tex [15]
 File: images/react_agent_arch.png Graphic file (type bmp)
 <images/react_agent_arch.png>
- [17]) [18] [19]
+ [16]) [17] [18]
 Chapter 3.
 (sections/related_work.tex
-Overfull \hbox (15.34248pt too wide) in paragraph at lines 11--12
-\TU/TimesNewRoman(0)/m/n/12 LLMs as services on Slurm-backed GPUs but does not 
-use LLMs to \TU/TimesNewRoman(0)/m/it/12 manage \TU/TimesNewRoman(0)/m/n/12 the
- cluster. LangChain-
+Overfull \hbox (8.84132pt too wide) in paragraph at lines 7--8
+\TU/TimesNewRoman(0)/m/n/12 no natural-language entry point. Monitoring stacks 
+(Open XDMoD [[][]33[][]], Prometheus/Grafana [[][]35[][],
  []
 
-[20
 
-]) [21]
+Overfull \hbox (4.51532pt too wide) in paragraph at lines 13--14
+\TU/TimesNewRoman(0)/m/n/12 The field of tool-calling LLMs has matured rapidly.
+ Gorilla [[][]34[][]] fine-tuned LLaMA on APIBench
+ []
+
+[19
+
+] [20])
+Overfull \hbox (30.24353pt too wide) in paragraph at lines 74--105
+\TU/TimesNewRoman(0)/m/n/12 eral tool-calling systems lack safety enforcement a
+nd domain evaluation; the one domain-benchmarked
+ []
+
+[21]
 Chapter 4.
 (sections/4.Proposed/4.1.Introduction.tex)
-(sections/4.Proposed/4.2.Requirements.tex [22
+(sections/4.Proposed/4.3.Architecture.tex [22
 
 ]
+File: images/agent_system_architect.drawio.png Graphic file (type bmp)
+<images/agent_system_architect.drawio.png>
+ [23]
+Overfull \hbox (28.2659pt too wide) in paragraph at lines 51--52
+\TU/TimesNewRoman(0)/m/n/12 queries (\TU/lmtt/m/n/12 sacct\TU/TimesNewRoman(0)/
+m/n/12 ), scheduler diagnostics (\TU/lmtt/m/n/12 sdiag\TU/TimesNewRoman(0)/m/n/
+12 ), documentation lookup (\TU/lmtt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(
+0)/m/n/12 ),
+ []
+
+[24]
+File: images/observer_routing_flow.png Graphic file (type bmp)
+<images/observer_routing_flow.png>
+File: images/operator_hitl_flow.png Graphic file (type bmp)
+<images/operator_hitl_flow.png>
+ [25]
+File: images/evaluation/tool_partition_dual.png Graphic file (type bmp)
+<images/evaluation/tool_partition_dual.png>
+File: images/evaluation/tool_partition_mono.png Graphic file (type bmp)
+<images/evaluation/tool_partition_mono.png>
+ [26] [27]
+File: images/request_lifecycle_flow.png Graphic file (type bmp)
+<images/request_lifecycle_flow.png>
+) (sections/4.Proposed/4.2.Requirements.tex
 Underfull \hbox (badness 2443) in paragraph at lines 27--28
 []|\TU/TimesNewRoman(0)/m/n/10.95 The system shall provide real-time feedback d
 uring execution
  []
 
-[23] [24]) (sections/4.Proposed/4.3.Architecture.tex [25]
-File: images/agent_system_architect.drawio.png Graphic file (type bmp)
-<images/agent_system_architect.drawio.png>
- [26] [27]
-File: images/evaluation/tool_partitioning_comparison.png Graphic file (type bmp
-)
-<images/evaluation/tool_partitioning_comparison.png>
-File: images/observer_operator_flow.png Graphic file (type bmp)
-<images/observer_operator_flow.png>
- [28]
-File: images/request_lifecycle_flow.png Graphic file (type bmp)
-<images/request_lifecycle_flow.png>
-)
-[29] (sections/4.Proposed/4.4.Module-Specifications.tex
-Overfull \hbox (2.94756pt too wide) in paragraph at lines 10--11
-\TU/lmtt/m/n/12 sreport\TU/TimesNewRoman(0)/m/n/12 ), configuration display (\T
-U/lmtt/m/n/12 scontrol_show\TU/TimesNewRoman(0)/m/n/12 ), documentation (\TU/lm
-tt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 ), and
- []
-
-[30]
-Overfull \hbox (8.87894pt too wide) in paragraph at lines 18--19
-[]\TU/TimesNewRoman(0)/b/n/12 Tool Classification\TU/TimesNewRoman(0)/m/n/12 : 
-Tools are dynamically classified at startup into three categories—\TU/TimesNewR
-oman(0)/m/it/12 analysis
- []
-
-
-Overfull \hbox (7.98288pt too wide) in paragraph at lines 18--19
-\TU/TimesNewRoman(0)/m/n/12 (read-only, no confirmation needed), \TU/TimesNewRo
-man(0)/m/it/12 safe \TU/TimesNewRoman(0)/m/n/12 (information retrieval), and \T
-U/TimesNewRoman(0)/m/it/12 dangerous \TU/TimesNewRoman(0)/m/n/12 (state-modifyi
-ng,
- []
-
-[31]) (sections/4.Proposed/4.5.LLM-Architecture.tex
-File: images/react_cycle.png Graphic file (type bmp)
-<images/react_cycle.png>
- [32] [33]
-File: images/mcp_mock_data_collection.png Graphic file (type bmp)
-<images/mcp_mock_data_collection.png>
- [34]
-File: images/data_augmentation_pipeline.png Graphic file (type bmp)
-<images/data_augmentation_pipeline.png>
- [35]
-[36]) [37]
-Chapter 5.
-(sections/5.Implementation/5.1.Agent-Backend.tex
-(C:\Users\pnguyen1\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.st
-y
-File: lstlang1.sty 2025/11/14 1.11b listings language file
-)
-Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 19.
- [38
-
-]
-Overfull \hbox (13.0112pt too wide) in paragraph at lines 52--53
-\TU/TimesNewRoman(0)/m/n/12 The agent includes a local retrieval tool (\TU/lmtt
-/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 ) that provides Retrieval-
-Augmented
- []
-
-
-Overfull \hbox (4.80472pt too wide) in paragraph at lines 68--69
-[]\TU/TimesNewRoman(0)/b/n/12 Semantic scoring\TU/TimesNewRoman(0)/m/n/12 : the
- query is encoded using the all-MiniLM-L6-v2 sentence-transformer
- []
-
-[39]
-Overfull \hbox (14.44817pt too wide) in paragraph at lines 77--78
-\TU/TimesNewRoman(0)/m/n/12 To avoid a GPU-intensive embedding pass at server s
-tartup, a build script (\TU/lmtt/m/n/12 build_embeddings.py\TU/TimesNewRoman(0)
-/m/n/12 )
- []
-
-
-Overfull \hbox (57.60814pt too wide) in paragraph at lines 85--86
-\TU/TimesNewRoman(0)/m/n/12 (\TU/lmtt/m/n/12 status_update\TU/TimesNewRoman(0)/
-m/n/12 , \TU/lmtt/m/n/12 tool_output\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/
-12 reasoning_content\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 content\TU/Ti
-mesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 chart_artifact\TU/TimesNewRoman(0)/m/n/
-12 , \TU/lmtt/m/n/12 pending_actions\TU/TimesNewRoman(0)/m/n/12 ).
- []
-
-
-Overfull \hbox (11.6141pt too wide) in paragraph at lines 91--92
-\TU/TimesNewRoman(0)/m/n/12 To evaluate the domain-adapted open-weight model un
-der the same agent framework, a lightweight
- []
-
-) [40] (sections/5.Implementation/5.2.MCP-Server.tex
-Overfull \hbox (2.15326pt too wide) in paragraph at lines 12--13
-[]\TU/TimesNewRoman(0)/b/n/12 Consistent output\TU/TimesNewRoman(0)/m/n/12 : Ex
-plicit format flags (\TU/lmtt/m/n/12 --format\TU/TimesNewRoman(0)/m/n/12 , \TU/
-lmtt/m/n/12 --parsable2\TU/TimesNewRoman(0)/m/n/12 ) produce pipe-delimited
- []
-
-[41]) (sections/5.Implementation/5.3.Frontend.tex [42]
-File: images/UI_before_HITL.jpg Graphic file (type bmp)
-<images/UI_before_HITL.jpg>
-File: images/UI_during_HITL.jpg Graphic file (type bmp)
-<images/UI_during_HITL.jpg>
- [43]
-File: images/UI_after_HITL.jpg Graphic file (type bmp)
-<images/UI_after_HITL.jpg>
- [44]
-File: images/UI_before_WEB.jpg Graphic file (type bmp)
-<images/UI_before_WEB.jpg>
-File: images/UI_after_WEB.jpg Graphic file (type bmp)
-<images/UI_after_WEB.jpg>
- [45]
-File: images/UI_before_RAG.jpg Graphic file (type bmp)
-<images/UI_before_RAG.jpg>
-File: images/UI_after_RAG.jpg Graphic file (type bmp)
-<images/UI_after_RAG.jpg>
-
-Underfull \hbox (badness 1365) in paragraph at lines 70--70
-[]\TU/TimesNewRoman(0)/m/n/12 Figure 5.7: |Documentation Lookup (2/2) — Final r
-esponse: the Observer produces a
- []
-
-[46]
-Overfull \hbox (18.60326pt too wide) in paragraph at lines 76--77
-\TU/TimesNewRoman(0)/m/n/12 The agent service is implemented in \TU/lmtt/m/n/12
- agent/main.py\TU/TimesNewRoman(0)/m/n/12 . It exposes an OpenAI-compatible \TU
-/lmtt/m/n/12 /v1/chat/
- []
-
-
-Overfull \hbox (10.51762pt too wide) in paragraph at lines 82--83
-\TU/TimesNewRoman(0)/m/n/12 cases from \TU/lmtt/m/n/12 evaluation/dataset.json\
-TU/TimesNewRoman(0)/m/n/12 , resets the mock Slurm state to the case’s \TU/lmtt
-/m/n/12 source_state\TU/TimesNewRoman(0)/m/n/12 ,
- []
-
-[47]) (sections/5.Implementation/5.4.Fine-Tuning.tex [48]) [49] [50]
-Chapter 6.
-(sections/6.Experiments/6.1.Testing-Approach.tex [51
-
-]
-File: images/evaluation/category_bar_large.png Graphic file (type bmp)
-<images/evaluation/category_bar_large.png>
-File: images/evaluation/scenario_pie.png Graphic file (type bmp)
-<images/evaluation/scenario_pie.png>
- [52]
-File: images/evaluation/dataset_distribution_heatmap.png Graphic file (type bmp
-)
-<images/evaluation/dataset_distribution_heatmap.png>
- [53])
-(sections/6.Experiments/6.2.Results.tex
-Overfull \hbox (7.10825pt too wide) in paragraph at lines 4--5
-\TU/TimesNewRoman(0)/m/n/12 fine-tuning data, and (3) the three-way comparative
- evaluation that quantifies whether the domain-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 21--22
-[]|\TU/TimesNewRoman(0)/m/n/12 healthy, failed, pending, mixed, de-
- []
-
-[54] [55]
-Overfull \hbox (70.56755pt too wide) in paragraph at lines 70--71
-[]\TU/TimesNewRoman(0)/m/n/12 No Observer sample contains calls to destructive 
-tools (\TU/lmtt/m/n/12 scancel\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 sco
-ntrol_hold\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/n/12 scontrol_release\TU/Tim
-esNewRoman(0)/m/n/12 ,
- []
-
-
-Overfull \hbox (9.52629pt too wide) in paragraph at lines 118--128
+[28] [29]) [30] (sections/4.Proposed/4.4.Module-Specifications.tex
+Overfull \hbox (1.59756pt too wide) in paragraph at lines 15--34
  [][] 
  []
 
-[56] [57] [58] [59] [60] [61]
-File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
-<images/evaluation/ablation_per_category.png>
- [62]
-File: images/evaluation/judge_score_comparison.png Graphic file (type bmp)
-<images/evaluation/judge_score_comparison.png>
- [63]
-File: images/evaluation/ablation_observer_only.png Graphic file (type bmp)
-<images/evaluation/ablation_observer_only.png>
-
-Overfull \hbox (2.06335pt too wide) in paragraph at lines 394--395
-\TU/TimesNewRoman(0)/m/n/12 (+38.2pp) both require the agent to distinguish bet
-ween \TU/lmtt/m/n/12 lookup_slurm_docs\TU/TimesNewRoman(0)/m/n/12 , \TU/lmtt/m/
-n/12 sacctmgr_list\TU/TimesNewRoman(0)/m/n/12 ,
+[31] [32]) (sections/4.Proposed/4.5.LLM-Architecture.tex [33]
+File: images/mcp_mock_data_collection.png Graphic file (type bmp)
+<images/mcp_mock_data_collection.png>
+ [34]
+Overfull \hbox (14.73834pt too wide) in paragraph at lines 55--56
+[]\TU/TimesNewRoman(0)/b/n/12 Train/test split. \TU/TimesNewRoman(0)/m/n/12 The
+ 3,135-case benchmark is partitioned 80/20 (stratified by category $\OMS/cmsy/m
+/n/12 ^^B$ \TU/TimesNewRoman(0)/m/n/12 sce-
  []
 
-[64]) [65]
-Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex [66
+[35]
+File: images/data_augmentation_phase1.png Graphic file (type bmp)
+<images/data_augmentation_phase1.png>
 
-] [67])
-(sections/7.Conclusion/7.2.Limitations.tex [68])
-Overfull \hbox (6.37569pt too wide) in paragraph at lines 20--138
+Underfull \hbox (badness 7012) in paragraph at lines 68--68
+\TU/TimesNewRoman(0)/m/n/10.95 handoff boundary into role-specific samples,
+ []
+
+File: images/data_augmentation_phase2.png Graphic file (type bmp)
+<images/data_augmentation_phase2.png>
+[36]) [37]
+Chapter 5.
+(sections/5.Implementation/5.1.Agent-Backend.tex [38
+
+] [39]
+Overfull \hbox (1.48962pt too wide) in paragraph at lines 48--49
+\TU/TimesNewRoman(0)/b/n/12 Streaming. \TU/TimesNewRoman(0)/m/n/12 The chat end
+point returns an OpenAI-compatible Server-Sent Events stream. Rather
+ []
+
+) (sections/5.Implementation/5.2.MCP-Server.tex [40]
+Overfull \hbox (1.71582pt too wide) in paragraph at lines 14--15
+\TU/TimesNewRoman(0)/m/n/12 The mock server ships with five named starting stat
+es: \TU/lmtt/m/n/12 healthy \TU/TimesNewRoman(0)/m/n/12 (jobs running normally)
+, \TU/lmtt/m/n/12 failed
+ []
+
+[41]) (sections/5.Implementation/5.3.Frontend.tex
+File: images/UI_before_HITL.jpg Graphic file (type bmp)
+<images/UI_before_HITL.jpg>
+ [42]
+File: images/UI_during_HITL.jpg Graphic file (type bmp)
+<images/UI_during_HITL.jpg>
+File: images/UI_after_HITL.jpg Graphic file (type bmp)
+<images/UI_after_HITL.jpg>
+ [43])
+(sections/5.Implementation/5.4.Fine-Tuning.tex [44] [45] [46]
+File: images/train_wandb.png Graphic file (type bmp)
+<images/train_wandb.png>
+) [47]
+Chapter 6.
+(sections/6.Experiments/6.1.Testing-Approach.tex
+Underfull \hbox (badness 3826) in paragraph at lines 47--47
+[]|\TU/TimesNewRoman(0)/m/n/10.95 Direct state inspection without
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 48--48
+[]|\TU/TimesNewRoman(0)/m/n/10.95 Failure interpretation, pending
+ []
+
+
+Underfull \hbox (badness 1072) in paragraph at lines 54--54
+[]|\TU/TimesNewRoman(0)/m/n/10.95 Accounting, QoS, fair-share in-
+ []
+
+[48
+
+]
+File: images/evaluation/dataset_distribution_category.png Graphic file (type bm
+p)
+<images/evaluation/dataset_distribution_category.png>
+ [49]
+File: images/evaluation/scenario_pie.png Graphic file (type bmp)
+<images/evaluation/scenario_pie.png>
+ [50]) [51] (sections/6.Experiments/6.2.Results.tex
+Overfull \hbox (3.09653pt too wide) in paragraph at lines 28--29
+\TU/TimesNewRoman(0)/m/n/12 perfect structural metrics, validating that the eva
+luation framework correctly captures tool-calling
+ []
+
+[52]
+Overfull \hbox (3.5516pt too wide) in paragraph at lines 32--33
+[]\TU/TimesNewRoman(0)/m/n/12 However, the fine-tuned model \TU/TimesNewRoman(0
+)/b/n/12 regresses modestly \TU/TimesNewRoman(0)/m/n/12 on knowledge-intensive 
+categories where
+ []
+
+File: images/evaluation/three_way_per_category.png Graphic file (type bmp)
+<images/evaluation/three_way_per_category.png>
+[53]
+Overfull \hbox (8.51059pt too wide) in paragraph at lines 74--75
+\TU/TimesNewRoman(0)/m/n/12 To isolate the architectural contribution of the du
+al-agent split from model capacity, base Qwen2.5-
+ []
+
+[54]
+Overfull \hbox (5.5674pt too wide) in paragraph at lines 98--99
+[]\TU/TimesNewRoman(0)/m/n/12 A recurring failure mode in the monolithic agent 
+is \TU/TimesNewRoman(0)/b/n/12 destructive action on read-only prompts\TU/Times
+NewRoman(0)/m/n/12 :
+ []
+
+[55]
+File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
+<images/evaluation/ablation_per_category.png>
+) [56]
+Chapter 7.
+(sections/7.Conclusion/7.1.Summary.tex [57
+
+]
+Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
+\TU/TimesNewRoman(0)/m/n/12 read, diagnose, account, documentation, and confirm
+ed action workflows. The Observer/Operator
+ []
+
+) (sections/7.Conclusion/7.2.Limitations.tex [58])
+Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--139
 \TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
 as-judge scoring introduces model-dependent
  []
 
-(sections/references.tex) [69]
-Overfull \hbox (1.72935pt too wide) in paragraph at lines 139--139
+(sections/references.tex) [59]
+Overfull \hbox (1.72935pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
 ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
 ] [] [] [] [][] [] [][][][][][][][][][][][] []
  []
 
 
-Overfull \hbox (23.71375pt too wide) in paragraph at lines 139--139
+Overfull \hbox (23.71375pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Anthropic. \TU/TimesNewRoman(0)/m/it/12 Model Con
 text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] [] 
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[70
+[60
 
 ]
-Overfull \hbox (3.9435pt too wide) in paragraph at lines 139--139
+Overfull \hbox (7.2249pt too wide) in paragraph at lines 140--140
+\TU/TimesNewRoman(0)/m/it/12 scape, Security Threats, and Future Research Direc
+tions\TU/TimesNewRoman(0)/m/n/12 . arXiv preprint arXiv:2512.06556.
+ []
+
+
+Overfull \hbox (3.9435pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Patrick Lewis et al. “Retrieval-augmented generat
 ion for knowledge-intensive NLP tasks”.
  []
 
-[71]
-Overfull \hbox (0.3274pt too wide) in paragraph at lines 139--139
+[61]
+Overfull \hbox (0.3274pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[72]
-Overfull \hbox (56.17505pt too wide) in paragraph at lines 139--139
+[62]
+Overfull \hbox (56.17505pt too wide) in paragraph at lines 140--140
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[73] 
+[63] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1838,18 +1861,18 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2025-12-24>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: F811B39CB84DECD37DA234AF1334BE2E;20085.
+(rerunfilecheck)             Checksum: 09ADA0ADF644CB3134A42E9743042D59;16261.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 45507 strings out of 402987
- 1050119 string characters out of 5447904
- 2055526 words of memory out of 5000000
- 73458 multiletter control sequences out of 15000+600000
- 638297 words of font info for 116 fonts, out of 8000000 for 9000
+ 46453 strings out of 402987
+ 1067925 string characters out of 5447904
+ 2059678 words of memory out of 5000000
+ 74374 multiletter control sequences out of 15000+600000
+ 641066 words of font info for 125 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 110i,10n,107p,2021b,4973s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,13n,131p,2021b,5000s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (86 pages).
+Output written on main.pdf (75 pages).

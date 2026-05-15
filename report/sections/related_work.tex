@@ -1,44 +1,74 @@
 \label{sec:related-works-compact}
 
-This chapter reviews work related to natural-language assistance for Slurm-based HPC operation.
+This chapter situates the project within four research threads: HPC management interfaces, tool-augmented LLM agents, multi-agent safety, and agent evaluation benchmarks. No existing system combines all six properties analysed in Section~\ref{sec:related-gap}; the gap motivates this work.
 
 \section{HPC Management Interfaces}
 
-Slurm provides expressive CLI tools (\texttt{squeue}, \texttt{sacct}, \texttt{sinfo}, \texttt{sbatch}, \texttt{scancel}) but assumes scheduler expertise~\cite{yoo2003slurm, slurm2024docs}. Portals such as Open OnDemand~\cite{hudak2018openondemand} and JupyterHub~\cite{jupyterhub2024} reduce barriers but still require manual parameter selection. Monitoring tools (Open XDMoD~\cite{palmer2015openxdmod}, Prometheus/Grafana~\cite{prometheus2024, grafana2024}) are observational and do not convert requests into validated actions.
+Slurm provides expressive CLI tools (\texttt{squeue}, \texttt{sacct}, \texttt{sinfo}, \texttt{sbatch}, \texttt{scancel}) but assumes deep scheduler expertise~\cite{yoo2003slurm, slurm2024docs}. Portals such as Open OnDemand~\cite{hudak2018openondemand} and JupyterHub~\cite{jupyterhub2024} lower barriers through graphical forms but still require manual parameter selection and provide no natural-language entry point. Monitoring stacks (Open XDMoD~\cite{palmer2015openxdmod}, Prometheus/Grafana~\cite{prometheus2024,grafana2024}) are observational and cannot translate requests into validated cluster operations.
 
-\section{LLM-Based HPC Systems}
+Recent work integrates LLMs with HPC infrastructure. Chat~AI~\cite{doosthosseini2024chatai} deploys LLMs \emph{on} Slurm-backed GPUs as a service but does not use the LLM to \emph{manage} the cluster: there is no tool-calling, no safety boundary, and no evaluation of scheduler operations. LangChain-Parsl~\cite{langchainparsl2025} connects an LLM to HPC workflows via the Parsl parallel programming framework; it demonstrates that LLMs can drive parallel task graphs but lacks HITL confirmation, native Slurm tool integration, and domain-adapted fine-tuning. Fujitsu's AI Computing Broker~\cite{fujitsu2025acb} optimises GPU allocation at the resource-brokering layer without a natural-language interface or tool-calling evaluation. A concurrent MCP-based system for quantum-HPC hybrid execution~\cite{shiraishi2026mcpquantum} uses the same protocol as this thesis to dispatch quantum circuits to HPC backends, demonstrating MCP's applicability beyond Slurm, though it is scoped to circuit submission rather than general cluster management.
 
-Recent work integrates LLMs with HPC, though with different goals. Chat~AI~\cite{doosthosseini2024chatai} deploys LLMs as services on Slurm-backed GPUs but does not use LLMs to \emph{manage} the cluster. LangChain-Parsl~\cite{langchainparsl2025} connects an LLM agent to HPC workflows via the Parsl framework but lacks HITL safety and native Slurm tool integration. Fujitsu's AI Computing Broker~\cite{fujitsu2025acb} optimizes GPU allocation across clusters at the resource-brokering layer.
+\section{Tool-Augmented LLM Agents}
+
+The field of tool-calling LLMs has matured rapidly. Gorilla~\cite{patil2023gorilla} fine-tuned LLaMA on APIBench to generate accurate ML framework API calls, demonstrating that domain-specific fine-tuning substantially reduces argument hallucination. ToolLLM~\cite{qin2023toolllm} scaled this to 16,000 RESTful APIs by using ChatGPT to generate training trajectories---the same teacher-distillation paradigm used in this thesis---and showed that a domain-adapted open model can match GPT-3.5 on tool selection. Xu et al.~\cite{xu2023toolmanip} further showed that open-source LLMs require usage examples and in-context demonstration to achieve reliable tool manipulation, and that training data coverage directly determines success rate. AgentTuning~\cite{zeng2023agenttuning} fine-tuned LLaMA on diverse agent trajectories to produce a generalist backbone; like ToolLLM it does not enforce safety boundaries or target a specific operational domain. More recently, GOAT~\cite{min2025goat} (ACL 2026) proposes a training framework for goal-oriented tool use, and Trajectory2Task~\cite{wang2026trajectory2task} synthesises verifiable multi-step trajectories from complex user intents---both confirm that trace-based distillation is an effective strategy for teaching multi-step tool calling to smaller models.
+
+Across all these systems, a consistent finding emerges: the gap between base open-weight models and commercial APIs can largely be closed through domain-specific fine-tuning on execution traces. However, none of them address a safety-critical operational domain where incorrect tool calls have irreversible real-world consequences, and none include a human confirmation gate for destructive operations.
+
+\section{Multi-Agent Safety and Coordination}
+
+General multi-agent frameworks such as AutoGen~\cite{wu2023autogen} and MetaGPT demonstrate that decomposing tasks across specialised agents improves accuracy on complex planning. The Observer/Operator split in this thesis is motivated by the same principle but adds a dimension absent from general frameworks: \emph{structural safety enforcement}. Greenblatt et al.~\cite{greenblatt2024aicontrol} (ICML 2024) formalise AI control protocols that remain safe even under adversarial model behaviour, identifying trusted-editing and untrusted-monitoring as robust patterns. The Observer/Operator handoff instantiates this principle: the Observer classifies intent and gathers evidence (read-only, structurally constrained), while the Operator acts only on a structured payload and only after explicit human confirmation. Jamshidi et al.~\cite{jamshidi2025mcpsecurity} identify tool poisoning and prompt injection as key risks in MCP deployments; this thesis mitigates both through parameter validation in the MCP layer, tool-set filtering per agent role, and the HITL gate that surfaces the exact planned action to the user before execution.
+
+\section{Agent Evaluation Benchmarks}
+
+AgentBench~\cite{liu2023agentbench} (ICLR 2024) evaluates LLMs across eight environments including OS tasks and web browsing, finding a 20--40 percentage point gap between top commercial models and open-source alternatives on agentic tasks---consistent with the 25.1\,pp gap observed between base Qwen and GPT-5-mini in this thesis. $\tau$-bench~\cite{yao2024taubench} evaluates tool-agent-user interaction with policy compliance in retail and airline domains; it finds that even GPT-4o succeeds on fewer than 50\% of tasks, confirming that domain-specific tool-plus-policy tasks are hard even for frontier models. API-BLEND~\cite{basu2024apiblend} (ACL 2024) curates large corpora for training and testing API-task LLMs covering tool detection, slot filling, and API sequencing, reinforcing that carefully curated domain-specific datasets are both necessary and sufficient for strong tool-calling performance. ReAct~\cite{yao2022react} and Toolformer~\cite{schick2023toolformer} establish the foundational reasoning and tool-use patterns on which all subsequent agent systems build.
+
+No existing benchmark tests Slurm-specific tool calling, multi-agent routing, or HITL compliance. Direct numerical comparison between this thesis and prior benchmarks is structurally impossible because the task space, tool definitions, safety dimensions, and scoring methodology are all different. The internal three-way comparison in Chapter~\ref{sec:results}---GPT-5-mini vs.\ fine-tuned Qwen vs.\ base Qwen---plus a monolithic architecture ablation---constitutes the controlled experimental evidence. Table~\ref{tab:benchmark-comparison} summarises the key methodological differences.
 
 \begin{table}[H]
     \centering
-    \caption{Comparison of LLM-Based HPC Systems}
-    \label{tab:llm-hpc-comparison}
+    \caption{Comparison of agent evaluation benchmarks and methodology.}
+    \label{tab:benchmark-comparison}
     \small
-    \begin{tabular}{|l|c|c|c|c|}
+    \begin{adjustbox}{max width=\textwidth}
+    \begin{tabular}{|l|c|r|l|l|c|c|}
         \hline
-        \textbf{System} & \textbf{NL Mgmt} & \textbf{Tool Calls} & \textbf{HITL} & \textbf{Slurm-Native} \\
+        \textbf{Benchmark} & \textbf{Domain} & \textbf{Cases} & \textbf{Scored Dimensions} & \textbf{Scoring} & \textbf{HITL} & \textbf{Local Model} \\
         \hline
-        Chat AI & No & No & N/A & Yes \\
-        LangChain-Parsl & Yes & Yes & No & No (Parsl) \\
-        Fujitsu ACB & No & No & N/A & Partial \\
-        \textbf{Slurm Agent} & Yes & Yes & Yes & Yes \\
+        AgentBench~\cite{liu2023agentbench}   & General (8 envs)   & $\sim$1{,}750 & Task success              & Binary pass/fail                  & $\times$   & $\times$ \\
+        $\tau$-bench~\cite{yao2024taubench}   & Retail / Airline   & $\sim$180     & Policy compliance         & Binary pass/fail                  & $\sim$     & $\times$ \\
+        API-BLEND~\cite{basu2024apiblend}     & General API        & $\sim$10{,}000& Slot fill, detection      & Accuracy per dimension            & $\times$   & $\times$ \\
+        \textbf{Ours}                         & Slurm HPC          & 3{,}135       & Tool recall, routing, HITL, state           & $\text{score}(c)\!\geq\!0.80$ & \checkmark & \checkmark \\
         \hline
     \end{tabular}
+    \end{adjustbox}
 \end{table}
 
-\section{LLM Agents and Tool-Augmented Reasoning}
+\section{Positioning and Gap Analysis}
+\label{sec:related-gap}
 
-ReAct combines reasoning traces with actions~\cite{yao2022react}. Toolformer demonstrates tool-calling patterns~\cite{schick2023toolformer}. Agent surveys identify planning, memory, tool use, and multi-agent coordination as key design dimensions~\cite{cheng2024llmagents, xi2023rise}. Frameworks such as the OpenAI Agents SDK and AutoGen provide implementation support including tool invocation, streaming, and handoff patterns~\cite{openaiagentssdk2024, wu2023autogen}. These are general-purpose; a Slurm assistant must additionally know which tools are read-only, which require confirmation, and how to interpret scheduler state.
+Table~\ref{tab:related-work-comparison} maps related systems across six dimensions that are jointly necessary for a production Slurm assistant.
 
-\section{Protocol-Based Tool Integration}
+\begin{table}[H]
+    \centering
+    \caption{Comparison of related systems. \checkmark~=~fully supported; $\sim$~=~partial; $\times$~=~absent.}
+    \label{tab:related-work-comparison}
+    \small
+    \begin{adjustbox}{max width=\textwidth}
+    \begin{tabular}{|l|c|c|c|c|c|c|}
+        \hline
+        \textbf{System} & \textbf{NL Interface} & \textbf{Typed Tools} & \textbf{HITL Safety} & \textbf{Domain FT} & \textbf{Local Deploy} & \textbf{Domain Benchmark} \\
+        \hline
+        Open OnDemand~\cite{hudak2018openondemand}               & $\times$   & $\times$   & N/A        & N/A        & \checkmark & $\times$ \\
+        Chat AI~\cite{doosthosseini2024chatai}                   & $\times$   & $\times$   & $\times$   & $\times$   & \checkmark & $\times$ \\
+        LangChain-Parsl~\cite{langchainparsl2025}                & \checkmark & $\sim$     & $\times$   & $\times$   & \checkmark & $\times$ \\
+        Fujitsu ACB~\cite{fujitsu2025acb}                        & $\times$   & $\times$   & N/A        & $\times$   & $\times$   & $\times$ \\
+        Gorilla / ToolLLM~\cite{patil2023gorilla,qin2023toolllm} & \checkmark & \checkmark & $\times$   & \checkmark & \checkmark & General \\
+        AgentTuning~\cite{zeng2023agenttuning}                   & \checkmark & \checkmark & $\times$   & \checkmark & \checkmark & General \\
+        $\tau$-bench~\cite{yao2024taubench}                      & \checkmark & \checkmark & $\sim$     & $\times$   & $\times$   & Domain \\
+        \textbf{Slurm Agent (ours)}                              & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+        \hline
+    \end{tabular}
+    \end{adjustbox}
+\end{table}
 
-The Model Context Protocol (MCP) defines a standard client-server interface for exposing tools to AI applications~\cite{anthropic2024mcp, mcpspec2024}. This project applies MCP to a Slurm-specific operational setting with read/write tool separation, mock scenarios for evaluation, and traceable behavior.
-
-\section{Natural Language to Structured Operations}
-
-Semantic parsing (Seq2SQL~\cite{zhong2017seq2sql}, Spider~\cite{yu2018spider}, RAT-SQL~\cite{wang2020ratsql}) maps language to structured queries. For Slurm, the operation space is a set of scheduler tools with parameters, states, and safety policies rather than a database schema. This makes the system closer to grounded operation generation with action risk management.
-
-\section{Safety and Evaluation}
-
-Alignment methods~\cite{bai2022constitutional, ouyang2022training} improve assistant behavior but cannot guarantee correctness in live systems. LLM-as-judge evaluation~\cite{zheng2023judging} does not verify tool-grounded workflows. The benchmark in this thesis therefore checks tool selection, routing, HITL compliance, and state transitions across 3,135 Slurm-specific scenarios.
+The table reveals a clear gap: HPC-specific systems lack tool-calling and fine-tuning; general tool-calling systems lack safety enforcement and domain evaluation; the one domain-benchmarked system ($\tau$-bench) provides no domain-adapted local model and no confirmation gate for destructive operations. This thesis is the first to combine Slurm-native typed tool integration, structural read/write safety separation with human confirmation, domain-specific QLoRA fine-tuning, and a purpose-built 3,135-case evaluation benchmark, all deployable on a single local GPU.

@@ -1,0 +1,25 @@
+flowchart TD
+    USER(["User Request"])
+
+    subgraph OBS["Observer"]
+        INTENT{"Classify Intent"}
+        READ["Call Read Tools"]
+        ANSWER["Generate Answer"]
+        SUMMARY["Write Final Summary"]
+    end
+
+    USER --> INTENT
+    INTENT -->|"read / diagnose / docs"| READ
+    READ --> ANSWER
+    ANSWER --> RESP(["Response to User"])
+
+    INTENT -->|"action / submit / cancel"| HO["Handoff to Operator\n(action · tool · targets)"]
+    HO --> OPR(["Operator"])
+    OPR -->|"original request + results"| SUMMARY
+    SUMMARY --> RESP
+
+    classDef neutral  fill:#ffffff,stroke:#555555,color:#000000
+    classDef terminal fill:#f0f0f0,stroke:#333333,color:#000000,font-weight:bold
+
+    class INTENT,READ,ANSWER,SUMMARY,HO neutral
+    class USER,RESP,OPR terminal

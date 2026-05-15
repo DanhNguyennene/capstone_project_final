@@ -1,7 +1,7 @@
-\section{Runtime Interface and Evaluation Integration}
+\section{Frontend Implementation}
 \label{sec:runtime-interface}
 
-The user interface is not treated as a primary research contribution of this thesis. It is a supporting layer that exposes the agent backend, human-confirmation flow, and evaluation runner during development. The main implementation focus remains the agent architecture, MCP tool layer, resettable mock states, dataset construction process, and trace-based evaluation.
+The React + Vite frontend is a supporting layer that exposes the agent backend for manual interaction and debugging. It is not a primary research contribution; the core evaluation results are produced programmatically against the same backend API (Section~\ref{sec:testing-approach}).
 
 \subsection{Interface Role in the System}
 
@@ -39,47 +39,9 @@ The screenshots below are captured from a live session running the fine-tuned Qw
 
 This interface makes manual testing convenient, but the architectural boundary is the backend API.
 
-\subsection{Additional Capability Screenshots}
-
-Beyond the HITL flow, the interface also exposes the Observer's knowledge-retrieval capabilities. The following figures illustrate web search integration and documentation lookup --- two tools that ground agent responses in external sources rather than model memory.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{images/UI_before_WEB.jpg}
-    \caption[Web Search (1/2) --- Tool execution phase]{Web Search (1/2) --- Tool execution phase: the user asks about a CUDA out-of-memory crash. The Observer issues two sequential \texttt{web\_search} calls followed by a \texttt{web\_fetch} on a specific NVIDIA developer thread, self-correcting its query after identifying \texttt{DistributedDataParallel} as a relevant term.}
-    \label{fig:ui-web-search-before}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{images/UI_after_WEB.jpg}
-    \caption[Web Search (2/2) --- Final response]{Web Search (2/2) --- Final response: the Observer synthesises the retrieved content into a structured CUDA OOM troubleshooting guide covering code-level checks, Slurm resource flags, container GPU visibility, and multi-GPU mapping pitfalls.}
-    \label{fig:ui-web-search}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{images/UI_before_RAG.jpg}
-    \caption[Documentation Lookup (1/2) --- Retrieval phase]{Documentation Lookup (1/2) --- Retrieval phase: the user asks how to choose a Slurm partition. The Observer calls \texttt{lookup\_slurm\_docs} and extracts partition configuration snippets from \texttt{slurm.conf}, including per-partition time limits, node groupings, and the \texttt{DEFAULT} partition entry.}
-    \label{fig:ui-docs-lookup-before}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{images/UI_after_RAG.jpg}
-    \caption[Documentation Lookup (2/2) --- Final response]{Documentation Lookup (2/2) --- Final response: the Observer produces a partition-selection guide grounded in the retrieved documentation, covering access requirements, speed/scale trade-offs, preemptible partitions, hardware specialisations, and a recommended four-step workflow. Responses are grounded in retrieved text rather than parametric model knowledge.}
-    \label{fig:ui-docs-lookup}
-\end{figure}
-
 \subsection{Agent Service API}
 
-The agent service is implemented in \texttt{agent/main.py}. It exposes an OpenAI-compatible \texttt{/v1/chat/\allowbreak{}completions} endpoint that receives the user request, initialises or resumes the session, routes the request through the multi-agent backend, and streams structured events back to the caller. The event stream carries status updates, tool outputs, pending actions, final answer text, and evaluation traces.
+The agent service exposes an OpenAI-compatible \texttt{/v1/chat/\allowbreak{}completions} endpoint that receives the user request, initialises or resumes the session, routes the request through the multi-agent backend, and streams structured events back to the caller.
 
 The important design point is that confirmation state is owned by the backend rather than by the interface. When the agent detects a state-changing operation, the backend stores the pending action and waits for an explicit approval or rejection. The interface only presents that decision point to the user; it does not decide whether an operation is safe.
-
-\subsection{Evaluation Integration}
-
-The evaluation path uses the same backend behavior as manual interaction. The evaluator loads cases from \texttt{evaluation/dataset.json}, resets the mock Slurm state to the case's \texttt{source\_state}, submits the prompt to the live agent endpoint, records observed tools and handoffs, applies HITL decisions when required, and scores the result against ground truth labels.
-
-An auxiliary evaluation backend provides controls for running single cases, running the full benchmark, stopping a run, and exporting result artifacts. An optional inspection view can display these artifacts, but the thesis treats the artifact itself as the evidence: dataset row, source state, target state, expected tools, observed tools, routing behavior, HITL behavior, response evidence, and state score.
 

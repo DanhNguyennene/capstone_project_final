@@ -1,52 +1,32 @@
 \section{Summary}
 \label{sec:summary}
 
-This project developed and evaluated a stateful Slurm Agent that enables natural-language interaction for broad Slurm monitoring, diagnosis, documentation assistance, and human-approved control. The main contribution is the Slurm-specific agent architecture and evaluation method: typed command grounding through MCP tools, read/write separation with confirmation, local documentation retrieval, a 3,135-case manually constructed synthetic benchmark dataset, and architecture-aware evaluation.
+This project designed, implemented, and evaluated a stateful Slurm Agent that enables natural-language interaction for cluster monitoring, diagnosis, documentation assistance, and human-approved control. The core contributions span three areas: a dual-agent architecture that enforces read/write separation structurally rather than by convention, a 3,135-case synthetic benchmark with architecture-aware scoring, and a fine-tuning methodology that distills the separation boundary into an open-weight model.
 
 \subsection{Research Contributions}
 
-This work contributes the following practical outcomes:
+\begin{description}
+    \item[Broad Slurm Intent Surface.] Natural-language coverage is implemented across monitoring, diagnosis, submission, job control, accounting, resource limits, QoS, reservations, scheduler health, configuration inspection, documentation support, and safety edge cases — grounded through 64 typed MCP tools rather than free-form command generation.
 
-\textbf{1. Broad Slurm Intent Surface.} The project defines and implements natural-language coverage across monitoring, diagnosis, submission, job control, accounting, resource limits, QoS, reservations, scheduler health, configuration inspection, documentation support, and safety edge cases.
+    \item[Capacity-Aware Observer/Operator Architecture.] Read-only observation is separated from state-changing operation through structured handoffs, pending-action persistence, and human confirmation. The partitioning reduces each agent's tool surface from 64 (monolithic) to 29 tools for the Observer and 40 tools for the Operator (35 dangerous + 5 discovery reads). Ablation experiments confirm a +10.2\,pp task-quality improvement on routing-neutral cases attributable solely to this tool-scope reduction, and a structural guarantee that the Observer cannot invoke destructive operations regardless of prompt or model behaviour.
 
-\textbf{2. Capacity-Aware Observer/Operator Workflow.} The system separates read-only observation from state-changing operation through structured handoffs, pending-action persistence, human confirmation, and dynamic tool filtering. Beyond safety enforcement, this partitioning reduces the per-agent tool surface from 18 to approximately 8 tools, directly addressing tool-selection degradation in the 14B-parameter local model. Ablation experiments confirm a +13.2 percentage point task-quality improvement on routing-neutral cases attributable solely to this tool-scope reduction.
+    \item[Grounded Slurm Knowledge.] Live cluster facts are retrieved through typed MCP tools. Command syntax, reason-code interpretation, and reference-style explanations are supported by hybrid BM25+semantic RAG over 2,276 chunks of official Slurm documentation, with web search as fallback.
 
-\textbf{3. Grounded Slurm Knowledge and Tool Execution.} Live cluster facts are retrieved through typed MCP tools, while command syntax, reason-code interpretation, state meanings, and reference-style explanations are supported by local official Slurm documentation retrieval with web search as fallback.
+    \item[3,135-Case Slurm Benchmark.] A balanced synthetic benchmark covers 11 task categories (285 cases each) across 5 mock cluster scenarios. Each case carries ground-truth labels for tool use, routing, HITL confirmation, and source/target state, enabling architecture-level rather than text-quality evaluation.
 
-\textbf{4. Balanced 3,135-Case Slurm Benchmark Dataset.} The project contributes an active curated benchmark with 3,135 cases across eleven balanced categories. The dataset covers ordinary and advanced Slurm workflows, includes expected tool and routing behavior, and preserves source/target state information for stateful scoring.
+    \item[Architecture-Aware Evaluation System.] A dataset-driven evaluation stack measures tool recall, routing match, HITL safety, state transitions, response quality, and optional LLM-as-judge scoring with parallel workers and persistent result artifacts.
 
-\textbf{5. Scenario-Grid Evaluation System.} The project implements a dataset-driven evaluation stack that measures architecture-level behavior: tool usage, routing, HITL safety, state transitions, response quality, optional LLM-as-judge scoring, parallel worker execution, and persistent result artifacts.
-
-\textbf{6. Domain-Adapted Fine-Tuning with Role-Scoped Tool Exposure.} The project demonstrates a methodology for distilling commercial-model behavior into an open-weight model while preserving the Observer/Operator safety boundary. By splitting training data at handoff points and restricting each sample's declared tool set to the active agent role, the fine-tuned model internalizes the separation rather than relying solely on runtime enforcement.
+    \item[Role-Scoped Distillation for Fine-Tuning.] A methodology for distilling commercial-model behavior into an open-weight model while preserving the Observer/Operator boundary: training traces are split at handoff points, each sample's declared tool set is restricted to the active agent role, and the fine-tuned model internalizes the separation rather than relying solely on runtime enforcement.
+\end{description}
 
 \subsection{Achievement Against Project Goals}
 
-\textbf{Goal 1 (Natural language access to Slurm):} Achieved across broad read, diagnose, account, documentation, and confirmed action workflows.
+All five project goals are met. Natural-language access to Slurm (Goal~1) is delivered across read, diagnose, account, documentation, and confirmed action workflows. The Observer/Operator control flow (Goal~2) is fully functional and measurable in the benchmark, with the routing dimension explicitly scored. Risk-aware MCP tool integration (Goal~3) is achieved through agent-side allowlists that enforce which tools each role may call, independent of model output. The curated benchmark dataset (Goal~4) contains 3,135 balanced cases with complete ground-truth annotations for all scoring dimensions. Domain-adapted fine-tuning (Goal~5) produces a model that achieves 88.3\% mean weighted score on the 615-case held-out test split, closing 29\% of the commercial gap while running entirely on local infrastructure.
 
-\textbf{Goal 2 (Observer/Operator control flow):} Achieved. Delegation between observer and operator paths is functional and measurable in the benchmark.
+\subsection{Key Findings}
 
-\textbf{Goal 3 (Risk-aware MCP tool integration):} Achieved. Tool interfaces are separated from agent reasoning, exposed through the MCP layer, and governed by agent-side risk classification.
+Architecture-aware metrics are necessary for reliable agentic evaluation: text quality alone does not capture whether destructive operations were correctly gated or whether the right agent executed each step. Deterministic state resets between test cases are essential — without them, state contamination between cases makes pass/fail scores non-reproducible. Trace-based result recording (observed tools, routing decisions, HITL activations, state outcomes) makes failed cases diagnosable rather than reducing them to an opaque score. Finally, role-scoped training data is effective at transferring safety-critical behaviour: the fine-tuned model achieves 88.6\% on the safety category and 90.4\% overall HITL match, confirming that the confirmation gate internalised during distillation activates reliably at inference time.
 
-\textbf{Goal 4 (Curated Benchmark Dataset):} Achieved. The benchmark contains 3,135 cases across eleven balanced categories, covering monitoring, diagnosis, action, submission, safety, accounting, documentation, domain reasoning, multi-step, bulk, and edge cases. Each case specifies expected tool behavior, routing expectations, confirmation policy, and source-to-target state information.
+\subsection{Public Artifacts}
 
-\textbf{Goal 5 (Domain-Adapted Fine-Tuning):} Achieved. A fine-tuning pipeline distills 3,329 role-scoped training samples from the commercial teacher model into Qwen2.5-14B-Instruct via QLoRA. The resulting model achieves 91.4\% pass rate on the 615-case held-out test split, closing 78\% of the gap to the commercial baseline while running entirely on local infrastructure, eliminating API costs and data-sovereignty concerns.
-
-\subsection{Main Findings}
-
-\textbf{Architecture-aware metrics are necessary.} Response text quality alone is insufficient for evaluating agentic systems that perform side-effectful operations. Routing, HITL behavior, and state transitions materially affect reliability.
-
-\textbf{Deterministic state reset improves evaluation quality.} Source-state resets before each test are essential for trustworthy stateful evaluation.
-
-\textbf{Trace-based evaluation improves debugging.} Recording observed tools, routing decisions, HITL behavior, and state outcomes makes failed cases diagnosable instead of reducing them to a single score.
-
-\textbf{Safety confirmation is measurable and effective.} The HITL confirmation mechanism achieves 90.4\% on the safety category in the fine-tuned model evaluation, confirming that the confirmation gate activates reliably for all destructive operations.
-
-\subsection{Source Code Availability}
-
-The complete source code is publicly available:
-
-\begin{center}
-    \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
-\end{center}
-
-The repository contains the agent backend, MCP server, lightweight interface layer, evaluation framework, dataset artifacts, and reproducible evaluation outputs.
+The source code, fine-tuned QLoRA adapter, and benchmark dataset are publicly released; references are in Section~\ref{sec:ft-implementation}. The benchmark is an independently reusable artifact and can evaluate any agent or LLM on Slurm operational tasks without running the full system.

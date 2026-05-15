@@ -1,0 +1,212 @@
+\documentclass[10pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage {mathtools}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{pgfgantt}
+\usepackage{tikz}
+\usetikzlibrary{trees, positioning, arrows.meta}
+\usetheme{CambridgeUS}
+\makeatletter
+\newcommand\titlegraphicii[1]{\def\inserttitlegraphicii{#1}}
+\titlegraphicii{} % default empty
+\usepackage{pifont}
+\usepackage{colortbl}
+\usepackage{ragged2e}
+\usepackage{pgfgantt}
+\usepackage[font=small,labelfont=bf,
+justification=justified,
+format=plain]{caption}
+\apptocmd{\frame}{}{\justifying}{}
+\let\olditem\item
+\renewcommand\item{\olditem\justifying}
+
+% set colors
+\definecolor{myNewColorA}{RGB}{25,25,112}
+\definecolor{myNewColorB}{RGB}{50,50,136}
+\definecolor{myNewColorC}{RGB}{62,62,146}
+% Define colors
+\definecolor{research}{HTML}{5B8FF9}
+\definecolor{baseline}{HTML}{61DDAA}
+\definecolor{symr}{HTML}{65789B}
+\definecolor{analysis}{HTML}{F6BD16}
+\setbeamercolor*{palette primary}{bg=myNewColorC}
+\setbeamercolor*{palette secondary}{bg=myNewColorB, fg = white}
+\setbeamercolor*{palette tertiary}{bg=myNewColorA, fg = white}
+\setbeamercolor*{titlelike}{fg=myNewColorA}
+\setbeamercolor*{title}{bg=myNewColorB, fg = white}
+\setbeamercolor*{item}{fg=myNewColorB}
+\setbeamercolor*{caption name}{fg=myNewColorA}
+\setbeamercolor*{page number in head/foot}{fg=white}
+\setbeamercolor{date in head/foot}{fg=white,bg=myNewColorC}
+\setbeamercolor*{headline}{fg=white}
+\setbeamercolor*{block title}{bg=myNewColorB, fg=white}
+\setbeamertemplate{sections/subsections in toc}[sections numbered projected]
+\setbeamercolor*{section number projected}{bg=myNewColorB, fg=white}
+\usefonttheme{professionalfonts}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[backend=biber,style=numeric]{biblatex}
+\addbibresource{ref.bib}
+\setcounter{tocdepth}{1}
+
+%------------------------------------------------------------
+\titlegraphic{\includegraphics[height=1.0cm]{hcmut.png}}
+
+\setbeamerfont{title}{size=\large}
+\setbeamerfont{subtitle}{size=\small}
+\setbeamerfont{author}{size=\small}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{institute}{size=\footnotesize}
+\setbeamertemplate{itemize items}[default]
+\setbeamertemplate{enumerate items}[default]
+
+
+\setbeamertemplate{title page}
+{
+	\vbox{}
+	% -------- TOP LOGOS --------
+	\begin{beamercolorbox}[wd=\paperwidth,ht=2.2ex,dp=1ex]{}
+		\centering
+		\inserttitlegraphic
+		\hspace{1em}
+		\inserttitlegraphicii
+	\end{beamercolorbox}
+	
+	% -------- TITLE --------
+	\begin{centering}
+		\begin{beamercolorbox}[
+			sep=5pt,
+			center,
+			rounded=true,
+			shadow=true
+			]{title}
+			\usebeamerfont{title}\inserttitle\par
+			\ifx\insertsubtitle\@empty\else
+			\vskip0.4em
+			{\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+			\fi
+		\end{beamercolorbox}
+	\end{centering}
+	
+	
+	\hspace{0.5em}
+	% -------- INFO BLOCK (SHIFTED RIGHT) --------
+	\begin{center}
+		\hspace*{0.015\textwidth}
+		\begin{minipage}{0.95\textwidth}
+			\begin{columns}[T,onlytextwidth]
+				% LEFT
+				\begin{column}{0.45\textwidth}
+					\textbf{Supervisor(s):}\\
+					Assoc.Prof. Thoại Nam\\
+					Thin Nguyen Manh, Ph.D.
+					
+					\vspace{0.8em}
+					
+					\textbf{Student(s):}\\
+					Nguyễn Phúc Thanh Danh -- 2252102
+				\end{column}
+				
+				% RIGHT
+				\begin{column}{0.65\textwidth}
+					\textbf{Council 2CC - Capstone Project - CLC:}\\
+					Chairperson: Tran Van Hoai, PhD\\
+					Secretary: Nguyen Minh Tam, MSc\\
+					Member: Phan Tran Minh Khue, PhD
+				\end{column}
+			\end{columns}
+		\end{minipage}
+	\end{center}
+	
+	\vfill
+	
+	% -------- FOOT --------
+	\begin{centering}
+		{\usebeamerfont{date}\insertdate\par}
+		\vspace{0.25em}
+		{\scriptsize \centering\usebeamerfont{institute}\insertinstitute\par}
+	\end{centering}
+}
+\makeatother
+
+\title{\textbf{CAPSTONE PROJECT}}
+\subtitle{DEVELOPING AN AI AGENT TO SUPPORT ADMINISTRATION\\AND OPERATION OF HPC SYSTEMS BASED ON SLURM}
+
+\author{Nguyễn Phúc Thanh Danh}
+
+\institute[HCMUT]{Department of Computer Science and Engineering\\
+	Ho Chi Minh City University of Technology -- VNUHCM}
+
+\date{June 8, 2026}
+
+\titlegraphic{\includegraphics[height=1cm]{Logo_BK.png}}
+\titlegraphicii{}
+
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+%------------------------------------------------------------
+%This block of commands puts the table of contents at the 
+%beginning of each section and highlights the current section:
+%\AtBeginSection[]
+%{
+	%  \begin{frame}
+		%    \frametitle{Contents}
+		%    \tableofcontents[currentsection]
+		%  \end{frame}
+	%}
+\AtBeginSection[]{
+	\begin{frame}
+		\vfill
+		\centering
+		\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+			\usebeamerfont{title}\insertsectionhead\par%
+		\end{beamercolorbox}
+		\vfill
+	\end{frame}
+}
+
+%------------------------------------------------------------
+
+\begin{document}
+	
+	%The next statement creates the title page.
+	\frame{\titlepage}
+	\begin{frame}
+		\frametitle{Contents}
+		\tableofcontents
+	\end{frame}
+	%------------------------------------------------------------
+	\input{sections/introduction}
+	\input{sections/related_works}
+	\input{sections/method}
+	\input{sections/experiment}
+	\input{sections/result}
+	\input{sections/conclusion}
+	\begin{frame}[allowframebreaks]{References}
+		\begingroup
+		\renewcommand*{\bibfont}{\tiny}
+		\printbibliography
+		\endgroup
+	\end{frame}
+	
+	\section*{Acknowledgement}  
+	\begin{frame}
+		\textcolor{myNewColorA}{\Huge{\centerline{Thank you for listening!}}}
+	\end{frame}
+	
+	\appendix
+	\section{Appendix}
+	\input{sections/appendix}
+	
+\end{document}
+
+
+

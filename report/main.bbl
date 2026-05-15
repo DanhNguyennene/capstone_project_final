@@ -216,6 +216,43 @@
       \field{journaltitle}{arXiv preprint arXiv:2212.08073}
       \field{title}{Constitutional AI: Harmlessness from AI feedback}
       \field{year}{2022}
+      \true{nocite}
+    \endentry
+    \entry{basu2024apiblend}{inproceedings}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{hash=d66d581d6e071b32a110685b63714e25}{%
+           family={Basu},
+           familyi={B\bibinitperiod},
+           given={Kinjal},
+           giveni={K\bibinitperiod}}}%
+        {{hash=6579e6eafeb754dcd11b86a3895310b6}{%
+           family={Abdelaziz},
+           familyi={A\bibinitperiod},
+           given={Ibrahim},
+           giveni={I\bibinitperiod}}}%
+        {{hash=fd8b4e53da79d14d47db2e23e1faaf91}{%
+           family={Farquhar},
+           familyi={F\bibinitperiod},
+           given={Subhajit},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{fullhash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{fullhashraw}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{bibnamehash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{authorbibnamehash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{authornamehash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{authorfullhash}{5dafbcb5308a45f511415ff0e81f0133}
+      \strng{authorfullhashraw}{5dafbcb5308a45f511415ff0e81f0133}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics}
+      \field{title}{{API-BLEND}: A Comprehensive Corpora for Training and Benchmarking {API} {LLMs}}
+      \field{year}{2024}
     \endentry
     \entry{brown2020language}{article}{}{}
       \true{moreauthor}
@@ -364,6 +401,7 @@
       \field{journaltitle}{arXiv preprint arXiv:2401.03428}
       \field{title}{Exploring Large Language Model based Intelligent Agents: Definitions, Methods, and Prospects}
       \field{year}{2024}
+      \true{nocite}
     \endentry
     \entry{cormack2009reciprocal}{inproceedings}{}{}
       \name{author}{3}{}{%
@@ -567,6 +605,45 @@
       \field{title}{Grafana Documentation}
       \field{year}{2024}
     \endentry
+    \entry{greenblatt2024aicontrol}{misc}{}{}
+      \name{author}{4}{}{%
+        {{hash=971e8ecd2b0e20613eb1a2d618015bba}{%
+           family={Greenblatt},
+           familyi={G\bibinitperiod},
+           given={Ryan},
+           giveni={R\bibinitperiod}}}%
+        {{hash=156453364dfa7e6dcb43302882a89311}{%
+           family={Shlegeris},
+           familyi={S\bibinitperiod},
+           given={Buck},
+           giveni={B\bibinitperiod}}}%
+        {{hash=e8d39e76c516f189702f9c05f34aafb4}{%
+           family={Sachan},
+           familyi={S\bibinitperiod},
+           given={Kshitij},
+           giveni={K\bibinitperiod}}}%
+        {{hash=e57aad27e38743ff2901db8cccee1375}{%
+           family={Roger},
+           familyi={R\bibinitperiod},
+           given={Fabien},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{93b2e6549625d7b896a19c3a59171020}
+      \strng{fullhash}{c61d850802cd22dbdcccecffab259428}
+      \strng{fullhashraw}{c61d850802cd22dbdcccecffab259428}
+      \strng{bibnamehash}{93b2e6549625d7b896a19c3a59171020}
+      \strng{authorbibnamehash}{93b2e6549625d7b896a19c3a59171020}
+      \strng{authornamehash}{93b2e6549625d7b896a19c3a59171020}
+      \strng{authorfullhash}{c61d850802cd22dbdcccecffab259428}
+      \strng{authorfullhashraw}{c61d850802cd22dbdcccecffab259428}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2312.06942}
+      \field{title}{AI Control: Improving Safety Despite Intentional Subversion}
+      \field{year}{2024}
+    \endentry
     \entry{hinton2015distilling}{article}{}{}
       \name{author}{3}{}{%
         {{hash=9a8750ccdb2a4cf14d2655face1ce016}{%
@@ -760,6 +837,37 @@
       \verb 10.21105/joss.00622
       \endverb
     \endentry
+    \entry{jamshidi2025mcpsecurity}{misc}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{2}{}{%
+        {{hash=b74e4854c5c94c5f4c53de7f456ec136}{%
+           family={Jamshidi},
+           familyi={J\bibinitperiod},
+           given={Mohammadali},
+           giveni={M\bibinitperiod}}}%
+        {{hash=f5f5031f31ced89262b60504bb81e16e}{%
+           family={Salim},
+           familyi={S\bibinitperiod},
+           given={Maryam},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{fullhash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{fullhashraw}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{bibnamehash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{authorbibnamehash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{authornamehash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{authorfullhash}{b696d7c70490475988ae5fbd08fafe2c}
+      \strng{authorfullhashraw}{b696d7c70490475988ae5fbd08fafe2c}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2512.06556}
+      \field{title}{Model Context Protocol ({MCP}): Landscape, Security Threats, and Future Research Directions}
+      \field{year}{2025}
+    \endentry
     \entry{jupyterhub2024}{misc}{}{}
       \name{author}{1}{}{%
         {{hash=04455645f6d0f265d82db1f3f715e4eb}{%
@@ -857,6 +965,77 @@
       \field{pages}{9459\bibrangedash 9474}
       \range{pages}{16}
     \endentry
+    \entry{liu2023agentbench}{inproceedings}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{10}{}{%
+        {{hash=dd8304255c910bcbd7d7d0cb4f7ed860}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Xiao},
+           giveni={X\bibinitperiod}}}%
+        {{hash=36c3a7c4b7df7f39ac811cd870a20dfa}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Hao},
+           giveni={H\bibinitperiod}}}%
+        {{hash=302e42a350224a77d082452cb4ae683b}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Hanchen},
+           giveni={H\bibinitperiod}}}%
+        {{hash=bb7f398dd3bbc927839cf1b066831cc3}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Yifan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=bb0be778a0b3e38c11c5132b24a24fc6}{%
+           family={Lei},
+           familyi={L\bibinitperiod},
+           given={Xuanyu},
+           giveni={X\bibinitperiod}}}%
+        {{hash=64281875ed286bcebe9cab5a23f7202c}{%
+           family={Lai},
+           familyi={L\bibinitperiod},
+           given={Hanyu},
+           giveni={H\bibinitperiod}}}%
+        {{hash=c09ee34fdc1d049e5c2474669f4d0110}{%
+           family={Gu},
+           familyi={G\bibinitperiod},
+           given={Yu},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=93f56235480848bc13972fe02d7d6121}{%
+           family={Ding},
+           familyi={D\bibinitperiod},
+           given={Hangliang},
+           giveni={H\bibinitperiod}}}%
+        {{hash=638c40d0af41c90970e2d97a338c8861}{%
+           family={Men},
+           familyi={M\bibinitperiod},
+           given={Kai},
+           giveni={K\bibinitperiod}}}%
+        {{hash=738d0ccb0c600588020912d2d2666187}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Kejuan},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{0f75163ab014ebf3a7d14f9cb4542b29}
+      \strng{fullhash}{404d140950b5230ac62629db35e3e84c}
+      \strng{fullhashraw}{404d140950b5230ac62629db35e3e84c}
+      \strng{bibnamehash}{0f75163ab014ebf3a7d14f9cb4542b29}
+      \strng{authorbibnamehash}{0f75163ab014ebf3a7d14f9cb4542b29}
+      \strng{authornamehash}{0f75163ab014ebf3a7d14f9cb4542b29}
+      \strng{authorfullhash}{404d140950b5230ac62629db35e3e84c}
+      \strng{authorfullhashraw}{404d140950b5230ac62629db35e3e84c}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the Twelfth International Conference on Learning Representations}
+      \field{title}{{AgentBench}: Evaluating {LLMs} as Agents}
+      \field{year}{2024}
+    \endentry
     \entry{lockwood2017fair}{inproceedings}{}{}
       \name{author}{3}{}{%
         {{hash=8d35b87fa9f1136c299f82a4c1ccb918}{%
@@ -944,6 +1123,32 @@
       \field{title}{Mermaid: Diagramming and charting tool}
       \field{year}{2024}
       \true{nocite}
+    \endentry
+    \entry{min2025goat}{inproceedings}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=c40fe403b53c159b8867c9ab71e498a3}{%
+           family={Min},
+           familyi={M\bibinitperiod},
+           given={Seungone},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{fullhash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{fullhashraw}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{bibnamehash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{authorbibnamehash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{authornamehash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{authorfullhash}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \strng{authorfullhashraw}{b1e8f76996c2cf37d8d4d01b574a73f1}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics}
+      \field{title}{{GOAT}: Goal-Oriented Agent Training for Tool Use}
+      \field{year}{2025}
     \endentry
     \entry{ollama2024}{misc}{}{}
       \name{author}{1}{}{%
@@ -1227,7 +1432,6 @@
       \field{journaltitle}{arXiv preprint arXiv:2305.15334}
       \field{title}{Gorilla: Large Language Model Connected with Massive {APIs}}
       \field{year}{2023}
-      \true{nocite}
     \endentry
     \entry{prometheus2024}{misc}{}{}
       \name{author}{1}{}{%
@@ -1598,6 +1802,32 @@
       \field{year}{2023}
       \true{nocite}
     \endentry
+    \entry{shiraishi2026mcpquantum}{misc}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=3dfa5501143af964a57ea3729c8c76b7}{%
+           family={Shiraishi},
+           familyi={S\bibinitperiod},
+           given={Ryota},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{fullhash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{fullhashraw}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{bibnamehash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{authorbibnamehash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{authornamehash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{authorfullhash}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \strng{authorfullhashraw}{6a28b4447f9d86ca8d44f700a3cc1b5d}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2604.08318}
+      \field{title}{Quantum-{HPC} Hybrid Execution via the Model Context Protocol}
+      \field{year}{2026}
+    \endentry
     \entry{svelte2024}{misc}{}{}
       \name{author}{1}{}{%
         {{hash=3f37ceb3e7787681158e016284b19a78}{%
@@ -1798,6 +2028,7 @@
       \field{booktitle}{Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics}
       \field{title}{RAT-SQL: Relation-Aware Schema Encoding and Linking for Text-to-SQL Parsers}
       \field{year}{2020}
+      \true{nocite}
       \field{pages}{7567\bibrangedash 7578}
       \range{pages}{12}
     \endentry
@@ -1861,6 +2092,33 @@
       \field{title}{Text embeddings by weakly-supervised contrastive pre-training}
       \field{year}{2022}
       \true{nocite}
+    \endentry
+    \entry{wang2026trajectory2task}{misc}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=c86327a7df09008d71c543e004d3691e}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Ziyue},
+           giveni={Z\bibinitperiod}}}%
+      }
+      \strng{namehash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{fullhash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{fullhashraw}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{bibnamehash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{authorbibnamehash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{authornamehash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{authorfullhash}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \strng{authorfullhashraw}{18b8fcde2cf71bb4e9636d2c9be0268a}
+      \field{extraname}{3}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2601.20144}
+      \field{title}{Trajectory2Task: Synthesising Verifiable Multi-Step Trajectories for Complex Tool-Use Tasks}
+      \field{year}{2026}
     \endentry
     \entry{wooldridge2009introduction}{article}{}{}
       \name{author}{1}{}{%
@@ -2031,6 +2289,91 @@
       \field{title}{The rise and potential of large language model based agents: A survey}
       \field{year}{2023}
     \endentry
+    \entry{xu2023toolmanip}{misc}{}{}
+      \name{author}{6}{}{%
+        {{hash=f1f086561872e5a943563c890f3c3bef}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Qiantong},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=bf5fdf0bb840853943c4211e9ac778e1}{%
+           family={Hong},
+           familyi={H\bibinitperiod},
+           given={Fenglu},
+           giveni={F\bibinitperiod}}}%
+        {{hash=a9c8728e355996d027a7e56b60820a18}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Bo},
+           giveni={B\bibinitperiod}}}%
+        {{hash=41152256e4d81c6af67725c944906009}{%
+           family={Hu},
+           familyi={H\bibinitperiod},
+           given={Changran},
+           giveni={C\bibinitperiod}}}%
+        {{hash=863f7207a1bfa9db0e388ec965a5676d}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Zhengyu},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=112faefb37293f52cd92c3bb36fcc08b}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Jian},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{2c2cd7eb5e6757498dde62da21777076}
+      \strng{fullhash}{a12d6170a37a1282c1ecd608b0c415ca}
+      \strng{fullhashraw}{a12d6170a37a1282c1ecd608b0c415ca}
+      \strng{bibnamehash}{2c2cd7eb5e6757498dde62da21777076}
+      \strng{authorbibnamehash}{2c2cd7eb5e6757498dde62da21777076}
+      \strng{authornamehash}{2c2cd7eb5e6757498dde62da21777076}
+      \strng{authorfullhash}{a12d6170a37a1282c1ecd608b0c415ca}
+      \strng{authorfullhashraw}{a12d6170a37a1282c1ecd608b0c415ca}
+      \field{sortinit}{X}
+      \field{sortinithash}{1965c258adceecf23ce3d67b05113442}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{arXiv preprint arXiv:2305.16504}
+      \field{title}{On the Tool Manipulation Capability of Open-source Large Language Models}
+      \field{year}{2023}
+    \endentry
+    \entry{yao2024taubench}{inproceedings}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{hash=5c1b62cbd4e181d818b927549813cf73}{%
+           family={Yao},
+           familyi={Y\bibinitperiod},
+           given={Shunyu},
+           giveni={S\bibinitperiod}}}%
+        {{hash=38e6ccf26c31cd565451a2e0601fc217}{%
+           family={Shinn},
+           familyi={S\bibinitperiod},
+           given={Noah},
+           giveni={N\bibinitperiod}}}%
+        {{hash=997c3143c2e5d593e816d2ff704fbf98}{%
+           family={Narasimhan},
+           familyi={N\bibinitperiod},
+           given={Karthik},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{fullhash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{fullhashraw}{74092b3325bc71f0f52e518852a891fb}
+      \strng{bibnamehash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{authorbibnamehash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{authornamehash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{authorfullhash}{74092b3325bc71f0f52e518852a891fb}
+      \strng{authorfullhashraw}{74092b3325bc71f0f52e518852a891fb}
+      \field{sortinit}{Y}
+      \field{sortinithash}{fd67ad5a9ef0f7456bdd9aab10fe1495}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{arXiv preprint arXiv:2406.12045}
+      \field{title}{$\tau$-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains}
+      \field{year}{2024}
+    \endentry
     \entry{yao2022react}{article}{}{}
       \name{author}{7}{}{%
         {{hash=5c1b62cbd4e181d818b927549813cf73}{%
@@ -2194,6 +2537,7 @@
       \field{booktitle}{Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing}
       \field{title}{Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task}
       \field{year}{2018}
+      \true{nocite}
       \field{pages}{3911\bibrangedash 3921}
       \range{pages}{11}
     \endentry
@@ -2250,7 +2594,6 @@
       \field{journaltitle}{arXiv preprint arXiv:2310.12823}
       \field{title}{{AgentTuning}: Enabling Generalized Agent Abilities for {LLMs}}
       \field{year}{2023}
-      \true{nocite}
     \endentry
     \entry{zheng2023judging}{article}{}{}
       \true{moreauthor}
@@ -2323,6 +2666,7 @@
       \field{title}{Judging LLM-as-a-judge with MT-bench and chatbot arena}
       \field{volume}{36}
       \field{year}{2023}
+      \true{nocite}
     \endentry
     \entry{zhong2017seq2sql}{article}{}{}
       \name{author}{3}{}{%
@@ -2357,6 +2701,7 @@
       \field{journaltitle}{arXiv preprint arXiv:1709.00103}
       \field{title}{Seq2SQL: Generating Structured Queries from Natural Language using Reinforcement Learning}
       \field{year}{2017}
+      \true{nocite}
     \endentry
   \enddatalist
 \endrefsection

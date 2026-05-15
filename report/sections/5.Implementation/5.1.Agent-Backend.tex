@@ -1,93 +1,54 @@
 \section{Agent Backend Implementation}
 \label{sec:agent-backend}
 
-The backend maintains session-aware multi-agent execution, exposes an OpenAI-compatible chat API, and enforces confirmation workflows for state-changing operations.
+The agent backend is a Python service that accepts chat requests, runs the multi-agent pipeline, and streams results back to the frontend.
 
 \subsection{Technology Stack}
 
-\begin{itemize}
-    \item \textbf{FastAPI + Uvicorn}: API layer for chat, health, and session endpoints
-    \item \textbf{OpenAI Agents SDK}: multi-agent orchestration and tool-driven execution
-    \item \textbf{MCP over SSE}: tool discovery and execution against the Slurm MCP server
-    \item \textbf{SQLiteSession}: persistent per-session context and chat history
-\end{itemize}
+The backend is built on FastAPI with Uvicorn, chosen for its native async support and first-class Server-Sent Events streaming. Agent orchestration uses the OpenAI Agents SDK, which handles the ReAct loop, tool dispatch, and handoff routing automatically once agents are configured. Tools are exposed through an MCP server over SSE. Conversation state is persisted in SQLite via the SDK's \texttt{SQLiteSession}, so chat history and pending actions survive process restarts without an external database.
 
 \subsection{Agent Topology}
+\label{sec:agent-topology-impl}
 
-The system implements a two-agent architecture with bidirectional handoffs. Both agents share the same LLM instance but differ in tool access and generation policy.
+The two-agent design is described in Section~\ref{sec:architecture}. The main implementation challenge was realising strict tool partitioning and bidirectional handoffs within a single SDK session.
 
-\begin{lstlisting}[language=Python, caption={Observer agent construction}, label={lst:observer-agent}]
-observer = Agent(
-    name="Observer",
-    instructions=observer_instructions,
-    model=reasoning_model,
-    model_settings=ModelSettings(tool_choice="auto"),
-    mcp_servers=[mcp_observer],  # read-only Slurm tools
-    tools=[slurm_docs_lookup, skill_lookup],
-    handoffs=[transfer_to_operator],
-)
-\end{lstlisting}
+\textbf{Tool partitioning via filtered MCP instances.} Rather than checking the active role at call time, each agent is given its own MCP server instance configured with an allowlist filter. The filter is a closure over the permitted tool names: the Observer's instance exposes only the 29 read-only tools; the Operator's MCP instance exposes an empty set (the Operator's action tools are not MCP tools at all). The Operator's 35 dangerous tools are registered as SDK \texttt{FunctionTool} objects with \texttt{needs\_approval=True}, and the 5 discovery-read tools are also wrapped as \texttt{FunctionTool}s rather than MCP calls. This means tool enforcement is structural, not advisory — the model cannot call a tool that is not in its SDK context.
 
-\begin{lstlisting}[language=Python, caption={Operator agent construction}, label={lst:operator-agent}]
-operator = Agent(
-    name="Operator",
-    instructions=operator_instructions,
-    model=reasoning_model,
-    model_settings=ModelSettings(tool_choice="required"),
-    mcp_servers=[mcp_operator],  # action Slurm tools
-    tools=[*dangerous_fns, *operator_read_fns],
-    handoffs=[transfer_to_observer],
-)
-\end{lstlisting}
+\textbf{Bidirectional handoff wiring.} Both agents must reference each other's handoff targets, but they are constructed sequentially. The solution is to initialise both with \texttt{handoffs=[]} and mutate the handoff lists after both \texttt{Agent} objects exist. This avoids a circular dependency at construction time while keeping the final object graph consistent.
 
-The Observer uses \texttt{tool\_choice="auto"} (the model decides whether to call a tool or respond directly), while the Operator uses \texttt{tool\_choice="required"} (every turn must invoke a tool---either an action or the handoff back). The MCP server instances expose strictly partitioned tool sets: the Observer sees only read-only commands (\texttt{squeue}, \texttt{sinfo}, \texttt{sacct}, \texttt{scontrol show}), while the Operator receives action tools (\texttt{scancel}, \texttt{scontrol update}, \texttt{sbatch}) plus a small subset of read tools for target discovery before acting.
+\textbf{Generation policy.} The Observer uses \texttt{tool\_choice="auto"} so it can respond directly for simple information queries without forcing an unnecessary tool call. The Operator uses \texttt{tool\_choice="required"} so every turn must invoke either an action tool or the return handoff — preventing the model from short-circuiting with a plain text response before executing anything.
+
+\textbf{Handoff input filters.} The SDK does not automatically carry context across agent boundaries. Two input filters handle this gap. The \emph{Observer-to-Operator filter} synthesises a canonical instruction for the Operator from the handoff payload: the action request, required tool, target scope, and concrete target IDs. When \texttt{target\_scope="discovery"} the instruction explicitly directs a read tool call first to resolve numeric job IDs before invoking the action, preventing the Operator from acting on placeholder identifiers. The \emph{Operator-to-Observer filter} reconstructs the final summary context: it recovers the original user request from session history and collects all deduplicated tool-output snippets from the Operator turn (capped at 2,000 characters each), then presents this as a single synthetic user message to the Observer. A hard instruction not to re-invoke the handoff is included, so the Observer can write the final response without triggering another loop.
 
 \subsection{Safety and Confirmation Pipeline}
 
-Dangerous operations follow a queued-action workflow: (1)~the request is transformed into a pending action (not executed), (2)~the user sees the action and must explicitly confirm, (3)~execution occurs only via \texttt{confirm\_action}. This two-step control reduces accidental cluster mutations.
+Dangerous tools carry \texttt{needs\_approval=True} in the SDK, which causes the runner to pause before execution and emit a \texttt{pending\_actions} event. The frontend surfaces this as a confirmation card; the user must explicitly approve or reject. Only a confirmed \texttt{confirm\_action} call triggers actual execution. This two-step pattern is implemented entirely in the SDK's approval callback mechanism — no custom scheduling or state machine is required. Pending actions are stored in the session so that if the user refreshes or reconnects, the confirmation prompt is restored.
 
 \subsection{Hybrid RAG Documentation Retrieval}
 \label{sec:impl-rag}
 
-The agent includes a local retrieval tool (\texttt{lookup\_slurm\_docs}) that provides Retrieval-Augmented Generation over the official Slurm documentation corpus. The pipeline operates without an external vector database---all indexing is in-memory.
+The agent includes a local retrieval tool (\texttt{lookup\_slurm\_docs}) for Retrieval-Augmented Generation over the official Slurm documentation corpus. The design avoids an external vector database: all indexing is in-memory at startup.
 
 \subsubsection{Corpus Preparation}
 
-A crawl script fetches all HTML pages from \texttt{slurm.schedmd.com}, converts them to Markdown with YAML frontmatter (source URL, title, fetch timestamp), and stores them in a local corpus directory. At the time of writing the corpus contains 273~documents covering commands, configuration, accounting, scheduling, and troubleshooting.
+A crawl script fetches all HTML pages from \texttt{slurm.schedmd.com}, converts them to Markdown with YAML frontmatter (source URL, title, fetch timestamp), and stores them locally. The corpus contains 273~documents.
 
-\subsubsection{Chunking Strategy}
+\subsubsection{Chunking and Indexing}
 
-Each document is split at heading boundaries (\texttt{\#}, \texttt{\#\#}, \texttt{\#\#\#}). Chunks smaller than 80~characters are discarded; chunks exceeding 1{,}400~characters are further split at paragraph boundaries. This produces 2{,}276 chunks with an average length of approximately 600~characters, balancing retrieval granularity against context window cost.
+Each document is split at heading boundaries. Chunks under 80~characters are discarded; chunks over 1{,}400~characters are split further at paragraph boundaries. This produces 2{,}276 chunks with an average length of approximately 600~characters. At query time, two parallel scoring passes run: a BM25-style lexical pass (with phrase-match and title bonuses) and a semantic pass using all-MiniLM-L6-v2 (384-dimensional cosine similarity). The two ranked lists are fused with Reciprocal Rank Fusion ($k=60$)~\cite{cormack2009reciprocal} and the top-5 results are returned (each capped at 950~characters, $\approx$1{,}200 tokens total).
 
-\subsubsection{Dual Retrieval}
-
-At query time, the tool runs two parallel scoring passes:
-
-\begin{enumerate}
-    \item \textbf{Lexical scoring}: token-overlap BM25-style matching between the normalized query and chunk content, with bonuses for phrase matches and path/title matches.
-    \item \textbf{Semantic scoring}: the query is encoded using the all-MiniLM-L6-v2 sentence-transformer model~\cite{reimers2019sentence} (384-dimensional embeddings, running on GPU). Cosine similarity against pre-computed chunk embeddings identifies semantically related passages.
-\end{enumerate}
-
-\subsubsection{Reciprocal Rank Fusion}
-
-The two ranked lists are fused using RRF with $k=60$~\cite{cormack2009reciprocal}. The top-5 results are returned as context snippets (each capped at 950~characters), yielding approximately 1{,}200~tokens per tool call---a small fraction of the model's context window.
+This hybrid approach was motivated by a practical failure mode observed during development: purely lexical retrieval misses paraphrased queries (``how to chain jobs'' does not match ``dependency afterok''), while purely semantic retrieval can miss exact command-syntax queries. Neither alone is reliable; RRF combines both without requiring score calibration.
 
 \subsubsection{Pre-computed Embeddings}
 
-To avoid a GPU-intensive embedding pass at server startup, a build script (\texttt{build\_embeddings.py}) pre-computes all 2{,}276 chunk embeddings and saves them as a compressed NumPy archive (\texttt{embeddings.npz}, 3.2~MB). At runtime the agent loads this file in under 100~ms. If the corpus is updated and the embedding count diverges, the system falls back to runtime embedding.
-
-\subsubsection{Design Rationale}
-
-This hybrid approach addresses a practical limitation observed during evaluation: purely lexical retrieval fails on paraphrased queries (e.g., ``how to chain jobs'' does not lexically match ``dependency afterok''), while purely semantic retrieval can miss exact command-syntax matches. RRF combines both strengths without requiring score calibration. The tool is invoked lazily---only when the agent encounters a documentation question---so it adds zero tokens to non-documentation conversations.
+To avoid a GPU embedding pass at startup, chunk embeddings are pre-computed and saved as a compressed NumPy archive (3.2~MB). The server loads this in under 100~ms. If the corpus changes and the embedding count diverges, the system falls back to runtime embedding automatically.
 
 \subsection{Runtime Services}
 
-The backend streams responses using OpenAI-style Server-Sent Events with typed delta fields (\texttt{status\_update}, \texttt{tool\_output}, \texttt{reasoning\_content}, \texttt{content}, \texttt{chart\_artifact}, \texttt{pending\_actions}). Chart artifacts are filtered from future LLM context to prevent token pollution.
+\textbf{Streaming.} The chat endpoint returns an OpenAI-compatible Server-Sent Events stream. Rather than a single \texttt{content} field, each delta carries a typed field so the frontend can render tool activity and confirmation cards in real time without parsing free-form text. The event types are: \texttt{status\_update} (tool in progress), \texttt{tool\_output} (result snippet), \texttt{reasoning\_content} (model thinking trace), \texttt{content} (final prose), and \texttt{pending\_actions} (HITL confirmation request).
 
-Each chat ID maps to a persistent session storing conversation memory, pending actions, chart context, and runtime config. Evaluation runs use deterministic isolated session IDs for reproducibility.
+\textbf{Session and agent lifecycle.} Each chat ID maps to a \texttt{SlurmAgentSystem} instance held in a process-level dictionary. Instances are reused across requests for the same session, avoiding repeated MCP tool discovery and agent initialisation on every turn. Sessions expire after one hour of inactivity and are cleaned up lazily on the next incoming request. If the LLM provider, model, or MCP URL changes mid-session, the old agent is disconnected and a fresh one is created for that session ID. A per-event timeout (configurable via \texttt{STREAM\_TIMEOUT}, default 300~seconds) aborts hung streams so that a stalled MCP call or model inference does not block the connection indefinitely.
 
 \subsection{Fine-Tuned Model Serving}
 
-To evaluate the domain-adapted open-weight model under the same agent framework, a lightweight inference server exposes the fine-tuned model through an OpenAI-compatible chat completions endpoint. The server loads the quantized base model with the LoRA adapter merged at startup, and processes requests identically to the commercial API from the agent's perspective---the same tool-calling format, streaming protocol, and system prompts are used regardless of which backend is active.
-
-As an additional safety layer, the server validates each generated tool call against the \texttt{tools} list provided in the request. Any tool call referencing a function not declared in the current request is silently filtered, preventing residual cross-role hallucinations from reaching the agent runtime. This defense-in-depth approach means that even if the model occasionally generates an out-of-scope tool call, it is caught before execution rather than causing a runtime error.
+Evaluating the fine-tuned open-weight model required no changes to the agent pipeline. A lightweight server loads the merged fp16 model at startup and exposes an OpenAI-compatible \texttt{/v1/chat/completions} endpoint. From the agent's perspective this is identical to the commercial API: the same tool-calling format, system prompts, and streaming protocol are used regardless of which backend is active. The server adds one defence-in-depth layer: any tool call that references a function not declared in the current request's \texttt{tools} field is filtered before it reaches the agent runtime, catching residual cross-role hallucinations from the fine-tuned model without affecting normal operation.

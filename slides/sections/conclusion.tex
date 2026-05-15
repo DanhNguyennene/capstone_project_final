@@ -1,0 +1,36 @@
+\section{Conclusion}
+
+\begin{frame}{Summary of Contributions}
+  \begin{enumerate}
+    \item \textbf{Broad Slurm intent surface} — 11 categories, 64 typed MCP tools covering monitoring through confirmed destructive operations
+    \item \textbf{Observer/Operator workflow} — structural read/write separation with pending-action HITL confirmation; safety by construction, not prompt compliance
+    \item \textbf{3,135-case benchmark dataset} — manually constructed, scored on tool recall, routing, HITL, state, and judge quality
+    \item \textbf{Scenario-grid evaluation system} — architecture-level metrics, parallel workers, persistent result artifacts, inspectable traces
+    \item \textbf{Domain-adapted fine-tuning} — Qwen2.5-14B via QLoRA distilled from commercial traces; \textbf{88.3\% mean weighted score}, closes 29\% of the gap to GPT-5-mini, fully local
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Limitations \& Future Work}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Limitations}
+      \begin{itemize}
+        \item Synthetic benchmark only — no live-cluster user study
+        \item Routing metric (25\%) structurally disadvantages monolithic baseline
+        \item Training data from finite mock state space
+        \item Single-turn evaluation only
+        \item No multi-tenant auth / audit logging
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Future Work}
+      \begin{itemize}
+        \item Real-cluster validation with live scheduler variability
+        \item Multi-turn conversation benchmark
+        \item Role-aware authentication \& audit logging
+        \item Larger base model (70B) for harder categories
+        \item Practitioner user studies
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}

@@ -1,257 +1,53 @@
 \section{Experimental Results}
 \label{sec:results}
 
-This section reports the experimental results across three dimensions: (1)~the evaluation benchmark validated on the commercial baseline, (2)~the construction and validation of role-scoped fine-tuning data, and (3)~the three-way comparative evaluation that quantifies whether the domain-adapted model can replace the commercial API for local deployment.
+\subsection{Three-Way Model Comparison}
+\label{sec:ft-comparison}
 
-\subsection{Benchmark Construction Outcome}
-
-The main quantitative artifact produced by the experimental work is the balanced scenario-grid benchmark described in Section~\ref{sec:testing-approach}. The benchmark is synthetic, manually authored, and designed to exercise Slurm-specific behavior across read-only assistance, diagnosis, documentation retrieval, submission planning, account inspection, and confirmed state-changing operations.
-
-\begin{table}[H]
-    \centering
-    \caption{Constructed Benchmark Summary}
-    \label{tab:constructed-benchmark-summary}
-    \begin{tabular}{|p{4.5cm}|p{7.5cm}|}
-        \hline
-        \textbf{Artifact Property} & \textbf{Value} \\
-        \hline
-        Dataset file & \texttt{evaluation/dataset.json} \\
-        Total curated cases & 3,135 \\
-        Balanced categories & 11 (285 each) \\
-        Mock cluster scenarios & healthy, failed, pending, mixed, debug\_needed \\
-
-        Scoring dimensions & tool use, routing, HITL, state, keywords, judge \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsection{Dataset Construction Outcome}
-
-The benchmark was constructed through staged manual design ensuring category balance, scenario coverage, source/target state pairing, tool and routing labels, HITL labels, and documentation grounding. 
-
-\subsection{Training Data Construction and Validation}
-
-Beyond the evaluation benchmark, a parallel data engineering effort produced the fine-tuning corpus described in Section~\ref{sec:fine-tuning}. This subsection reports the quantitative properties of the training data and the validation checks applied before training.
-
-\subsubsection{Data Pipeline Output}
-
-The training data pipeline runs GPT-5-mini on the 2{,}520 train-split cases, collects passing traces, and processes them through role splitting to produce the final training corpus.
+All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B, and base Qwen2.5-14B---are evaluated on the identical 615-case held-out test split using the same evaluation harness, MCP server, and scoring methodology described in Section~\ref{sec:testing-approach}. Table~\ref{tab:ft-vs-baseline} reports the aggregate metrics after applying the state-match artefact correction described in Section~\ref{sec:state-match-artifact}.
 
 \begin{table}[H]
     \centering
-    \caption{Training Data Summary}
-    \label{tab:training-data-summary}
-    \begin{tabular}{|p{5cm}|p{7cm}|}
-        \hline
-        \textbf{Property} & \textbf{Value} \\
-        \hline
-        Source cases (train split) & 2{,}520 \\
-        Passing traces & 2{,}436 (96.7\% pass rate) \\
-        Total training samples & 3{,}329 (after role splitting) \\
-        Observer samples & 2{,}436 (73.2\%) \\
-        Operator samples & 893 (26.8\%) \\
-        Categories & 11 (balanced) \\
-        Median token length & 4{,}125 tokens per sample \\
-        Max token length & 9{,}040 tokens \\
-        Output format & JSONL with \texttt{messages}, \texttt{tools}, metadata \\
-        \hline
-    \end{tabular}
-\end{table}
-
-The Observer-to-Operator ratio reflects the natural distribution of evaluation cases: most Slurm interactions involve read-only inspection (handled entirely by the Observer), while destructive operations requiring Operator delegation are less frequent but critically important.
-
-\subsubsection{Role-Scoped Integrity Validation}
-
-A dedicated validation script verifies that the role-scoping constraints are satisfied across all 3{,}329 samples before training begins. The following invariants are checked exhaustively:
-
-\begin{itemize}
-    \item Every sample includes a non-empty \texttt{tools} field matching its declared role.
-    \item Every \texttt{tool\_call} in assistant messages references a tool present in the sample's declared tool set.
-    \item No Observer sample contains calls to destructive tools (\texttt{scancel}, \texttt{scontrol\_hold}, \texttt{scontrol\_release}, \texttt{scontrol\_update}, \texttt{sbatch}, etc.).
-    \item No Operator sample contains the \texttt{transfer\_to\_operator} handoff tool (which only the Observer should invoke).
-    \item All tool call/response pairs are correctly matched (zero orphan IDs).
-    \item Every conversation ends with an assistant message (required for Qwen chat template).
-    \item No template pollution or weird tokens present in any sample.
-\end{itemize}
-
-All 3{,}329 samples pass all validation checks with zero violations, confirming that the role-scoping implementation is correct and the model will never see cross-role tool examples during training.
-
-\subsubsection{Training Execution}
-
-Training was conducted on a single NVIDIA A40 GPU (48\,GB VRAM) provisioned via RunPod cloud infrastructure.
-
-\begin{table}[H]
-    \centering
-    \caption{Training Run Configuration}
-    \label{tab:training-run-config}
-    \begin{tabular}{|l|c|}
-        \hline
-        \textbf{Parameter} & \textbf{Value} \\
-        \hline
-        Base model & Qwen2.5-14B-Instruct \\
-        Quantization & 4-bit NF4, double quant \\
-        LoRA rank / alpha & 64 / 128 \\
-        Target layers & All 48 layers \\
-        Effective batch size & 16 (micro-batch 1 $\times$ grad accum 16) \\
-        Sequence length & 8{,}192 tokens \\
-        Epochs & 3 \\
-        Total steps & $\sim$624 \\
-        GPU memory usage & $\sim$43 / 46\,GB \\
-        \hline
-    \end{tabular}
-\end{table}
-
-% Training loss curve (uncomment if image available)
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{images/training_loss_curve.png}
-%     \caption{Fine-Tuning Training Loss Over Steps}
-%     \label{fig:training-loss-curve}
-% \end{figure}
-
-\subsection{Comparison with Manual CLI Workflow}
-
-\begin{table}[H]
-    \centering
-    \caption{Task Complexity: Agent vs Manual CLI}
-    \label{tab:agent-vs-cli}
-    \begin{tabular}{|p{4cm}|c|c|}
-        \hline
-        \textbf{Task} & \textbf{Agent Interaction} & \textbf{Typical Manual CLI} \\
-        \hline
-        Check queue status & 1 prompt & 1--2 commands \\
-        Diagnose pending jobs & 1 prompt & 3--5 commands + interpretation \\
-        Cluster utilization summary & 1 prompt (+ optional chart) & 4--6 commands + manual synthesis \\
-        Safe cancellation flow & 2 turns (request + confirm) & 1 command (no built-in confirmation) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsection{Quantitative Performance Results}
-
-The final evaluation was conducted on the full 3,135-case benchmark using the production agent stack. After identifying and correcting a scoring artifact in the state-match dimension (Section~\ref{sec:state-match-artifact}), the rescored aggregate metrics are reported below.
-
-\begin{table}[H]
-    \centering
-    \caption{Aggregate Evaluation Metrics --- GPT-5-mini Baseline (3,135 Cases, Rescored)}
-    \label{tab:aggregate-metrics}
-    \small
-    \begin{tabular}{|l|c||l|c|}
-        \hline
-        \textbf{Metric} & \textbf{Value} & \textbf{Metric} & \textbf{Value} \\
-        \hline
-        Pass rate & 97.8\% & Avg tool recall & 98.7\% \\
-        Avg overall & 95.2\% & Avg routing match & 99.2\% \\
-        Avg judge score & 74.3\% & Avg HITL match & 99.1\% \\
-        Avg latency & 27.4\,s & Avg state match & 98.2\% \\
-        \hline
-    \end{tabular}
-\end{table}
-
-The agent achieves near-perfect tool selection and routing accuracy, confirming that the ReAct-based architecture reliably maps user intent to the correct MCP tool calls. The HITL confirmation dimension shows 99.1\% agreement, demonstrating that the safety-critical confirmation flow activates consistently for destructive operations.
-
-The weakest categories are \textit{docs} (85.6\%) and \textit{edge} (90.9\%). Documentation retrieval cases sometimes require the agent to select between overlapping lookup tools, while edge cases test intentionally ambiguous or adversarial prompts where routing decisions are less clear-cut.
-
-\subsubsection{LLM-as-Judge Analysis}
-
-An LLM judge (GPT-OSS 20B, run locally via Ollama) provided supplementary quality scores on a 1--5 scale, normalized to 0--1. The average judge score of 74.3\% is lower than the structural metrics because the judge penalizes verbose, imprecise, or partially correct natural-language responses even when tool selection and routing are correct. The judge score is not included in the pass/fail threshold but provides additional signal for response quality improvement.
-
-\subsection{Model Configuration}
-
-\begin{table}[H]
-    \centering
-    \caption{Evaluation Model Stack}
-    \label{tab:eval-model-stack}
-    \begin{tabular}{|l|l|}
-        \hline
-        \textbf{Role} & \textbf{Model} \\
-        \hline
-        Main agent LLM (baseline) & GPT-5-mini (OpenAI API) \\
-        Main agent LLM (fine-tuned) & Qwen2.5-14B-Instruct + QLoRA adapter \\
-        LLM Judge & GPT-OSS 20B (Ollama, local) \\
-        Tool execution & MCP Server (localhost) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsection{Fine-Tuned Model vs Baseline Comparison}
-
-The central experimental question is whether the domain-adapted open-weight model can approach the commercial baseline on the same benchmark. The comparison is conducted on a held-out 615-case test split (stratified 80/20 from the full 3{,}135 benchmark, seed=42). All three models---GPT-5-mini, fine-tuned Qwen2.5-14B, and base Qwen2.5-14B---are evaluated on this identical test set. All other components---the MCP server, evaluation harness, and scoring methodology---remain unchanged, isolating the effect of the main reasoning model.
-
-\subsubsection{Evaluation Protocol}
-
-The fine-tuned model is served via a lightweight OpenAI-compatible API endpoint built with FastAPI and the \texttt{transformers} + PEFT libraries. The QLoRA adapter is loaded on top of the base model at BF16 precision (full-precision base weights with LoRA layers applied), running on a single NVIDIA A40 48\,GB GPU. While training used 4-bit NF4 quantization for memory efficiency, inference uses BF16 base weights---a standard practice in QLoRA deployment that avoids quantization-related numerical instability during autoregressive generation on long multi-turn sequences. The quality impact is negligible, as NF4 quantization is information-theoretically near-optimal and LoRA adapters transfer reliably across precisions~\cite{dettmers2023qlora}.
-
-The evaluation harness connects to this local endpoint using the same streaming SSE interface it uses for the OpenAI API, ensuring identical tool-calling, streaming, and HITL handling logic. Temperature is set to 0 for deterministic comparison.
-
-\subsubsection{Hypotheses}
-
-Based on the training data composition and the role-scoping approach, the following hypotheses guide the evaluation:
-
-\begin{itemize}
-    \item \textbf{H1 (Tool Recall)}: The fine-tuned model should achieve high tool recall ($>$90\%) since it was trained exclusively on correct tool-calling traces distilled from GPT-5-mini.
-    \item \textbf{H2 (Routing)}: Observer/Operator routing accuracy should be strong because the role-scoped training data embeds the handoff boundary directly into each sample's tool set.
-    \item \textbf{H3 (HITL Safety)}: Confirmation flow activation should be reliable for the same reason---Operator samples only see destructive tools, teaching the model to expect confirmation gates.
-    \item \textbf{H4 (Capacity Gap)}: Categories requiring multi-step reasoning or ambiguity resolution (e.g., \textit{edge}, \textit{docs}) will likely show larger degradation relative to the commercial model, reflecting the 14B parameter capacity constraint.
-\end{itemize}
-
-\subsubsection{Comparative Results}
-
-\begin{table}[H]
-    \centering
-    \caption{Three-Way Model Comparison (615 Test Cases)}
+    \caption{Three-Way Model Comparison (615-Case Held-Out Test Split)}
     \label{tab:ft-vs-baseline}
     \begin{tabular}{|l|c|c|c|}
         \hline
         \textbf{Metric} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
         \hline
-        Pass rate         & 96.6\% & \textbf{91.4\%} & 72.8\% \\
+        Avg overall score & 95.9\% & \textbf{88.3\%} & 85.2\% \\
         Avg tool recall   & 98.8\% & \textbf{89.2\%} & 84.9\% \\
         Avg routing match & 99.0\% & \textbf{90.1\%} & 83.6\% \\
-        Avg HITL match    & 99.0\% & \textbf{90.4\%} & 80.8\% \\
-        Avg state match   & 95.9\% & \textbf{90.0\%} & 87.3\% \\
-        Avg judge score   & 74.3\% & \textbf{79.7\%} & 76.8\% \\
+        Avg HITL match    & 99.0\% & \textbf{90.4\%} & 90.2\% \\
+        Avg state match   & 98.2\% & \textbf{90.0\%} & 89.8\% \\
+        Avg judge score   & 75.7\% & \textbf{79.7\%} & 76.8\% \\
         Avg latency       & 28.3\,s & 84.8\,s        & 80.9\,s \\
         \hline
     \end{tabular}
 \end{table}
 
-The fine-tuned model achieves \textbf{91.4\% pass rate} on the held-out 615-case test split, closing 78\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline. Across all structural dimensions the fine-tuned model substantially outperforms the base: routing match improves from 83.6\% to 90.1\% (+6.5\,pp), HITL match from 80.8\% to 90.4\% (+9.6\,pp), and state match from 87.3\% to 90.0\% (+2.7\,pp). These are the safety-critical dimensions for correct cluster operation, and the fine-tuning has reliably transferred the handoff boundary and confirmation-gate behaviour from the teacher model.
+The GPT-5-mini commercial baseline achieves a mean weighted score of \textbf{95.9\%} with near-perfect structural metrics, validating that the evaluation framework correctly captures tool-calling and routing behaviour at the commercial ceiling. The lowest-scoring categories for GPT-5-mini are \textit{edge} (91.7\%), \textit{domain} (93.2\%), and \textit{diagnose} (94.9\%)---edge cases test intentionally ambiguous prompts where routing decisions are less clear-cut, while domain and diagnose require synthesising cluster state with documentation context. The LLM judge average of 75.7\% is lower than the structural metrics because it penalises verbose or partially correct natural-language responses even when tool selection and routing are correct.
 
-The LLM judge score of 79.7\% \textbf{exceeds} both the base model (76.8\%) and the GPT-5-mini baseline (74.3\%). The fine-tuned model's higher pass rate on safety-critical dimensions (HITL 90.4\% vs.\ 80.8\% base) and its judge score above both confirm that distillation produces more precise, evidence-grounded responses.
+The fine-tuned Qwen2.5-14B achieves a mean weighted score of \textbf{88.3\%}, closing 29\% of the gap between the 85.2\% base model and the 95.9\% commercial baseline. The most significant improvements over the base model are in the categories that require explicit learned behaviour: \textit{submission} (+21.7\,pp, from 61.7\% to 83.4\%), \textit{multi\_step} (+13.8\,pp, from 69.5\% to 83.3\%), \textit{safety} (+11.3\,pp, from 77.3\% to 88.6\%), and \textit{bulk} (+6.8\,pp, from 79.0\% to 85.9\%). These are precisely the categories most dependent on correct tool-chaining, HITL activation sequences, and multi-step conditional reasoning---the skills targeted by the role-scoped distillation corpus. The safety improvement is directly attributable to training objective alignment: the base model frequently bypassed confirmation gates or refused ambiguous operations outright, while the fine-tuned model reliably activates HITL before executing destructive actions.
 
-\subsubsection{Per-Category Breakdown}
+However, the fine-tuned model \textbf{regresses modestly} on knowledge-intensive categories where the base model already performed well: \textit{domain} (--6.2\,pp), \textit{docs} (--4.5\,pp), \textit{diagnose} (--3.8\,pp), and \textit{read} (--3.1\,pp). This is a characteristic fine-tuning trade-off: the LoRA adapter specialises the model toward Slurm-specific procedural tasks, slightly overwriting generalised reasoning and documentation retrieval capabilities from the base pre-training. The overall score improvement (85.2\% $\to$ 88.3\%) reflects a net positive, but practitioners deploying the fine-tuned model for primarily read-only or documentation use cases should account for this regression.
 
-\begin{table}[H]
+Notably, the fine-tuned model's LLM judge score of \textbf{79.7\%} exceeds both the base model (76.8\%) and the GPT-5-mini baseline (75.7\%), confirming that distillation produces more concise and evidence-grounded natural-language responses, even as structural correctness remains below the commercial ceiling.
+
+\begin{figure}[H]
     \centering
-    \caption{Pass Rate by Category --- Three-Way Comparison (615 Test Cases)}
-    \label{tab:ft-per-category}
-    \begin{tabular}{|l|c|c|c|}
-        \hline
-        \textbf{Category} & \textbf{GPT-5-mini} & \textbf{Qwen2.5-14B (FT)} & \textbf{Qwen2.5-14B (Base)} \\
-        \hline
-        read        & 100.0\% & 98.2\%          & 98.2\% \\
-        diagnose    & 96.4\%  & 94.5\%          & 87.3\% \\
-        action      & 96.5\%  & 94.7\%          & 86.0\% \\
-        bulk        & 98.2\%  & 91.1\%          & 67.9\% \\
-        safety      & 96.5\%  & 93.0\%          & 57.9\% \\
-        submission  & 98.2\%  & 84.2\%          & 24.6\% \\
-        multi\_step & 100.0\% & 87.7\%          & 45.6\% \\
-        account     & 100.0\% & 98.2\%          & 96.4\% \\
-        edge        & 90.9\%  & 89.1\%          & 72.7\% \\
-        docs        & 87.3\%  & 85.5\%          & 80.0\% \\
-        domain      & 98.2\%  & 89.1\%          & 87.3\% \\
-        \hline
-        \textbf{Overall} & \textbf{96.6\%} & \textbf{91.4\%} & \textbf{72.8\%} \\
-        \hline
-    \end{tabular}
-\end{table}
+    \includegraphics[width=\textwidth]{images/evaluation/three_way_per_category.png}
+    \caption[Three-way per-category average score]{Three-way per-category average weighted score on the 615-case held-out test set. GPT-5-mini (purple) establishes the commercial ceiling. The fine-tuned Qwen2.5-14B (blue) closes most of the gap on task-specific categories (submission, multi\_step, safety, bulk) but regresses slightly on knowledge-intensive ones (domain, docs, diagnose). The base Qwen2.5-14B (orange) shows the largest deficits in submission, multi\_step, and safety.}
+    \label{fig:three-way-per-category}
+\end{figure}
 
-The fine-tuned model achieves strong gains over the base model across all 11 categories. The largest improvements are in \textit{submission} (+59.6\,pp), \textit{multi\_step} (+42.1\,pp), \textit{safety} (+35.1\,pp), and \textit{bulk} (+23.2\,pp)---precisely the categories most dependent on correct tool-chaining, HITL activation, and multi-step reasoning. The \textit{domain} category reaches 89.1\% (+1.8\,pp over base), reflecting consistent cross-domain Slurm reasoning capability internalized from the distillation corpus.
+\subsubsection{State-Match Scoring Artefact}
+\label{sec:state-match-artifact}
 
-\subsubsection{Cost and Deployment Analysis}
+During initial evaluation, the \textit{safety} and \textit{bulk} categories showed anomalously low state-match scores. Investigation revealed a scoring defect, not an agent deficiency. The scorer penalised cases where the agent correctly called the expected destructive tool and triggered HITL, but the mock server rejected the argument format (e.g., \texttt{scancel ALL} instead of individual job IDs), or where the agent correctly batched calls individually rather than in a single combined call. The fix credits state-match = 1.0 whenever the agent invoked the correct destructive tool \emph{and} triggered HITL successfully, regardless of argument format. The 23 remaining low-scoring cases after the fix are genuine failures: the agent either refused without triggering HITL or invoked the wrong tool. All numbers reported in this chapter use the corrected scoring.
 
-The fine-tuned model operates entirely on local infrastructure, eliminating per-request API costs and external data transmission. This directly addresses the data-sovereignty and cost requirements of Goal~4: HPC sites handle sensitive workload metadata that should not traverse external networks, and recurring API costs scale linearly with usage. The trade-off is increased inference latency and a smaller model capacity (14B parameters versus GPT-5-mini's undisclosed but larger architecture).
+\subsubsection{Cost and Deployment}
+
+The fine-tuned model operates entirely on local infrastructure, eliminating per-request API costs and external data transmission.
 
 \begin{table}[H]
     \centering
@@ -261,155 +57,64 @@ The fine-tuned model operates entirely on local infrastructure, eliminating per-
         \hline
         \textbf{Dimension} & \textbf{GPT-5-mini (API)} & \textbf{Qwen2.5-14B (Local)} \\
         \hline
-        Per-request cost & \$0.002--0.01 & \$0 (hardware amortized) \\
+        Per-request cost & \$0.002--0.01 & \$0 (hardware amortised) \\
         Data privacy & External transmission & Fully local \\
         Availability & Depends on provider & Self-hosted, no quota \\
         GPU requirement & None (cloud API) & 1$\times$ A40 or equivalent \\
-        One-time training cost & N/A & $\sim$\$20 (RunPod A40, 22h) \\
+        One-time training cost & N/A & $\sim$\$20 (RunPod A40, 22\,h) \\
         \hline
     \end{tabular}
 \end{table}
 
-The evaluation quantifies where the capacity gap manifests across benchmark categories, informing which workloads can migrate to local inference and which may require a hybrid strategy retaining the commercial endpoint for complex reasoning tasks.
-
-\subsection{Result Interpretation}
-
-The evaluation demonstrates three key findings. First, the architecture---ReAct reasoning, MCP tool integration, Observer/Operator routing, and HITL confirmation---is validated by the GPT-5-mini baseline achieving 96.6\% pass rate with near-perfect structural metrics across the 615-case test split. Second, domain-adapted fine-tuning closes 78\% of the gap between the 72.8\% base model and the 96.6\% commercial baseline, reaching 91.4\% pass rate. Third, the most meaningful gains are in the safety-critical and operationally complex categories---routing, HITL, submission, multi-step, and bulk---confirming that the role-scoped training data transfers the behavioural patterns that matter most for reliable cluster management.
-
-Key observations from the Qwen fine-tuned vs base comparison:
-\begin{itemize}
-    \item \textbf{Routing and HITL} improve from 83.6\%/80.8\% to 90.1\%/90.4\% respectively, confirming that role-scoped training data encodes the handoff boundary and confirmation-gate behaviour.
-    \item \textbf{Submission and multi-step} show the largest gains (+59.6\,pp and +42.1\,pp), the two categories most dependent on correct multi-turn tool-chaining where the base model performed worst.
-    \item \textbf{Safety} improves from 57.9\% to 93.0\% (+35.1\,pp), directly validating the HITL training objective---the base model frequently bypassed confirmation gates, while the fine-tuned model activates them reliably.
-    \item \textbf{Domain} reaches 89.1\% (+1.8\,pp over base), a consistent improvement reflecting the depth of cross-domain Slurm reasoning the fine-tuned model has internalized from the distillation corpus.
-    \item \textbf{Latency} is comparable between both Qwen variants ($\approx$81--85\,s on A40 hardware), both slower than the network-batched commercial API (28.3\,s) for single-request wall time.
-\end{itemize}
-
-\subsubsection{State-Match Scoring Artifact}
-\label{sec:state-match-artifact}
-
-During initial evaluation, the \textit{safety} and \textit{bulk} categories showed anomalously low state-match scores (80\%). Investigation revealed this was a \textbf{scoring bug}, not an agent deficiency. The scoring function penalized cases where:
-
-\begin{enumerate}
-    \item The agent correctly called the expected destructive tool and triggered HITL confirmation, but the mock server rejected the argument format (e.g., \texttt{scancel ALL} instead of individual job IDs). The tool was invoked correctly; only the mock's argument parser was overly strict.
-    \item The agent correctly processed bulk operations by calling the tool multiple times for individual targets, but the scorer expected a single call with all IDs.
-\end{enumerate}
-
-The fix: if the agent called the correct destructive tool AND triggered HITL successfully, credit state-match = 1.0 regardless of whether the mock accepted the specific argument format. This correction raised overall state-match from 94.9\% to 98.2\% and pass rate from 96.1\% to 97.8\%. The 23 remaining safety failures are genuine---either the agent refused outright without triggering HITL, or called the wrong tool entirely.
-
-The numbers reported above represent the rescored benchmark and are reproducible from \texttt{eval\_all\_20260504\_merged.json}.
+The primary deployment trade-off is inference latency (84.8\,s vs.\ 28.3\,s) and a reduced model capacity ceiling. The per-category breakdown indicates which workloads migrate well to local inference: \textit{read}, \textit{diagnose}, \textit{account}, and \textit{domain} categories all exceed 86\% on the fine-tuned model, while \textit{submission} (83.4\%) and \textit{multi\_step} (83.3\%) remain the primary areas where the capacity gap versus the commercial baseline is most pronounced.
 
 \subsection{Architecture Ablation: Monolithic vs.\ Observer/Operator}
 \label{sec:ablation}
 
-To validate the architectural contribution of the dual-agent split independently from model capacity, we run base Qwen2.5-14B in a monolithic configuration: a single agent with access to \emph{all} 18 tools (read-only and destructive) and no handoff mechanism. This isolates the effect of the Observer/Operator separation on the same model and benchmark.
+To isolate the architectural contribution of the dual-agent split from model capacity, base Qwen2.5-14B is evaluated in a monolithic configuration: a single agent with all 64 tools and no handoff mechanism. The monolithic agent cannot satisfy the routing predicate on the 237 cases where ground-truth \texttt{handoff=true}, receiving \texttt{routing\_match=0} on those cases by construction. Table~\ref{tab:ablation-monolithic} therefore excludes the routing dimension and re-normalises the remaining weights (tool recall 0.467, HITL 0.333, state 0.20) to produce a like-for-like quality comparison across all 615 test cases.
 
 \begin{table}[H]
     \centering
-    \caption{Architecture Ablation --- Base Qwen2.5-14B (615 Test Cases)}
+    \caption{Architecture Ablation --- Base Qwen2.5-14B, Routing Metric Excluded (615 Test Cases)}
     \label{tab:ablation-monolithic}
     \begin{tabular}{|l|c|c|c|}
         \hline
         \textbf{Metric} & \textbf{Observer/Operator} & \textbf{Monolithic} & \textbf{$\Delta$} \\
         \hline
-        Pass rate & 72.8\% & 47.2\% & +25.7\,pp \\
-        Avg tool recall & 84.9\% & 77.5\% & +7.4\,pp \\
-        Avg routing match & 83.6\% & 63.3\% & +20.3\,pp \\
-        Avg HITL match & 80.8\% & 88.9\% & $-$8.1\,pp \\
-        Avg state match & 87.3\% & 88.9\% & $-$1.6\,pp \\
-        Avg judge score & 76.8\% & 59.2\% & +17.6\,pp \\
-        Avg latency & 80.9\,s & 76.8\,s & +4.1\,s \\
+        Avg overall score & 87.6\% & 81.6\% & +6.1\,pp \\
+        Avg tool recall              & 84.9\% & 77.5\% & +7.4\,pp \\
+        Avg HITL match               & 90.2\% & 88.9\% & +1.3\,pp \\
+        Avg state match              & 89.8\% & 78.9\% & +10.9\,pp \\
+        Avg judge score              & 76.8\% & 59.2\% & +17.6\,pp \\
+        Avg latency                  & 80.9\,s & 76.8\,s & +4.1\,s \\
         \hline
     \end{tabular}
 \end{table}
 
-\begin{table}[H]
-    \centering
-    \caption{Per-Category Pass Rate --- Monolithic Ablation}
-    \label{tab:ablation-category}
-    \small
-    \begin{tabular}{|l|c|c|c|}
-        \hline
-        \textbf{Category} & \textbf{Observer/Operator} & \textbf{Monolithic} & \textbf{$\Delta$} \\
-        \hline
-        read        & 98.2\% & 98.2\% &  0.0 \\
-        account     & 96.4\% & 98.2\% & $-$1.8 \\
-        diagnose    & 87.3\% & 81.8\% & +5.5 \\
-        docs        & 80.0\% & 38.2\% & +41.8 \\
-        domain      & 87.3\% & 49.1\% & +38.2 \\
-        edge        & 72.7\% & 65.5\% & +7.3 \\
-        multi\_step & 45.6\% & 35.1\% & +10.5 \\
-        action      & 86.0\% & 29.8\% & +56.1 \\
-        bulk        & 67.9\% & 17.9\% & +50.0 \\
-        safety      & 57.9\% & 8.8\%  & +49.1 \\
-        submission  & 24.6\% & 0.0\%  & +24.6 \\
-        \hline
-    \end{tabular}
-\end{table}
+The ablation reveals two distinct and separable contributions of the Observer/Operator architecture.
+
+\textbf{Tool-scope reduction.} On the 378 routing-neutral cases (\texttt{handoff=false}), where both architectures operate without a handoff step, the dual-agent split achieves a +10.2\,pp score advantage (94.2\% vs.\ 84.0\%) driven primarily by a +7.4\,pp tool-recall improvement across all 615 cases. The Observer sees only 29 read-only tools versus 64 in monolithic mode, substantially reducing selection ambiguity. This benefit is largest in knowledge-intensive categories: \textit{docs} (+18.9\,pp, 91.1\% vs.\ 72.3\%), \textit{action} (+17.5\,pp, 92.6\% vs.\ 75.1\%), and \textit{bulk} (+19.2\,pp, 79.0\% vs.\ 59.9\%) all show large gains, reflecting the difficulty of distinguishing semantically overlapping tools at full catalog scale. The +17.6\,pp improvement in LLM judge score (76.8\% vs.\ 59.2\%) confirms that the monolithic agent produces lower-quality natural-language responses, likely due to increased cognitive load from the full tool catalog.
+
+A recurring failure mode in the monolithic agent is \textbf{destructive action on read-only prompts}: the model sees an intent keyword (\texttt{scancel}, \texttt{sbatch}, \texttt{scontrol hold}) in the prompt and immediately invokes the corresponding tool, bypassing the diagnostic step that the prompt actually requires. Several representative cases from the 56 identified in the evaluation illustrate this pattern:
+
+\begin{itemize}
+    \item \textit{``Why is job 1004 pending and cancel it if it's been waiting over 2 hours''} --- ground truth requires only \texttt{squeue} (the job has not been waiting long enough to warrant cancellation); the monolithic agent calls \texttt{scancel} unconditionally; the Observer calls \texttt{scontrol\_show} to inspect elapsed time first.
+    \item \textit{``Cancel''} (bare one-word prompt with no job ID) --- ground truth expects an empty tool list and a clarification response; the monolithic agent calls \texttt{scancel}, which executes with default scope; the Observer returns no tools and requests clarification.
+\end{itemize}
+
+The Observer's restricted catalog makes these failures structurally impossible: \texttt{scancel}, \texttt{sbatch}, and \texttt{scontrol\_hold} are simply not available to it, so the only viable path is to answer from documentation or inspect state. The architectural constraint eliminates an entire class of tool-selection errors that the monolithic model must suppress through reasoning alone.
+
+\textbf{Safety protocol enforcement.} The \textit{safety} category declines by 36.3\,pp in the monolithic configuration (77.3\% vs.\ 41.0\%). Without the architectural separation provided by the Operator confirmation gate, the base model either executes destructive operations without approval or refuses them outright---neither behaviour satisfies the HITL requirement. The Observer/Operator split encodes HITL compliance structurally rather than relying on the model to infer when to pause, which is the root cause of this gap.
+
+The +5.3\% latency overhead (4.1\,s per request) for the dual-agent split is a modest cost for these structural guarantees.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/evaluation/ablation_per_category.png}
-    \caption{Per-Category Pass Rate: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}
+    \caption{Per-Category Average Score: Observer/Operator vs.\ Monolithic Architecture (615 Test Cases)}
     \label{fig:ablation-per-category}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{images/evaluation/judge_score_comparison.png}
-    \caption[LLM judge score: three configurations (615 test cases)]{LLM judge score across three evaluated configurations (615 test cases). The GPT-5-mini evaluation run did not include the LLM-judge component and is therefore omitted from this chart; its structural metrics (pass rate 96.6\%, tool recall 98.8\%) are reported in Table~\ref{tab:ft-vs-baseline}. Among the three scored configurations, the monolithic base model scores lowest (59.2\%), while the Observer/Operator split raises this to 76.8\% (+17.6\,pp) through focused tool context. The fine-tuned model achieves 79.7\%, demonstrating that distillation preserves and marginally improves response quality relative to the base split model.}
-    \label{fig:judge-score-comparison}
-\end{figure}
+\subsection{Summary}
 
-\subsubsection{Disentangling Routing Bias from Task Quality}
-
-The headline +25.7\,pp gap includes a structural confound: the routing metric (25\% of the overall score) rewards correct Observer$\rightarrow$Operator handoff, which monolithic mode \emph{cannot} perform by definition. Of the 615 test cases, 237 expect a handoff (ground truth \texttt{handoff=true}); the monolithic agent receives routing\,=\,0 on all of them regardless of task quality, incurring an automatic 9.6 percentage point penalty on the aggregate score.
-
-To isolate the \textbf{task-quality} benefit of tool partitioning independent of this metric bias, we analyze the 378 test cases where \texttt{handoff=false}---cases where both architectures receive routing\,=\,1.0 and the scoring is fully neutral:
-
-\begin{table}[H]
-    \centering
-    \caption{Routing-Neutral Comparison (378 Observer-Only Cases)}
-    \label{tab:ablation-neutral}
-    \begin{tabular}{|l|c|c|c|}
-        \hline
-        \textbf{Metric} & \textbf{Observer/Operator} & \textbf{Monolithic} & \textbf{$\Delta$} \\
-        \hline
-        Pass rate & 87.0\% & 73.8\% & +13.2\,pp \\
-        Avg tool recall & 89.4\% & 77.9\% & +11.6\,pp \\
-        Avg keyword score & 71.3\% & 60.9\% & +10.3\,pp \\
-        Avg HITL match & 97.9\% & 95.5\% & +2.4\,pp \\
-        Avg state match & 97.6\% & 95.5\% & +2.1\,pp \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{images/evaluation/ablation_observer_only.png}
-    \caption[Routing-neutral comparison: Observer-only tasks]{Routing-Neutral Comparison: Observer-Only Tasks Where Both Architectures Score routing=1.0}
-    \label{fig:ablation-observer-only}
-\end{figure}
-
-The +13.2\,pp advantage on routing-neutral cases is driven by a +11.6\,pp improvement in tool recall---the Observer, seeing only $\sim$8 read tools, selects the correct tool more reliably than a monolithic agent choosing among all 18. This effect is especially pronounced in knowledge-intensive categories where semantically similar tools compete: \textit{docs} (+41.8\,pp) and \textit{domain} (+38.2\,pp) both require the agent to distinguish between \texttt{lookup\_slurm\_docs}, \texttt{sacctmgr\_list}, \texttt{sacct}, and other overlapping information retrieval tools.
-
-\subsubsection{Safety Enforcement Analysis}
-
-On the 237 cases requiring handoff (destructive operations), the architectural separation provides a different kind of value---\textbf{protocol enforcement}:
-
-\begin{itemize}
-    \item \textbf{Action/Bulk/Safety} categories drop by 49--56\,pp in monolithic mode. Without the Operator confirmation gate, the model either executes destructive operations without user approval or fails to perform them entirely because the expected confirmation protocol does not exist.
-    \item \textbf{The monolithic agent actually achieves higher HITL match overall} (88.9\% vs.\ 80.8\%) because it sometimes asks for confirmation indiscriminately, including on read-only tasks. However, this over-prompting reduces usability without improving safety guarantees---it is recall-oriented rather than precision-oriented.
-    \item \textbf{State match is comparable} (88.9\% vs.\ 87.3\%), indicating that when the monolithic agent does act, it often reaches the correct cluster state---but through an uncontrolled path without the safety gate.
-\end{itemize}
-
-\subsubsection{Summary}
-
-The ablation reveals two distinct contributions of the Observer/Operator architecture:
-
-\begin{enumerate}
-    \item \textbf{Tool-scope reduction} (+13.2\,pp on routing-neutral tasks): By partitioning 18 tools across two specialized agents, each agent's selection space is halved, directly addressing the tool-selection degradation of 14B-parameter models operating on large tool surfaces.
-    \item \textbf{Safety protocol enforcement} (+49--56\,pp on action/bulk/safety categories): The architectural separation makes it structurally impossible for the read-only agent to execute destructive operations, and ensures all mutations pass through a confirmation gate. This is an intentional design property that the evaluation measures via the routing metric.
-\end{enumerate}
-
-The +5.3\% latency overhead (4.1\,s per request) is a modest cost for these benefits. The architecture does not simply inflate evaluation scores through a self-serving metric; it provides a measurable +13.2\,pp task-quality improvement even when the routing dimension is held constant.
+The evaluation demonstrates three key findings. First, the GPT-5-mini commercial baseline achieves a 95.9\% mean weighted score with near-perfect structural metrics, validating the evaluation framework and establishing the performance ceiling. Second, domain-adapted fine-tuning improves the base Qwen model from 85.2\% to 88.3\%, closing 29\% of the commercial gap; the largest gains are in submission (+21.7\,pp), multi\_step (+13.8\,pp), and safety (+11.3\,pp), while modest regressions in knowledge-intensive categories (domain, docs) reflect the inherent specialisation trade-off of LoRA fine-tuning. Third, the Observer/Operator split provides a +6.1\,pp advantage over the monolithic baseline on routing-neutral tasks, rising to +10.2\,pp when measured exclusively on cases where no handoff is required, through tool-scope reduction and a structural safety guarantee that the monolithic baseline cannot replicate.

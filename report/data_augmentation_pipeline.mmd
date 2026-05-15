@@ -1,6 +1,6 @@
 flowchart TD
-    A["Raw GPT-5 Mini Traces"] --> B{"Contains\nhandoff?"}
-    B -->|"Yes"| C["Split at handoff boundary"]
+    A["GPT-5-mini agent run against\nmock MCP server\n(2,520 training scenarios)"] --> B{"Contains\nObserver→Operator\nhandoff?"}
+    B -->|"Yes"| C["Split at handoff boundary\n→ 2 samples per trace"]
     B -->|"No"| D["Single Observer sample"]
     C --> E["Observer sample\n(ends at handoff directive)"]
     C --> F["Operator sample\n(starts from handoff context)"]
@@ -9,10 +9,11 @@ flowchart TD
     E --> G
     F --> G
 
-    G --> H["Observer:\nread-only tools + handoff"]
-    G --> I["Operator:\naction tools + discovery reads"]
+    G --> H["Observer tools:\nread-only + handoff mechanism\n(observer=2,436)"]
+    G --> I["Operator tools:\naction tools + discovery reads\n(operator=893)"]
 
-    H --> J["Prompt variation\n(lexical rephrasing)"]
+    H --> J["Raw corpus: 3,329 samples"]
     I --> J
 
-    J --> K["Final Dataset\n~3,300 train / ~800 test\nstratified by category × scenario"]
+    J --> K["Deduplication\n(remove 704 identical interaction patterns)"]
+    K --> L["Final Training Set\n2,625 unique samples\nobserver=2,074 · operator=551"]

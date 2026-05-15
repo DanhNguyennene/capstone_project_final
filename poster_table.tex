@@ -1,4 +1,4 @@
-\documentclass[14pt]{extarticle}
+\documentclass[12pt]{extarticle}
 \usepackage[a3paper, landscape, margin=0.8cm, top=0.5cm, bottom=0.5cm]{geometry}
 \usepackage{booktabs}
 \usepackage{xcolor}
@@ -36,9 +36,11 @@
   \vspace{1pt}
 }}
 
-%% ── THREE COLUMNS (minipage) ────────────────────────────────────────────────
+\vspace{4pt}
+
+%% ── TOP ROW: 3 columns ──────────────────────────────────────────────────────
 \noindent
-\begin{minipage}[t][26cm][s]{0.30\linewidth}
+\begin{minipage}[t]{0.30\linewidth}
 
 \sectionhead{Motivation}
 \begin{itemize}
@@ -48,7 +50,7 @@
   \item No standardised benchmark for NL-based Slurm agents
 \end{itemize}
 
-\vfill
+\vspace{0.5em}
 \sectionhead{Approach}
 \begin{itemize}
   \item \textbf{Observer/Operator Split:} Read-only Observer + state-changing Operator; destructive actions require human confirmation
@@ -57,60 +59,51 @@
   \item \textbf{Benchmark:} 3,135 cases, 11 categories, LLM-as-judge scoring
 \end{itemize}
 
-\vfill
+\vspace{0.5em}
 \sectionhead{Implementation}
 \begin{itemize}
   \item \textbf{Stack:} React/Vite $\to$ FastAPI $\to$ MCP $\to$ real Slurm cluster
-  \item \textbf{Tools:} 18 typed Slurm tools (\textasciitilde10 Observer, \textasciitilde8 Operator)
-  \item \textbf{Training:} 3,329 samples · 3 epochs · A40 48\,GB · QLoRA 4-bit NF4 · \textasciitilde\$20
+  \item \textbf{Tools:} 64 agent-facing tools (29 read-only for Observer, 35 action + 5 discovery reads for Operator)
+  \item \textbf{Training:} 2,625 unique samples · 3 epochs · A40 48\,GB · QLoRA 4-bit NF4 · r=64 all-layer · 8,192 ctx · \textasciitilde\$20
 \end{itemize}
-
-\vfill
-\centering
-\includegraphics[width=\linewidth, keepaspectratio]{report/images/agent_system_architect.drawio.png}\\[2pt]
-{\small\bfseries\color{seccolor} System Architecture}
 
 \end{minipage}%
 \hfill
-\begin{minipage}[t][26cm][s]{0.38\linewidth}
+\begin{minipage}[t]{0.38\linewidth}
 
 \sectionhead{Results --- Three-Way Model Comparison}
 {\footnotesize 615-case held-out test set (stratified 80/20 split, seed=42)}\\[4pt]
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.2}
 \begin{adjustbox}{max width=\linewidth}
 \begin{tabular}{lcccccc}
 \toprule
-\textbf{Model} & \textbf{Pass} & \textbf{Tool} & \textbf{HITL} & \textbf{State} & \textbf{Judge} & \textbf{Lat.} \\
+\textbf{Model} & \textbf{Score} & \textbf{Tool} & \textbf{HITL} & \textbf{State} & \textbf{Judge} & \textbf{Lat.} \\
 \midrule
-GPT-5-mini            & 96.6\% & 98.8\% & 99.0\% & 95.9\% & 74.3\% & 28s \\
+GPT-5-mini            & 95.9\% & 98.8\% & 99.0\% & 98.2\% & 75.7\% & 28s \\
 \rowcolor{rowbg}
-\textbf{\textcolor{highlight}{FT Qwen (ours)}} & \textbf{\textcolor{highlight}{91.4\%}} & \textbf{\textcolor{highlight}{89.2\%}} & \textbf{\textcolor{highlight}{90.4\%}} & \textbf{\textcolor{highlight}{90.0\%}} & \textbf{\textcolor{highlight}{79.7\%}} & \textbf{\textcolor{highlight}{85s}} \\
-Base Qwen             & 72.8\% & 84.9\% & 80.8\% & 87.3\% & 76.8\% & 81s \\
-Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
+\textbf{\textcolor{highlight}{FT Qwen (ours)}} & \textbf{\textcolor{highlight}{88.3\%}} & \textbf{\textcolor{highlight}{89.2\%}} & \textbf{\textcolor{highlight}{90.4\%}} & \textbf{\textcolor{highlight}{90.0\%}} & \textbf{\textcolor{highlight}{79.7\%}} & \textbf{\textcolor{highlight}{85s}} \\
+Base Qwen             & 85.2\% & 84.9\% & 90.2\% & 89.8\% & 76.8\% & 81s \\
+Monolithic ablation$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 78.9\% & 59.2\% & 77s \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
 
-\begin{itemize}
-  \item FT model closes \textbf{78\% of the gap} to GPT-5-mini baseline
-  \item Observer/Operator beats monolithic by \textbf{+44.2\,pp} pass rate
-  \item FT judge (79.7\%) \textbf{exceeds both} base Qwen (76.8\%) and GPT-5-mini (74.3\%)
-  \item Tool partitioning cuts selection confusion: docs +41.8\,pp vs.\ monolithic
+{\footnotesize $^\ddagger$ Routing excluded; re-normalised weights.}
+
+\begin{itemize}\small
+  \item FT closes \textbf{29\% of gap} to GPT-5-mini
+  \item O/O beats mono by \textbf{+6.1\,pp}; +\textbf{10.2\,pp} routing-neutral
+  \item FT judge (79.7\%) \textbf{exceeds} base (76.8\%) \& commercial (75.7\%)
 \end{itemize}
 
-\vfill
+\vspace{0.3em}
 \centering
-\includegraphics[width=\linewidth, height=7cm, keepaspectratio]{report/images/evaluation/ablation_per_category.png}\\[2pt]
-{\small\bfseries\color{seccolor} Per-Category Results (FT vs Base vs Monolithic)}
-
-\vfill
-\centering
-\includegraphics[width=\linewidth, height=7cm, keepaspectratio]{report/images/evaluation/judge_score_comparison.png}\\[2pt]
-{\small\bfseries\color{seccolor} LLM Judge Score Comparison}
+\includegraphics[width=\linewidth, height=6cm, keepaspectratio]{report/images/evaluation/three_way_per_category.png}\\[2pt]
+{\small\bfseries\color{seccolor} Three-Way Per-Category Comparison}
 
 \end{minipage}%
 \hfill
-\begin{minipage}[t][26cm][s]{0.28\linewidth}
+\begin{minipage}[t]{0.28\linewidth}
 
 \sectionhead{Contributions}
 \begin{itemize}
@@ -118,10 +111,10 @@ Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
   \item HITL confirmation workflow for all destructive operations
   \item Grounded RAG pipeline over 273 official Slurm docs
   \item \textbf{3,135-case} curated benchmark with LLM-as-judge scoring
-  \item Cost-effective fine-tuning (\textasciitilde\$20) achieving 91.4\% pass rate
+  \item Cost-effective fine-tuning (\textasciitilde\$20) achieving 88.3\% mean weighted score
 \end{itemize}
 
-\vfill
+\vspace{0.5em}
 \sectionhead{Future Works}
 \begin{itemize}
   \item Multi-tenant authentication, resource isolation, audit logging
@@ -130,29 +123,35 @@ Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
   \item Explore larger open-weight models and multi-turn fine-tuning
 \end{itemize}
 
-\vfill
-\centering
-\includegraphics[width=\linewidth, height=5cm, keepaspectratio]{report/images/UI_during_HITL.jpg}\\[2pt]
-{\small\bfseries\color{seccolor} HITL Confirmation UI}
-
-\vfill
-\centering
-\includegraphics[width=\linewidth, height=5cm, keepaspectratio]{report/images/UI_after_HITL.jpg}\\[2pt]
-{\small\bfseries\color{seccolor} UI After HITL Confirmation}
+\vspace{0.5em}
+\sectionhead{Scoring Formula}
+\[
+  s = 0.35\,r_{\text{tool}} + 0.25\,r_{\text{route}} + 0.25\,r_{\text{HITL}} + 0.15\,r_{\text{state}}
+\]
+{\footnotesize Ablation (mono): routing removed, weights $\times\,4/3$}
+\[
+  s_{\text{abl}} = \tfrac{7}{15}\,r_{\text{tool}} + \tfrac{1}{3}\,r_{\text{HITL}} + \tfrac{1}{5}\,r_{\text{state}}
+\]
 
 \end{minipage}
 
+\vspace{4pt}
+
+%% ── BOTTOM ROW: Architecture (2-col) + Ablation chart (col 3) ────────────────
+\noindent
+\begin{minipage}[c]{0.68\linewidth}
+  \centering
+  \includegraphics[width=\linewidth, height=8cm, keepaspectratio]{report/images/agent_system_architect.drawio.png}\\[2pt]
+  {\small\bfseries\color{seccolor} System Architecture}
+\end{minipage}%
+\hfill
+\begin{minipage}[c]{0.28\linewidth}
+  \centering
+  \includegraphics[width=\linewidth, height=8cm, keepaspectratio]{report/images/evaluation/ablation_per_category.png}\\[2pt]
+  {\small\bfseries\color{seccolor} Ablation: Dual-Agent vs.\ Monolithic}
+\end{minipage}
+
 \end{document}
-
-\definecolor{highlight}{RGB}{0, 102, 204}
-\definecolor{rowbg}{RGB}{220, 235, 255}
-\definecolor{titlebg}{RGB}{0, 51, 102}
-\definecolor{seccolor}{RGB}{0, 102, 204}
-
-\titleformat{\section}{\large\bfseries\color{seccolor}}{}{0em}{}[\vspace{-4pt}\rule{\linewidth}{1pt}]
-\setlength{\columnsep}{1cm}
-\setlist{noitemsep, topsep=2pt, leftmargin=1.2em}
-\pagestyle{empty}
 
 \begin{document}
 
@@ -172,7 +171,7 @@ Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{cccc}
   {\LARGE\bfseries\color{highlight} 91.4\%} &
-  {\LARGE\bfseries\color{highlight} 78\%} &
+  {\LARGE\bfseries\color{highlight} 74\%} &
   {\LARGE\bfseries\color{highlight} \textasciitilde\$20} &
   {\LARGE\bfseries\color{highlight} 3,135} \\
   FT model pass rate & Gap closed to commercial API & Fine-tuning cost & Benchmark cases \\
@@ -204,8 +203,8 @@ Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
 \section*{\color{seccolor}Implementation}
 \begin{itemize}
   \item \textbf{Stack:} React/Vite $\to$ FastAPI $\to$ MCP tool layer $\to$ Slurm
-  \item \textbf{Tools:} 18 typed Slurm tools (\textasciitilde10 Observer, \textasciitilde8 Operator)
-  \item \textbf{Training:} 3,329 samples · 3 epochs · A40 48GB GPU · \textasciitilde\$20
+  \item \textbf{Tools:} 64 agent-facing tools (29 read-only for Observer, 35 action + 5 discovery reads for Operator)
+  \item \textbf{Training:} 2,625 unique samples · 3 epochs · A40 48GB · QLoRA 4-bit NF4 · r=64 all-layer · 8,192 ctx · \textasciitilde\$20
 \end{itemize}
 
 \columnbreak
@@ -217,20 +216,20 @@ Monolithic ablation   & 47.2\% & 77.9\% & 88.9\% & 88.9\% & 59.2\% & 77s \\
 \toprule
 \textbf{Model} & \textbf{Pass} & \textbf{Tool} & \textbf{HITL} & \textbf{State} & \textbf{Judge} & \textbf{Latency} \\
 \midrule
-GPT-5-mini        & 96.6\% & 98.8\% & 99.0\% & 95.9\% & 74.3\%$^\dagger$ & 28.3s \\
+GPT-5-mini        & 97.9\% & 98.8\% & 99.0\% & 98.2\% & 75.7\%$^\dagger$ & 28.3s \\
 \rowcolor{rowbg}
 \textbf{\textcolor{highlight}{FT Qwen (ours)}}  & \textbf{\textcolor{highlight}{91.4\%}} & \textbf{\textcolor{highlight}{89.2\%}} & \textbf{\textcolor{highlight}{90.4\%}} & \textbf{\textcolor{highlight}{90.0\%}} & \textbf{\textcolor{highlight}{79.7\%}} & \textbf{\textcolor{highlight}{84.8s}} \\
-Base Qwen         & 72.8\% & 84.9\% & 80.8\% & 87.3\% & 76.8\% & 80.9s \\
-Monolithic        & 47.2\% & ---    & ---    & ---    & 59.2\% & --- \\
+Base Qwen         & 72.8\% & 84.9\% & 90.2\% & 89.8\% & 76.8\% & 80.9s \\
+Monolithic$^\ddagger$ & 69.8\% & 77.5\% & 88.9\% & 88.9\% & 75.2\% & 76.8s \\
 \bottomrule
-\multicolumn{7}{l}{\tiny $^\dagger$ Judge score from full 3,135-case baseline run.}
+\multicolumn{7}{l}{\tiny $^\dagger$ Judge score from full 3,135-case baseline run.\quad $^\ddagger$ Routing metric excluded; monolithic cannot perform handoff by construction. Remaining weights re-normalised.}
 \end{tabular}
 
 \vspace{0.1cm}
 \begin{itemize}
-  \item FT model closes \textbf{78\% of the gap} to the commercial API baseline
-  \item Observer/Operator split beats monolithic by \textbf{+44.2pp pass rate}
-  \item FT judge score (79.7\%) \textbf{exceeds both} base (76.8\%) and commercial (74.3\%)
+  \item FT model closes \textbf{74\% of the gap} to the commercial API baseline
+  \item Observer/Operator split beats monolithic by \textbf{+2.9pp pass rate} (routing-excluded; +\textbf{13.8\,pp} on routing-neutral cases)
+  \item FT judge score (79.7\%) \textbf{exceeds both} base (76.8\%) and commercial (75.7\%)
 \end{itemize}
 
 \columnbreak

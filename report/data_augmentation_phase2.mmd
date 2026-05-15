@@ -1,0 +1,13 @@
+flowchart TD
+    E["Observer sample"] --> G["Role-scoped tool filtering"]
+    F["Operator sample"] --> G
+    D["Single Observer sample"] --> G
+
+    G --> H["Observer tools:\nread-only + handoff mechanism"]
+    G --> I["Operator tools:\naction tools + discovery reads"]
+
+    H --> J["Raw corpus: 3,329 samples"]
+    I --> J
+
+    J --> K["Deduplication\n(remove 704 identical interaction patterns)"]
+    K --> L["Final Training Set\n2,625 unique samples\nobserver=2,074 · operator=551"]

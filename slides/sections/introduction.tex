@@ -1,0 +1,15 @@
+\section{Introduction}
+
+% ── 1. Motivation, Goals, and Scope ──────────────────────────────────
+\begin{frame}{Motivation and Goals}
+  Slurm powers $>$50\% of TOP500 clusters~\cite{yoo2003slurm} yet remains inaccessible to most users.
+  State-changing operations affect all cluster users, and sensitive workload metadata cannot leave the site.
+  \vspace{0.6em}
+  \begin{enumerate}\setlength{\itemsep}{7pt}
+    \item \textbf{Natural-language interface} for broad Slurm operations — inspect jobs, nodes, partitions, accounting, and submit/control workloads in plain English.
+    \item \textbf{Observer/Operator control flow} — read-only observation separated from state-changing operation with an explicit HITL confirmation gate.
+    \item \textbf{Risk-aware MCP tool integration} — typed Slurm tool interfaces with parameter validation; state-changing actions routed through confirmation.
+    \item \textbf{Curated benchmark} — 3,135-case dataset across 11 Slurm categories with expected tools, routing, HITL policy, and state transitions.
+    \item \textbf{Domain-adapted fine-tuning} — QLoRA on Qwen2.5-14B distilled from evaluation traces; local deployment, no external API dependency.
+  \end{enumerate}
+\end{frame}

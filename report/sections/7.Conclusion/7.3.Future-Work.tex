@@ -1,72 +1,20 @@
 \section{Future Work}
 \label{sec:future-work}
 
-Future work is prioritized around reliability, real-cluster validation, and deployment readiness.
+\subsection{Reliability and Real-Cluster Validation}
 
-\subsection{Priority 1: Reliability Hardening}
+The benchmark identifies the largest remaining gaps in \textit{submission} (83.4\%), \textit{docs} (86.7\%), and \textit{multi\_step} (83.3\%) categories. Near-term work should target tool-routing consistency for multi-step workflows, HITL mismatch cases in safety-sensitive tasks, and state-transition success for submission flows, measured against the pinned model stack.
 
-The latest benchmark indicates strongest performance in read/account workflows and weaker performance in \texttt{multi\_step}, \texttt{safety}, and \texttt{submission}. Immediate work should therefore focus on:
+Beyond synthetic benchmarking, real-cluster validation is the most critical external validity step. A controlled deployment on a live Slurm cluster would expose scheduler variability, concurrent user interactions, and operational failure modes that the fixed mock-state scenarios cannot replicate. This validation is necessary before drawing strong conclusions about generalisability beyond the five snapshot states used in training and evaluation.
 
-\begin{itemize}
-    \item improving tool-routing consistency for multi-step workflows,
-    \item reducing HITL mismatch cases in safety-sensitive tasks,
-    \item improving state-transition success for submission/action flows.
-\end{itemize}
+\subsection{Security and Deployment Readiness}
 
-These improvements should be measured with repeated full-run evaluations and pass\textasciicircum{}k analysis under the pinned local-Ollama model stack.
+Production deployment in multi-tenant HPC environments requires capabilities not exercised by the current evaluation harness: role-aware authentication and authorisation, auditable action logs for safety-critical operations, and policy controls for high-impact tool invocations such as job cancellation at scale. These controls are prerequisites for institutional adoption and should be addressed before any live deployment.
 
-\subsection{Priority 2: Real Cluster Validation}
+\subsection{Extended Evaluation}
 
-Current results are primarily based on deterministic mock-state scenarios. The next phase should validate behavior on real Slurm clusters with controlled permissions:
+The benchmark evaluates single-turn interactions exclusively. Real users interact across multiple turns---asking follow-up questions, refining requests, and referencing prior context. Extending the dataset to ordered turn sequences with per-turn ground truth, and modifying the evaluation runner to maintain session state across turns, would enable metrics for context retention and conversational routing consistency. A related gap is the web-search fallback path: web results are non-reproducible due to page drift and ranking changes, so the current evaluation excludes web-dependent cases. A cached snapshot mechanism for search results would make this path evaluable.
 
-\begin{itemize}
-    \item live scheduler variability and queue dynamics,
-    \item concurrent user interactions,
-    \item realistic operational failure modes.
-\end{itemize}
+\subsection{Open-Weight Model Parity}
 
-This step is necessary to confirm external validity of the benchmark findings.
-
-\subsection{Priority 3: Security and Governance Readiness}
-
-Before production deployment, the system should integrate:
-
-\begin{itemize}
-    \item role-aware authentication and authorization,
-    \item auditable action logs for safety-critical operations,
-    \item policy controls for high-impact tool invocations.
-\end{itemize}
-
-These controls are essential for institutional HPC environments.
-
-\subsection{Priority 4: Multi-Turn Behavioral Evaluation}
-
-The current benchmark evaluates single-turn interactions exclusively. Real users interact across multiple turns---asking follow-up questions, refining requests, and referencing prior context. Future work should:
-
-\begin{itemize}
-    \item extend the dataset format to support ordered turn sequences with per-turn ground truth,
-    \item modify the evaluation runner to maintain session state across turns within a single test case,
-    \item design metrics for context retention (does the agent correctly resolve ``that job'' from a prior turn?) and conversational consistency (does tool routing remain correct across turns?).
-\end{itemize}
-
-Multi-turn evaluation is challenging because the space of valid follow-up behaviors is larger than single-turn, making automated scoring less deterministic.
-
-\subsection{Priority 5: Web-Grounded Retrieval Reproducibility}
-
-The system includes a web search fallback for documentation queries not covered by the local corpus. However, web search results are inherently non-reproducible: page content changes, search rankings shift, and network availability varies. Future work should:
-
-\begin{itemize}
-    \item develop a cached web snapshot mechanism for evaluation (freeze search results at test-creation time),
-    \item create benchmark cases that specifically test the local-RAG-to-web escalation path,
-    \item evaluate whether web-grounded answers improve factual coverage compared to local-only retrieval across version-specific and community-sourced questions.
-\end{itemize}
-
-Until reproducible web grounding is achieved, the evaluation excludes web-dependent cases to maintain result determinism.
-
-\subsection{Priority 6: Open-Weight Model Parity}
-
-The current fine-tuning demonstrates that distillation from commercial-model traces can produce a functional open-weight alternative, but a gap remains between the 14B-parameter adapted model and the commercial baseline. Closing this gap requires continued iteration along several axes: training on larger and more diverse trace corpora including failure-recovery examples, exploring larger base models as they become available, and applying preference optimization (such as DPO) on cases where the fine-tuned model diverges from expected behavior. The long-term goal is a fully self-hosted deployment that matches commercial-API quality while eliminating external dependencies.
-
-\subsection{Summary Roadmap}
-
-In short, the near-term roadmap is: \textbf{stabilize benchmark weaknesses} $\rightarrow$ \textbf{validate on real clusters} $\rightarrow$ \textbf{harden security/governance} $\rightarrow$ \textbf{improve traceability and runtime maintainability}. This sequence keeps research outcomes aligned with practical HPC adoption constraints.
+The fine-tuning demonstrates that role-scoped distillation closes 29\% of the gap to the commercial baseline, but a residual capacity difference remains. Closing this further involves training on larger and more diverse trace corpora including failure-recovery examples, applying preference optimisation (DPO) on cases where the fine-tuned model diverges from expected behaviour, and evaluating larger base models as they become available. The long-term goal is a fully self-hosted deployment that matches commercial-API quality while eliminating external dependencies and data-sovereignty concerns.

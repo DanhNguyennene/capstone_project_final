@@ -1,0 +1,25 @@
+flowchart TD
+    OPR_IN(["Handoff from Observer"])
+
+    subgraph OPR["Operator"]
+        SCOPE{"Resolve Targets"}
+        HITL{"HITL Gate"}
+    end
+
+    OPR_IN --> SCOPE
+    SCOPE -->|"discovery"| DISC["Discover Jobs\nvia squeue / sinfo"]
+    DISC --> HITL
+    SCOPE -->|"explicit"| HITL
+
+    HITL -->|"Approved"| EXEC["Execute Action Tool"]
+    HITL -->|"Cancelled"| SKIP["Report Cancellation"]
+
+    EXEC --> RET["Return to Observer"]
+    SKIP --> RET
+    RET --> OBS(["Observer"])
+
+    classDef neutral  fill:#ffffff,stroke:#555555,color:#000000
+    classDef terminal fill:#f0f0f0,stroke:#333333,color:#000000,font-weight:bold
+
+    class SCOPE,HITL,DISC,EXEC,SKIP,RET neutral
+    class OPR_IN,OBS terminal

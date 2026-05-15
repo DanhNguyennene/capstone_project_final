@@ -133,7 +133,9 @@ def _make_mcp_server(mcp_url: str, allowed: set[str], name: str = "slurm-mcp") -
 
 # ── Tool names given to the Operator for pre-action verification ──────────────
 _OPERATOR_READ_TOOLS = {"scontrol_show", "squeue", "sinfo", "sacctmgr_list", "scontrol_reservation_show"}
-_OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state"}
+# Eval-only infrastructure tools — registered on MCP server for evaluation harness
+# but must never be visible to or callable by agents.
+_OBSERVER_HIDDEN_MCP_TOOLS = {"cluster_history", "reset_mock_state", "get_mock_state_snapshot"}
 
 
 
@@ -486,34 +488,63 @@ class SlurmAgentSystem:
             return cleaned
 
         def _observer_handoff_input_filter(handoff_data: HandoffInputData) -> HandoffInputData:
-            """Give Observer only completion context to avoid action re-handoff loops."""
+            """Return Observer the original user request + full execution results for final summary."""
+            # ── 1. Recover the original user request from input_history ──────────
+            original_request = ""
+            for run_item in getattr(handoff_data, "input_history", ()) or ():
+                if isinstance(run_item, dict):
+                    if run_item.get("role") == "user":
+                        content = run_item.get("content", "")
+                        if isinstance(content, str):
+                            original_request = content.strip()
+                        elif isinstance(content, list):
+                            for part in content:
+                                if isinstance(part, dict) and part.get("type") == "input_text":
+                                    original_request = str(part.get("text", "")).strip()
+                                    break
+                        if original_request:
+                            break
+                else:
+                    raw = getattr(run_item, "raw_item", None) or run_item
+                    if isinstance(raw, dict) and raw.get("role") == "user":
+                        content = raw.get("content", "")
+                        if isinstance(content, str):
+                            original_request = content.strip()
+                        elif isinstance(content, list):
+                            for part in content:
+                                if isinstance(part, dict) and part.get("type") == "input_text":
+                                    original_request = str(part.get("text", "")).strip()
+                                    break
+                        if original_request:
+                            break
+
+            # ── 2. Collect ALL tool outputs from the Operator turn ─────────────
             snippets: List[str] = []
-            for bucket_name in ("new_items", "pre_handoff_items", "input_items", "input_history"):
+            for bucket_name in ("new_items", "pre_handoff_items", "input_items"):
                 for run_item in getattr(handoff_data, bucket_name, ()) or ():
                     snippets.extend(_extract_handoff_result_snippets(run_item))
 
-            seen = set()
-            compact_snippets: List[str] = []
+            seen: set = set()
+            unique_snippets: List[str] = []
             for s in snippets:
                 norm = " ".join(s.split()).lower()
-                if norm in seen:
-                    continue
-                seen.add(norm)
-                compact_snippets.append(s[:500])
-                if len(compact_snippets) >= 3:
-                    break
+                if norm not in seen:
+                    seen.add(norm)
+                    unique_snippets.append(s[:2000])  # up to 2000 chars per snippet, no count cap
 
+            # ── 3. Build synthetic message: original request + all results ───────
             lines = [
-                "Action execution phase is complete.",
-                "Prepare the final user-facing summary from these results.",
-                "Do NOT ask the user to provide action execution results; use the results below.",
-                # "Do NOT call transfer_to_operator again unless a NEW user message asks for another action.",
+                "The action requested by the user has been executed by the Operator.",
+                "Your task: write the final user-facing response summarising what happened.",
+                "Do NOT call transfer_to_operator again — execution is already complete.",
             ]
-            if compact_snippets:
-                lines.append("Execution results:")
-                lines.extend(f"- {s}" for s in compact_snippets)
+            if original_request:
+                lines.append(f"\nOriginal user request: {original_request}")
+            if unique_snippets:
+                lines.append("\nExecution results (all tool outputs):")
+                lines.extend(f"- {s}" for s in unique_snippets)
             else:
-                lines.append("Execution results: no detailed tool output was captured by the handoff filter.")
+                lines.append("\nExecution results: no tool output was captured.")
 
             cleaned = remove_all_tools(handoff_data)
             canonical_input = {
@@ -546,18 +577,6 @@ class SlurmAgentSystem:
             )
 
         observer.handoffs = [_build_transfer_to_operator_handoff()]
-        # Guard: Operator can only hand back AFTER executing at least one action.
-        # is_enabled hides transfer_to_observer until an action has fired OR
-        # discovery has confirmed there are no eligible targets this handoff.
-        def _operator_handoff_enabled(ctx, _agent) -> bool:
-            slurm_ctx = ctx.context if hasattr(ctx, 'context') else None
-            if slurm_ctx and hasattr(slurm_ctx, 'operator_actions_taken'):
-                blocked = bool(getattr(slurm_ctx, 'operator_blocked_reason', ""))
-                actions_taken = int(getattr(slurm_ctx, 'operator_actions_taken', 0) or 0)
-                no_targets = bool(getattr(slurm_ctx, 'operator_no_targets_found', False))
-                return blocked or actions_taken > 0 or no_targets
-            return False  # strict: never allow handback before an action call
-
         operator.handoffs = [
             handoff(
                 observer,
@@ -568,7 +587,6 @@ class SlurmAgentSystem:
                     "message asks you to submit, cancel, hold, release, or requeue. "
                     "You must call the action tools first."
                 ),
-                is_enabled=_operator_handoff_enabled,
                 input_filter=_observer_handoff_input_filter,
             ),
         ]

@@ -53,11 +53,11 @@ All three configurations evaluated on an identical 615-case held-out test split 
 
 | Metric | GPT-5-mini | **Qwen2.5-14B (FT)** | Qwen2.5-14B (Base) | Monolithic (Base) |
 |---|---|---|---|---|
-| Pass rate | 96.6% | **91.4%** | 72.8% | 47.2% |
+| Pass rate | 96.6% | **91.4%** | 72.8% | 69.8%† |
 | Tool recall | 98.8% | **89.2%** | 84.9% | 77.5% |
 | Routing match | 99.0% | **90.1%** | 83.6% | 63.3% |
 | HITL match | 99.0% | **90.4%** | 80.8% | 88.9% |
-| Judge score | 75.2% | **79.7%** | 76.8% | 59.2% |
+| Judge score | 75.2% | **79.7%** | 76.8% | 75.2% |
 | Latency | 28.3 s | 84.8 s | 80.9 s | 76.8 s |
 
 The fine-tuned model closes **78% of the gap** between the base model and the commercial API baseline while running entirely on local infrastructure.

@@ -1,0 +1,72 @@
+% ── Related Work (inside Introduction) ───────────────────────────────
+\begin{frame}{Related Work: HPC Management \& Tool-Calling Agents}
+  \small
+  \renewcommand{\arraystretch}{1.15}
+  \begin{adjustbox}{max width=\textwidth}
+  \begin{tabular}{lcccccc}
+    \toprule
+    \textbf{System} & \textbf{NL} & \textbf{Typed Tools} & \textbf{HITL} & \textbf{Domain FT} & \textbf{Local} & \textbf{Benchmark} \\
+    \midrule
+    Open OnDemand~\cite{hudak2018openondemand}     & \texttimes & \texttimes & N/A        & N/A        & \checkmark & \texttimes \\
+    Chat AI~\cite{doosthosseini2024chatai}         & \texttimes & \texttimes & \texttimes & \texttimes & \checkmark & \texttimes \\
+    LangChain-Parsl~\cite{langchainparsl2025}      & \checkmark & $\sim$     & \texttimes & \texttimes & \checkmark & \texttimes \\
+    Fujitsu ACB~\cite{fujitsu2025acb}              & \texttimes & \texttimes & N/A        & \texttimes & \texttimes & \texttimes \\
+    Gorilla / ToolLLM~\cite{patil2023gorilla,qin2023toolllm} & \checkmark & \checkmark & \texttimes & \checkmark & \checkmark & General \\
+    AgentTuning~\cite{zeng2023agenttuning}         & \checkmark & \checkmark & \texttimes & \checkmark & \checkmark & General \\
+    $\tau$-bench~\cite{yao2024taubench}            & \checkmark & \checkmark & $\sim$     & \texttimes & \texttimes & Domain \\
+    \midrule
+    \textbf{Slurm Agent (ours)}                    & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular}
+  \end{adjustbox}
+  \vspace{0.4em}
+
+  \footnotesize
+  No existing system combines: NL interface, typed Slurm tool calls, HITL safety gate, domain-adapted fine-tuning, local deployment, and a domain-specific evaluation benchmark.
+\end{frame}
+
+\begin{frame}{Related Work: Multi-Agent Safety \& Evaluation}
+  \small
+  \renewcommand{\arraystretch}{1.15}
+  \begin{adjustbox}{max width=\textwidth}
+  \begin{tabular}{lp{6.5cm}l}
+    \toprule
+    \textbf{Work} & \textbf{Contribution} & \textbf{Gap} \\
+    \midrule
+    Greenblatt et al.~\cite{greenblatt2024aicontrol}
+      & AI control protocols safe under adversarial behaviour; trusted-editing + untrusted-monitoring
+      & General; not HPC \\[0.3em]
+    Jamshidi et al.~\cite{jamshidi2025mcpsecurity}
+      & Tool poisoning \& prompt injection risks in MCP
+      & Threat model only; no system \\[0.3em]
+    AgentBench~\cite{liu2023agentbench}
+      & 8 environments, binary pass/fail; 20--40\,pp open-vs-commercial gap
+      & No domain tools or HITL \\[0.3em]
+    $\tau$-bench~\cite{yao2024taubench}
+      & Policy compliance in retail/airline; GPT-4o $<$50\%
+      & No local model or FT \\[0.3em]
+    API-BLEND~\cite{basu2024apiblend}
+      & 10k cases for API slot filling \& detection
+      & No safety or routing \\
+    \bottomrule
+  \end{tabular}
+  \end{adjustbox}
+
+  \vspace{0.5em}
+  \footnotesize
+  None test Slurm-specific tool calling, multi-agent routing, or HITL compliance.\\
+  Our Observer/Operator instantiates Greenblatt's trusted-editing pattern; parameter validation + per-role filtering mitigates Jamshidi's MCP threats.
+\end{frame}
+
+% ── Gap Summary ──────────────────────────────────────────
+\begin{frame}{Research Gap}
+  \begin{itemize}\setlength{\itemsep}{8pt}
+    \item \textbf{HPC systems} lack NL interfaces, tool-calling, and fine-tuning --- users must know CLI syntax.
+    \item \textbf{General tool-calling agents} (Gorilla, ToolLLM, AgentTuning) have no safety enforcement for destructive ops and no domain-specific evaluation.
+    \item \textbf{Domain benchmarks} ($\tau$-bench) provide no domain-adapted local model and no confirmation gate.
+    \item \textbf{No existing work} combines all six: NL~+~typed Slurm tools~+~HITL~+~domain FT~+~local deploy~+~domain benchmark.
+  \end{itemize}
+  \vspace{0.5em}
+  \centering
+  $\Rightarrow$ \textbf{This thesis fills the gap.}
+\end{frame}

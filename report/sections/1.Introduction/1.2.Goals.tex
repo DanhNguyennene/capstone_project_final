@@ -9,6 +9,8 @@ The primary goal of this thesis is to develop and evaluate an intelligent agent 
     
     \item \textbf{Risk-Aware MCP Integration.} Implement Model Context Protocol (MCP) tools that expose Slurm operations through typed interfaces while preserving the risk distinction between monitoring, diagnosis, submission, job control, and administrative actions.
     
-    \item \textbf{Dataset, Fine-Tuning \& Evaluation.} Construct a 3,135-case benchmark dataset for Slurm operations; distill commercial-model traces into role-scoped training data; fine-tune an open-weight model (Qwen2.5-14B-Instruct) via QLoRA to enable local deployment that preserves data sovereignty and eliminates per-query API costs; and evaluate the fine-tuned model against the commercial baseline to quantify the performance--cost trade-off.
+    \item \textbf{Benchmark Dataset \& Evaluation System.} Construct a 3{,}135-case benchmark dataset covering eleven Slurm operational categories (read, diagnose, action, bulk, safety, submission, multi-step, account, edge, docs, domain) across five cluster-state scenarios. Design and implement a deterministic evaluation stack that measures tool recall, routing correctness, HITL compliance, and state-transition accuracy --- enabling architecture-level diagnosis of agent failures beyond simple response-quality scoring.
+
+    \item \textbf{Domain-Adapted Fine-Tuning.} Distill commercial-model traces into role-scoped training data; fine-tune an open-weight model (Qwen2.5-14B-Instruct) via QLoRA to enable local deployment that preserves data sovereignty and eliminates per-query API costs; and evaluate the fine-tuned model against the commercial baseline to quantify the performance--cost trade-off.
     
 \end{itemize}

@@ -1,0 +1,8 @@
+flowchart TD
+    A["GPT-5-mini agent run against\nmock MCP server\n(2,520 training scenarios)"] --> B{"Trace\nsuccessful?"}
+    B -->|"No (84 excluded:\ntimeout / malformed)"| X["❌ Discarded"]
+    B -->|"Yes (2,436 traces)"| C{"Contains\nObserver→Operator\nhandoff?"}
+    C -->|"Yes"| D["Split at handoff boundary\n→ 2 samples per trace"]
+    C -->|"No"| E["Single Observer sample"]
+    D --> F["Observer sample\n(ends at handoff directive)"]
+    D --> G["Operator sample\n(starts from handoff context)"]

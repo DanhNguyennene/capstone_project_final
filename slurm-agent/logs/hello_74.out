@@ -1,9 +1,0 @@
-Hello from Slurm!
-Job ID:    74
-Node:      danhHomeBase
-Partition: debug
-CPUs:      2
-Memory:    1024MB
-Time:      Sun Apr 12 12:56:12 PM +07 2026
-danhHomeBase
-Done!

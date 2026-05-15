@@ -1,7 +1,7 @@
 \section{Requirements Overview}
 \label{sec:requirements}
 
-This section defines the functional and non-functional requirements that guide system design. Requirements are derived from the project goals stated in Section~\ref{sec:app-introduction} and the operational needs of HPC administrators and researchers.
+This section formalises the functional and non-functional requirements that the architecture described in Section~\ref{sec:architecture} is designed to satisfy. Requirements are derived from the project goals in Section~\ref{sec:app-introduction} and the operational needs of HPC administrators and researchers.
 
 \subsection{Functional Requirements}
 
@@ -56,44 +56,3 @@ This section defines the functional and non-functional requirements that guide s
         \hline
     \end{tabular}
 \end{table}
-
-\subsection{Requirements Traceability}
-
-Table~\ref{tab:requirements-traceability} maps each requirement to the project goals defined in Section~\ref{sec:app-introduction}.
-
-\begin{table}[H]
-    \centering
-    \caption{Requirements Traceability to Project Goals}
-    \label{tab:requirements-traceability}
-    \small
-    \begin{tabular}{|l|c|c|c|c|}
-        \hline
-        \textbf{Requirement} & \textbf{G1} & \textbf{G2} & \textbf{G3} & \textbf{G4} \\
-        & \textit{NL Slurm} & \textit{Control} & \textit{MCP} & \textit{FT \&} \\
-        & \textit{Access} & \textit{Flow} & \textit{Tools} & \textit{Eval} \\
-        \hline
-        FR1: Intent Interpretation & \checkmark & & & \checkmark \\
-        FR2: Cluster State Retrieval & \checkmark & & \checkmark & \\
-        FR3: Confirmed State Changes & \checkmark & \checkmark & \checkmark & \\
-        FR4: Documentation Retrieval & \checkmark & & \checkmark & \\
-        FR5: Multi-Turn Conversation & \checkmark & \checkmark & & \\
-        FR6: Real-Time Feedback & & \checkmark & & \checkmark \\
-        FR7: Deterministic Evaluation & & & \checkmark & \checkmark \\
-        \hline
-        NFR1: Safety & & \checkmark & & \checkmark \\
-        NFR2: Accuracy & \checkmark & & & \checkmark \\
-        NFR3: Latency & \checkmark & & & \checkmark \\
-        NFR4: Extensibility & & & \checkmark & \\
-        NFR5: Context Efficiency & & \checkmark & & \checkmark \\
-        NFR6: Reproducibility & & & & \checkmark \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\subsection{Constraints}
-
-\textbf{Technology}: Python backend, MCP-based tool layer, local Ollama models for reproducibility with optional remote providers for development and comparison.
-
-\textbf{Environment}: Evaluation uses mock Slurm states exposed by the MCP server. Real deployment assumes standard Slurm command availability and site permissions.
-
-\textbf{Scope}: The system targets broad Slurm assistance (monitoring, diagnosis, submission, job control, accounting, documentation). High-risk operations are gated by explicit confirmation rather than unrestricted automation.

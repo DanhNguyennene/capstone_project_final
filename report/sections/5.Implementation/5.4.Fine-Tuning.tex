@@ -7,7 +7,7 @@ This section details the concrete training configuration that realizes the fine-
 
 The base model (Qwen2.5-14B-Instruct, 48 transformer layers) is loaded in 4-bit NormalFloat (NF4) quantization with double quantization enabled, reducing GPU memory from approximately 28\,GB to under 10\,GB. Computation uses bfloat16 precision for numerical stability.
 
-A LoRA adapter with rank $r{=}64$ and scaling factor $\alpha{=}128$ is attached to all 48 transformer layers, targeting all linear projections: query, key, value, and output attention projections plus the MLP gate, up, and down projections. This yields approximately 480M trainable parameters---about 3.2\% of the full model. Applying LoRA across all layers (rather than only the upper 12) was found necessary to fully override the base model's pretrained prior for CLI-style tool invocations.
+A LoRA adapter with rank $r{=}64$ and scaling factor $\alpha{=}128$ is attached to all 48 transformer layers, targeting all linear projections: query, key, value, and output attention projections plus the MLP gate, up, and down projections. This yields approximately 275M trainable parameters---about 1.9\% of the full model. Applying LoRA across all layers (rather than only the upper 12) was found necessary to fully override the base model's pretrained prior for CLI-style tool invocations.
 
 \subsection{Data Formatting}
 
@@ -31,10 +31,10 @@ Loss masking ensures the model is trained only to generate assistant responses a
         LoRA rank / alpha & 64 / 128 \\
         Target layers & All 48 layers \\
         Target modules & q/k/v/o\_proj, gate/up/down\_proj \\
-        Trainable parameters & $\sim$480M (3.2\%) \\
+        Trainable parameters & $\sim$275M (1.9\%) \\
         \hline
-        Training samples & 3{,}329 total (2{,}625 unique) \\
-        & (2{,}436 Observer + 893 Operator) \\
+        Training samples & 2{,}625 (deduplicated) \\
+        & (2{,}074 Observer + 551 Operator) \\
         Teacher model & GPT-5-mini (distilled traces) \\
         Epochs & 3 \\
         Effective batch size & 16 (micro-batch 1 $\times$ grad accum 16) \\
@@ -45,12 +45,12 @@ Loss masking ensures the model is trained only to generate assistant responses a
         Truncation & Left \\
         Gradient checkpointing & Enabled (non-reentrant) \\
         \hline
-        Hardware & 1$\times$ NVIDIA A40 (46\,GB) \\
+        Hardware & 1$\times$ NVIDIA A40 (48\,GB) \\
         \hline
     \end{tabular}
 \end{table}
 
-Training uses the AdamW optimizer with 8-bit quantized state to reduce optimizer memory. Gradient checkpointing trades recomputation for memory savings, allowing the full 8{,}192-token sequences to fit within the 46\,GB A40 GPU at batch size 1. The cosine learning rate schedule with warmup avoids early instability from the relatively high learning rate.
+Training uses the AdamW optimizer with 8-bit quantized state to reduce optimizer memory. Gradient checkpointing trades recomputation for memory savings, allowing the full 8{,}192-token sequences to fit within the 48\,GB A40 GPU at batch size 1. The cosine learning rate schedule with warmup avoids early instability from the relatively high learning rate.
 
 \subsection{Training Monitoring}
 
@@ -58,12 +58,25 @@ Training progress is tracked via Weights \& Biases. Key metrics include training
 
 \subsubsection{Data Quality Note}
 
-Post-hoc auditing identified that 704 samples (21.1\%) share identical message sequences, introduced by the data generation pipeline when distinct test IDs produced the same interaction pattern. The effective unique training set is 2{,}625 samples. This concentration affects Operator samples (54\% of duplicated groups) in the \texttt{bulk} and \texttt{action} categories, where the mock scenario space is more constrained. The final model achieves strong results across all categories, demonstrating that the training signal remains robust despite this distribution characteristic.
+Post-hoc auditing identified that 704 samples (21.1\%) share identical message sequences, where distinct test IDs produced the same interaction pattern. These duplicates concentrate in Operator samples in the \texttt{bulk} and \texttt{action} categories, where the mock scenario space is more constrained. The full dataset pipeline and sample counts are reported in Section~\ref{sec:fine-tuning}.
 
-% Training loss curve - insert after training completes
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/training_loss_curve.png}
-%     \caption{Fine-Tuning Training Loss Over Steps}
-%     \label{fig:training-loss-curve}
-% \end{figure}
+\subsection{Released Artifacts}
+
+The trained adapter (Qwen2.5-14B-Instruct + QLoRA, all 48 layers, $r{=}64$) is released publicly:
+
+\begin{center}
+    \url{https://huggingface.co/DanhVuiVe/slurm-agent-qwen14b-lora-final}
+\end{center}
+
+The complete source code — agent backend, MCP server, training scripts, dataset, and evaluation framework — is available at:
+
+\begin{center}
+    \url{https://github.com/DanhNguyennene/specialized_project_slurm_agent}
+\end{center}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{images/train_wandb.png}
+    \caption[WandB training dashboard]{Weights \& Biases training dashboard over 500 steps. Training loss drops sharply in the first 100 steps as the model learns tool-call formatting, then stabilises near 0.1. The learning rate follows a cosine schedule with 5\% warmup; the gradient norm spikes during warmup before settling below 0.1, confirming stable training without exploding gradients.}
+    \label{fig:training-loss-curve}
+\end{figure}

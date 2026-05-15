@@ -34,10 +34,13 @@ Several third-party tools have emerged to provide enhanced cluster monitoring an
         sview & No & Yes & Yes & No \\
         Open XDMoD & No & Limited & Yes & Yes \\
         Grafana & No & No & Yes & Yes \\
-        \textbf{Slurm Agent} & Yes & Yes & Yes & Yes \\
+        \textbf{Slurm Agent} & Yes & Yes & No & Yes \\
+        \hline
+        \multicolumn{5}{|p{\dimexpr\linewidth-2\tabcolsep-2\arrayrulewidth}|}{\footnotesize\textit{NL Interface}: accepts natural-language queries without requiring command syntax knowledge. \textit{Job Mgmt}: supports submission, cancellation, or hold/release (not just monitoring). \textit{Visualization}: renders graphical views of cluster state or job queues. \textit{Web-based}: accessible via browser without local installation.} \\
         \hline
     \end{tabular}
 \end{table}
+
 
 \subsection{Portal and Gateway Systems}
 
@@ -74,19 +77,9 @@ These systems motivate but do not solve the problem addressed by the Slurm Agent
         Fujitsu ACB & No & No & N/A & Partial \\
         \textbf{Slurm Agent} & Yes & Yes & Yes & Yes \\
         \hline
+        \multicolumn{5}{|p{\dimexpr\linewidth-2\tabcolsep-2\arrayrulewidth}|}{\footnotesize\textit{NL Mgmt}: natural language for both observation and job management. \textit{Tool Calls}: typed structured calls rather than free-form shell generation. \textit{HITL Safety}: explicit user confirmation required before destructive operations; N/A = system performs no cluster operations. \textit{Slurm-Native}: issues Slurm commands directly rather than via an abstraction layer.} \\
+        \hline
     \end{tabular}
 \end{table}
 
-\subsection{Limitations of Existing Approaches}
 
-Analysis of existing HPC management tools reveals common limitations that motivate the development of intelligent agent-based interfaces:
-
-\textbf{Knowledge requirements}: All existing tools assume users understand Slurm concepts, command syntax, or form field meanings. There is no mechanism for translating high-level goals into appropriate system operations.
-
-\textbf{Static interfaces}: Current tools provide fixed interfaces that cannot adapt to individual user needs or provide contextual guidance based on the current situation.
-
-\textbf{Limited reasoning}: Existing solutions cannot reason about cluster state to provide recommendations, diagnose issues, or suggest optimizations.
-
-\textbf{No natural language}: Users must communicate through structured interfaces (commands, forms, queries) rather than expressing needs in natural language.
-
-These limitations create opportunities for LLM-based agents that can understand user intent, reason about cluster operations, and provide intelligent assistance—the approach pursued in this research.

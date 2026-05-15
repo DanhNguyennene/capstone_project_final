@@ -1,60 +1,24 @@
 \section{MCP Server Implementation}
 \label{sec:mcp-implementation}
 
-The MCP server bridges the AI agents and Slurm infrastructure, translating tool calls into command executions. It is implemented in Python using the official MCP SDK with asyncio-based non-blocking I/O.
+The MCP server is a Python process that registers Slurm tools via the official MCP SDK and exposes them over an SSE transport. It operates in two modes selected at startup: real mode, which executes actual Slurm CLI commands, and mock mode, which serves the same tool surface against a mutable in-memory cluster state. The agent backend connects identically in both modes — tool names, argument schemas, and return formats are unchanged.
 
-\subsection{Design Principles}
+\subsection{Tool Implementation}
 
-\textbf{Stateless tools}: Each tool takes parameters, executes a command, and returns results without maintaining session state between invocations.
+All 64 tools follow the same pattern: accept typed parameters, build a command list, execute it, and return formatted text. In real mode, tool functions call \texttt{subprocess.run} with the command as a discrete argument list and a 30-second timeout. Parameters are never interpolated into shell strings, so command injection is structurally impossible regardless of parameter content. Slurm CLI flags for machine-readable output (\texttt{--parsable2}, \texttt{--format}, \texttt{--noheader}) are hardcoded so the agent receives pipe-delimited or tabular output rather than human-formatted text. Empty results return a header-only response rather than an empty string, so the agent can distinguish ``no jobs found'' from an error.
 
-\textbf{Injection prevention}: Parameters are never interpolated into shell strings; they are passed as discrete subprocess arguments, preventing command injection regardless of parameter content.
+In mock mode, tool functions read from and write to a shared \texttt{\_ClusterState} object that holds jobs, nodes, reservations, triggers, and partition overrides in memory. State-changing tools produce real visible side-effects: \texttt{scancel} removes entries from the job list, \texttt{sbatch} appends a new job with an auto-incremented ID, \texttt{scontrol\_hold}/\texttt{scontrol\_release} toggle job state between \texttt{PENDING} and \texttt{HOLD}, and \texttt{scontrol\_update} patches fields in place. This means the evaluation harness can verify that an action was actually executed by inspecting the state after the agent run, not just by checking which tool was called.
 
-\textbf{Consistent output}: Explicit format flags (\texttt{--format}, \texttt{--parsable2}) produce pipe-delimited or tabular output suitable for LLM consumption. Empty results return header-only responses.
+\subsection{Mock Scenarios}
 
-\subsection{Tool Surface}
+The mock server ships with five named starting states: \texttt{healthy} (jobs running normally), \texttt{failed} (jobs with OOM, timeout, and non-zero exit codes), \texttt{pending} (all nodes fully allocated, new jobs queued), \texttt{mixed} (a combination of running, failed, and pending jobs with one node drained), and \texttt{debug\_needed} (jobs with obscure error strings such as NCCL failures, Lustre striping errors, and InfiniBand faults that require web-search to diagnose). The scenario is selected at startup via \texttt{--mock <name>}; the evaluation harness passes the scenario as part of each test case definition and resets state between cases via a dedicated \texttt{reset\_mock\_state} tool that is hidden from agent contexts but accessible to the evaluator.
 
-Table~\ref{tab:mcp-tools} summarizes the 67 tools grouped by operational role.
+The five scenarios are the five ``scenarios'' in the benchmark dataset (Section~\ref{sec:testing-approach}). Each benchmark test case specifies both a category and a scenario, so evaluation covers the same natural-language request against different cluster states — a cancel-all-jobs request behaves differently in the \texttt{healthy} scenario (jobs exist and can be cancelled) versus the \texttt{pending} scenario (only pending jobs exist).
 
-\begin{table}[H]
-    \centering
-    \caption{MCP Server Tool Reference}
-    \label{tab:mcp-tools}
-    \small
-    \begin{tabular}{|p{3.5cm}|p{2cm}|p{7.5cm}|}
-        \hline
-        \textbf{Tool Family} & \textbf{Category} & \textbf{Description} \\
-        \hline
-        Queue/Job inspection & Query & Current queue, job details, accounting history \\
-        Node/Partition inspection & Query & Partition state, node reasons, topology \\
-        Accounting/Policy & Query & Accounts, QoS, fair-share, priority \\
-        Scheduler diagnostics & Query & Controller ping, backfill health, counters \\
-        Reports/Licenses & Query & Utilization reports, license pools \\
-        \hline
-        Submission & Action & Batch/interactive submission, file staging \\
-        Job control & Action & Cancel, hold, release, requeue, suspend \\
-        Node control & Action & Drain, resume, power state, GRES updates \\
-        Reservation control & Action & Create, update, delete reservations \\
-        \hline
-        Controller admin & Admin & Reconfigure, shutdown, debug, tokens \\
-        Accounting admin & Admin & Add/modify/delete accounts, archive \\
-        Triggers & Admin & List, create, clear event triggers \\
-        \hline
-        Documentation & Reference & Local Slurm docs lookup \\
-        Web search & Reference & DuckDuckGo search + page fetch \\
-        \hline
-    \end{tabular}
-\end{table}
+\subsection{Web Search Tools}
 
-\subsection{Dual Execution Modes}
+Two tools extend the agent's reach beyond local Slurm commands. \texttt{web\_search} queries DuckDuckGo's HTML endpoint and returns a ranked list of titles and URLs. \texttt{fetch\_web\_content} retrieves a single page, strips HTML tags and navigation boilerplate, and returns up to 4,000 characters of readable text. These are used when the agent encounters error codes or configuration questions not covered by the local documentation corpus — the \texttt{debug\_needed} scenario specifically targets this path.
 
-\textbf{Real mode}: Tool calls invoke actual Slurm CLI commands on the management node with subprocess timeout protection (30s default).
+\subsection{Transport and Deployment}
 
-\textbf{Mock mode}: Tools operate against mutable in-memory state simulating a Slurm cluster. Five scenarios (healthy, failed, pending, mixed, debug\_needed) provide reproducible starting states. The evaluator resets state before each test case and verifies source-to-target transitions.
-
-\subsection{Web Search}
-
-The \texttt{web\_search} tool uses DuckDuckGo's HTML search to retrieve external documentation. The \texttt{fetch\_web\_content} tool retrieves full page text by stripping HTML to readable content (max 4000 chars). These complement the local documentation corpus for topics not covered offline.
-
-\subsection{Transport}
-
-The server uses SSE (Server-Sent Events) transport for remote connections, enabling the agent backend to connect over HTTP. This supports deployment where the MCP server runs on a cluster head node while the agent runs on a separate application server.
+The server uses SSE transport so the agent backend can connect over a plain HTTP connection. This enables the standard deployment topology: the MCP server runs on the cluster head node (where Slurm commands are available), while the agent backend runs on a separate application server. The agent backend discovers the tool catalog at startup with a single \texttt{GET /sse} call; tool schemas are cached and reused for the lifetime of the agent instance, so repeated requests do not re-query the server.

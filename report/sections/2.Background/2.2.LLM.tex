@@ -32,7 +32,7 @@ This objective allows the model to learn linguistic patterns, factual associatio
 
 \subsection{Instruction Following and Alignment}
 
-Base language models are optimized for continuation, not necessarily for helpful task completion. Instruction tuning improves this behavior by training models on instruction-response examples. Reinforcement Learning from Human Feedback (RLHF) further adjusts model behavior according to human preferences for helpfulness, relevance, and safety \cite{ouyang2022training}. Other alignment approaches, such as Constitutional AI, use explicit principles to critique and revise model outputs \cite{bai2022constitutional}.
+Base language models are optimized for continuation, not necessarily for helpful task completion. Instruction tuning improves this behavior by training models on instruction-response examples. Reinforcement Learning from Human Feedback (RLHF) further adjusts model behavior according to human preferences for helpfulness, relevance, and safety \cite{ouyang2022training}.
 
 These techniques make LLMs better suited for conversational systems, but they do not remove the need for domain constraints. In a Slurm environment, an apparently correct response may still use the wrong partition, assume outdated job state, or omit an operational precondition. Therefore, alignment must be combined with tool grounding, parameter validation, and confirmation for actions that affect cluster state.
 

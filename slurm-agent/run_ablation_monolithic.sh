@@ -101,6 +101,7 @@ python evaluation/scenario_eval.py \
   --main-provider openai \
   --main-model slurm-agent \
   --test-ids-file evaluation/split_test_ids.json \
+  --repeat 3 \
   --workers 1
 
 echo ""
