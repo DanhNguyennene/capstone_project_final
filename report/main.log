@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  15 MAY 2026 20:16
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  16 MAY 2026 10:08
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1640,13 +1640,13 @@ Chapter 3.
 (sections/related_work.tex
 Overfull \hbox (8.84132pt too wide) in paragraph at lines 7--8
 \TU/TimesNewRoman(0)/m/n/12 no natural-language entry point. Monitoring stacks 
-(Open XDMoD [[][]33[][]], Prometheus/Grafana [[][]35[][],
+(Open XDMoD [[][]35[][]], Prometheus/Grafana [[][]37[][],
  []
 
 
 Overfull \hbox (4.51532pt too wide) in paragraph at lines 13--14
 \TU/TimesNewRoman(0)/m/n/12 The field of tool-calling LLMs has matured rapidly.
- Gorilla [[][]34[][]] fine-tuned LLaMA on APIBench
+ Gorilla [[][]36[][]] fine-tuned LLaMA on APIBench
  []
 
 [19
@@ -1807,16 +1807,17 @@ Overfull \hbox (3.5516pt too wide) in paragraph at lines 32--33
 categories where
  []
 
+[54]
 File: images/evaluation/three_way_per_category.png Graphic file (type bmp)
 <images/evaluation/three_way_per_category.png>
-[54] [55]
-Overfull \hbox (8.51059pt too wide) in paragraph at lines 80--81
+ [55] [56]
+Overfull \hbox (8.51059pt too wide) in paragraph at lines 132--133
 \TU/TimesNewRoman(0)/m/n/12 To isolate the architectural contribution of the du
 al-agent split from model capacity, base Qwen2.5-
  []
 
-[56]
-Overfull \hbox (5.5674pt too wide) in paragraph at lines 104--105
+[57]
+Overfull \hbox (5.5674pt too wide) in paragraph at lines 156--157
 []\TU/TimesNewRoman(0)/m/n/12 A recurring failure mode in the monolithic agent 
 is \TU/TimesNewRoman(0)/b/n/12 destructive action on read-only prompts\TU/Times
 NewRoman(0)/m/n/12 :
@@ -1824,7 +1825,7 @@ NewRoman(0)/m/n/12 :
 
 File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
 <images/evaluation/ablation_per_category.png>
-[57]) [58]
+[58]) [59]
 Chapter 7.
 (sections/7.Conclusion/7.1.Summary.tex
 Overfull \hbox (11.04263pt too wide) in paragraph at lines 9--10
@@ -1832,7 +1833,7 @@ Overfull \hbox (11.04263pt too wide) in paragraph at lines 9--10
 d safety edge cases — grounded through
  []
 
-[59
+[60
 
 ]
 Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
@@ -1840,13 +1841,13 @@ Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
 ed action workflows. The Observer/Operator
  []
 
-) (sections/7.Conclusion/7.2.Limitations.tex [60]
+) (sections/7.Conclusion/7.2.Limitations.tex [61]
 Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--17
 \TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
 as-judge scoring introduces model-dependent
  []
 
-) [61] (sections/references.tex) [62]
+) [62] (sections/references.tex) [63]
 Overfull \hbox (1.72935pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
 ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
@@ -1860,7 +1861,7 @@ text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] []
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[63
+[64
 
 ]
 Overfull \hbox (7.2249pt too wide) in paragraph at lines 140--140
@@ -1874,19 +1875,19 @@ Overfull \hbox (3.9435pt too wide) in paragraph at lines 140--140
 ion for knowledge-intensive NLP tasks”.
  []
 
-[64]
+[65]
 Overfull \hbox (0.3274pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[65]
+[66] [67]
 Overfull \hbox (56.17505pt too wide) in paragraph at lines 140--140
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[66] 
+[68] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1900,12 +1901,12 @@ Package logreq Info: Writing requests to 'main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 46475 strings out of 402987
- 1068570 string characters out of 5447904
- 2060688 words of memory out of 5000000
- 74388 multiletter control sequences out of 15000+600000
+ 46490 strings out of 402987
+ 1069152 string characters out of 5447904
+ 2061097 words of memory out of 5000000
+ 74403 multiletter control sequences out of 15000+600000
  642813 words of font info for 139 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 110i,13n,131p,2030b,5000s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,14n,131p,2030b,4995s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (78 pages).
+Output written on main.pdf (80 pages).

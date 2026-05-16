@@ -96,19 +96,24 @@
 \contentsline {section}{\numberline {6.2}Experimental Results}{53}{section.6.2}%
 \contentsline {subsection}{\numberline {6.2.1}Three-Way Model Comparison}{53}{subsection.6.2.1}%
 \contentsline {subsubsection}{Statistical Confidence}{54}{subsubsection*.53}%
-\contentsline {subsubsection}{State-Match Scoring Artefact}{55}{subsubsection*.55}%
-\contentsline {subsubsection}{Cost and Deployment}{55}{subsubsection*.56}%
-\contentsline {subsection}{\numberline {6.2.2}Architecture Ablation: Monolithic vs.\ Observer/Operator}{56}{subsection.6.2.2}%
-\contentsline {subsection}{\numberline {6.2.3}Summary}{58}{subsection.6.2.3}%
-\contentsline {chapter}{\numberline {7}Conclusion}{59}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Summary}{59}{section.7.1}%
-\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{59}{subsection.7.1.1}%
-\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{60}{subsection.7.1.2}%
-\contentsline {subsection}{\numberline {7.1.3}Key Findings}{60}{subsection.7.1.3}%
-\contentsline {subsection}{\numberline {7.1.4}Public Artifacts}{60}{subsection.7.1.4}%
-\contentsline {section}{\numberline {7.2}Limitations}{60}{section.7.2}%
-\contentsline {subsection}{\numberline {7.2.1}Evaluation Scope}{61}{subsection.7.2.1}%
-\contentsline {subsection}{\numberline {7.2.2}Behavioral and Deployment Constraints}{61}{subsection.7.2.2}%
-\contentsline {subsection}{\numberline {7.2.3}Model and Metric Constraints}{61}{subsection.7.2.3}%
-\contentsline {subsection}{\numberline {7.2.4}Annotation and Training Data}{61}{subsection.7.2.4}%
-\contentsline {chapter}{References}{62}{subsection.7.2.4}%
+\contentsline {paragraph}{Wilcoxon signed-rank test.}{54}{paragraph*.54}%
+\contentsline {paragraph}{Paired $t$-test.}{54}{paragraph*.55}%
+\contentsline {paragraph}{Effect size.}{55}{paragraph*.56}%
+\contentsline {paragraph}{McNemar's test.}{55}{paragraph*.57}%
+\contentsline {paragraph}{Robustness.}{55}{paragraph*.59}%
+\contentsline {subsubsection}{State-Match Scoring Artefact}{56}{subsubsection*.61}%
+\contentsline {subsubsection}{Cost and Deployment}{56}{subsubsection*.62}%
+\contentsline {subsection}{\numberline {6.2.2}Architecture Ablation: Monolithic vs.\ Observer/Operator}{57}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Summary}{59}{subsection.6.2.3}%
+\contentsline {chapter}{\numberline {7}Conclusion}{60}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Summary}{60}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Research Contributions}{60}{subsection.7.1.1}%
+\contentsline {subsection}{\numberline {7.1.2}Achievement Against Project Goals}{61}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Key Findings}{61}{subsection.7.1.3}%
+\contentsline {subsection}{\numberline {7.1.4}Public Artifacts}{61}{subsection.7.1.4}%
+\contentsline {section}{\numberline {7.2}Limitations}{62}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Evaluation Scope}{62}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Behavioral and Deployment Constraints}{62}{subsection.7.2.2}%
+\contentsline {subsection}{\numberline {7.2.3}Model and Metric Constraints}{62}{subsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.2.4}Annotation and Training Data}{63}{subsection.7.2.4}%
+\contentsline {chapter}{References}{63}{subsection.7.2.4}%

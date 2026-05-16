@@ -403,6 +403,33 @@
       \field{year}{2024}
       \true{nocite}
     \endentry
+    \entry{cohen1988statistical}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=eaad07ee1c6ef93a9308150f12c3c2eb}{%
+           family={Cohen},
+           familyi={C\bibinitperiod},
+           given={Jacob},
+           giveni={J\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Lawrence Erlbaum Associates}%
+      }
+      \strng{namehash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{fullhash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{fullhashraw}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{bibnamehash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{authorbibnamehash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{authornamehash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{authorfullhash}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \strng{authorfullhashraw}{eaad07ee1c6ef93a9308150f12c3c2eb}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{2}
+      \field{title}{Statistical Power Analysis for the Behavioral Sciences}
+      \field{year}{1988}
+    \endentry
     \entry{cormack2009reciprocal}{inproceedings}{}{}
       \name{author}{3}{}{%
         {{hash=8d007d505d39a8bbd47859edd9f4e9b6}{%
@@ -1075,6 +1102,37 @@
       \true{nocite}
       \field{pages}{550\bibrangedash 555}
       \range{pages}{6}
+    \endentry
+    \entry{mcnemar1947note}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=3c2670ad8954343917d3fd0384a23703}{%
+           family={McNemar},
+           familyi={M\bibinitperiod},
+           given={Quinn},
+           giveni={Q\bibinitperiod}}}%
+      }
+      \strng{namehash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{fullhash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{fullhashraw}{3c2670ad8954343917d3fd0384a23703}
+      \strng{bibnamehash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{authorbibnamehash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{authornamehash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{authorfullhash}{3c2670ad8954343917d3fd0384a23703}
+      \strng{authorfullhashraw}{3c2670ad8954343917d3fd0384a23703}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Psychometrika}
+      \field{number}{2}
+      \field{title}{Note on the Sampling Error of the Difference between Correlated Proportions or Percentages}
+      \field{volume}{12}
+      \field{year}{1947}
+      \field{pages}{153\bibrangedash 157}
+      \range{pages}{5}
+      \verb{doi}
+      \verb 10.1007/BF02295996
+      \endverb
     \endentry
     \entry{sse2024}{misc}{}{}
       \name{author}{1}{}{%
@@ -2119,6 +2177,37 @@
       \field{howpublished}{arXiv preprint arXiv:2601.20144}
       \field{title}{Trajectory2Task: Synthesising Verifiable Multi-Step Trajectories for Complex Tool-Use Tasks}
       \field{year}{2026}
+    \endentry
+    \entry{wilcoxon1945individual}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=405b308b1e8e33ef3275bf6cb9c9b281}{%
+           family={Wilcoxon},
+           familyi={W\bibinitperiod},
+           given={Frank},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{fullhash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{fullhashraw}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{bibnamehash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{authorbibnamehash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{authornamehash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{authorfullhash}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \strng{authorfullhashraw}{405b308b1e8e33ef3275bf6cb9c9b281}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Biometrics Bulletin}
+      \field{number}{6}
+      \field{title}{Individual Comparisons by Ranking Methods}
+      \field{volume}{1}
+      \field{year}{1945}
+      \field{pages}{80\bibrangedash 83}
+      \range{pages}{4}
+      \verb{doi}
+      \verb 10.2307/3001968
+      \endverb
     \endentry
     \entry{wooldridge2009introduction}{article}{}{}
       \name{author}{1}{}{%

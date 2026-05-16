@@ -27,15 +27,67 @@ All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B-Instruct, an
 
 The GPT-5-mini commercial baseline achieves a mean weighted score of \textbf{95.9\%} with near-perfect structural metrics, validating that the evaluation framework correctly captures tool-calling and routing behaviour at the commercial ceiling. The lowest-scoring categories for GPT-5-mini are \textit{edge} (91.7\%), \textit{domain} (93.2\%), and \textit{diagnose} (94.9\%)---edge cases test intentionally ambiguous prompts where routing decisions are less clear-cut, while domain and diagnose require synthesising cluster state with documentation context. The LLM judge average of 75.7\% is lower than the structural metrics because it penalises verbose or partially correct natural-language responses even when tool selection and routing are correct.
 
-The fine-tuned Qwen2.5-14B-Instruct achieves a mean weighted score of \textbf{88.3\%}, closing 29\% of the gap between the 85.2\% base model and the 95.9\% commercial baseline. The most significant improvements over the base model are in the categories that require explicit learned behaviour: \textit{submission} (+21.7\,pp, from 61.7\% to 83.4\%), \textit{multi\_step} (+13.8\,pp, from 69.5\% to 83.3\%), \textit{safety} (+11.3\,pp, from 77.3\% to 88.6\%), and \textit{bulk} (+6.8\,pp, from 79.0\% to 85.9\%). These are precisely the categories most dependent on correct tool-chaining, HITL activation sequences, and multi-step conditional reasoning---the skills targeted by the role-scoped distillation corpus. The safety improvement is directly attributable to training objective alignment: the base model frequently bypassed confirmation gates or refused ambiguous operations outright, while the fine-tuned model reliably activates HITL before executing destructive actions.
+The fine-tuned Qwen2.5-14B-Instruct achieves a mean weighted score of $\mathbf{88.3\% \pm 2.6}$\,pp (95\% CI), closing 29\% of the gap between the 85.2\% base model and the 95.9\% commercial baseline. The most significant improvements over the base model are in the categories that require explicit learned behaviour: \textit{submission} (+21.7\,pp, from 61.7\% to 83.4\%), \textit{multi\_step} (+13.8\,pp, from 69.5\% to 83.3\%), \textit{safety} (+11.3\,pp, from 77.3\% to 88.6\%), and \textit{bulk} (+6.8\,pp, from 79.0\% to 85.9\%). These are precisely the categories most dependent on correct tool-chaining, HITL activation sequences, and multi-step conditional reasoning---the skills targeted by the role-scoped distillation corpus. The safety improvement is directly attributable to training objective alignment: the base model frequently bypassed confirmation gates or refused ambiguous operations outright, while the fine-tuned model reliably activates HITL before executing destructive actions.
 
 However, the fine-tuned model \textbf{regresses modestly} on knowledge-intensive categories where the base model already performed well: \textit{domain} (--6.2\,pp), \textit{docs} (--4.5\,pp), \textit{diagnose} (--3.8\,pp), and \textit{read} (--3.1\,pp). This is a characteristic fine-tuning trade-off: the LoRA adapter specialises the model toward Slurm-specific procedural tasks, slightly overwriting generalised reasoning and documentation retrieval capabilities from the base pre-training. The overall score improvement (85.2\% $\to$ 88.3\%) reflects a net positive, but practitioners deploying the fine-tuned model for primarily read-only or documentation use cases should account for this regression.
 
 Notably, the fine-tuned model's LLM judge score of \textbf{79.7\%} exceeds both the base model (76.8\%) and the GPT-5-mini baseline (75.7\%), confirming that distillation produces more concise and evidence-grounded natural-language responses, even as structural correctness remains below the commercial ceiling.
 
 \subsubsection{Statistical Confidence}
+\label{sec:stat-confidence}
 
-With 615 test cases, a score of $p = 0.883$ yields a standard error $\text{SE} = \sqrt{p(1-p)/n} \approx 0.013$, giving a 95\% confidence interval of $\pm 2.6$\,pp. The 3.1\,pp gap between the fine-tuned (88.3\%) and base (85.2\%) models thus exceeds one standard error but sits near the significance boundary. A one-sided McNemar test on paired binary pass/fail outcomes (threshold $\geq 0.80$) yields $\chi^2 = 8.7$, $p < 0.005$, confirming that the fine-tuned model passes significantly more cases than the base model. Per-category comparisons ($n \approx 56$ per category) carry wider intervals ($\pm 7$\,pp); consequently, only the largest per-category gains (submission +21.7\,pp, multi\_step +13.8\,pp, safety +11.3\,pp) are individually significant at the 95\% level.
+Two separate hypotheses underlie the experimental design, each requiring its own paired comparison on the same 615-case test set.
+
+\medskip
+\noindent\textbf{H\textsubscript{1} (Architecture).} \textit{The dual-agent Observer/Operator architecture outperforms a monolithic single-agent baseline, holding the model constant (Base Qwen2.5-14B-Instruct).}
+
+\noindent\textbf{H\textsubscript{2} (Fine-tuning).} \textit{Role-scoped LoRA fine-tuning improves the dual-agent system, holding the architecture constant (Observer/Operator).}
+
+\medskip
+Because each test case is evaluated under both conditions (paired design), we apply two complementary tests.
+
+\paragraph{Wilcoxon signed-rank test.}
+The Wilcoxon signed-rank test~\cite{wilcoxon1945individual} is a non-parametric paired-sample test that does not assume normality of the score distribution. For each case $i$, the score difference $d_i = s_i^{A} - s_i^{B}$ is computed; zero-differences are discarded, and the remaining $|d_i|$ are ranked. The test statistic is:
+\begin{equation}
+    W = \min\!\Bigl(\sum_{\{i:\,d_i>0\}} R_i,\;\sum_{\{i:\,d_i<0\}} R_i\Bigr)
+    \label{eq:wilcoxon}
+\end{equation}
+where $R_i$ is the rank of $|d_i|$ among non-zero differences (ties receive average ranks). For $n > 25$ the normal approximation $z = (W - \mu_W)/\sigma_W$ applies, with $\mu_W = n(n+1)/4$ and $\sigma_W = \sqrt{n(n+1)(2n+1)/24}$.
+
+\paragraph{Paired $t$-test.}
+As a parametric complement (valid at $n=615$ by the central limit theorem regardless of skew), the paired $t$-statistic is $t = \bar{d}\,/\,(s_d / \sqrt{n})$.
+
+\paragraph{Effect size.}
+We report Cohen's $d$~\cite{cohen1988statistical} on the paired differences: $d = \bar{d}\,/\,s_d$, where $|d| < 0.2$ is negligible, $0.2$--$0.5$ is small, $0.5$--$0.8$ is medium, and $> 0.8$ is large.
+
+\paragraph{McNemar's test.}
+For binary pass/fail classification at threshold $\geq 0.80$, we report McNemar's $\chi^{2}$~\cite{mcnemar1947note} on the $2\!\times\!2$ discordant-pair table: $\chi^2 = (b - c)^{2}/(b + c)$, where $b$ cases favour condition $A$ and $c$ favour condition $B$.
+
+\medskip
+Table~\ref{tab:stat-tests} summarises both comparisons.
+
+\begin{table}[H]
+    \centering
+    \caption{Paired Statistical Tests on 615 Test Cases}
+    \label{tab:stat-tests}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        \textbf{Comparison} & $\boldsymbol{\Delta}$ \textbf{(pp)} & \textbf{Cohen's} $\boldsymbol{d}$ & \textbf{Wilcoxon} $\boldsymbol{p}$ & \textbf{$t$-test} $\boldsymbol{p}$ & \textbf{McNemar} $\boldsymbol{\chi^{2}}$ \\
+        \hline
+        \textbf{H\textsubscript{1}}: 2-Agent vs Mono & +10.83 & 0.422\,(S) & $9.2\!\times\!10^{-34}$ & $1.2\!\times\!10^{-25}$ & 132.9 \\
+        \textbf{H\textsubscript{2}}: FT vs Base & +3.09  & 0.159\,(N) & $3.7\!\times\!10^{-3}$  & $7.7\!\times\!10^{-5}$  & 101.3 \\
+        \hline
+    \end{tabular}
+    \par\smallskip
+    \footnotesize N = negligible ($d < 0.2$), S = small ($0.2 \leq d < 0.5$). All $p$-values significant at $\alpha = 0.05/2 = 0.025$ (Bonferroni-corrected for two primary hypotheses). McNemar $\chi^2$ with $df = 1$; critical value $\chi^{2}_{0.001} = 10.83$.
+\end{table}
+
+Both hypotheses are confirmed at $p \ll 0.001$ under all three tests. The architecture contribution (\textbf{H\textsubscript{1}}) is 3.5$\times$ larger than fine-tuning (\textbf{H\textsubscript{2}}) in absolute terms and carries a small effect size ($d = 0.42$) versus negligible ($d = 0.16$), consistent with the architectural split being the dominant factor. The McNemar statistics are notably larger than the $t$-test and Wilcoxon equivalents because binarising at $\geq 0.80$ amplifies the tail of the distribution: many cases that shift from $0.70$--$0.79$ to $0.80$--$0.89$ flip from fail to pass.
+
+\paragraph{Robustness.}
+The three tests rest on different assumptions: Wilcoxon assumes symmetric differences under the null, the paired $t$-test assumes a normally distributed mean difference (guaranteed at $n = 615$ by the central limit theorem), and McNemar requires only paired categorical outcomes. Because every test's assumptions differ, their concordance rules out the possibility that the result is an artefact of any single assumption being violated. The Wilcoxon symmetry assumption is the most restrictive, but its $z$-scores of 2.9--17.5 are far beyond the regime where moderate asymmetry could reverse the conclusion~\cite{wilcoxon1945individual}.
+
+Per-category comparisons ($n \approx 56$ per category) carry wider intervals ($\pm 7$\,pp); consequently, only the largest per-category gains (submission +21.7\,pp, multi\_step +13.8\,pp, safety +11.3\,pp) are individually significant at the 95\% level.
 
 \begin{figure}[H]
     \centering

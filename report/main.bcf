@@ -2453,7 +2453,11 @@
     <bcf:citekey order="72" intorder="1">yao2024taubench</bcf:citekey>
     <bcf:citekey order="73" intorder="1">dettmers2023qlora</bcf:citekey>
     <bcf:citekey order="74" intorder="1">cormack2009reciprocal</bcf:citekey>
-    <bcf:citekey order="75" intorder="1" nocite="1">*</bcf:citekey>
+    <bcf:citekey order="75" intorder="1">wilcoxon1945individual</bcf:citekey>
+    <bcf:citekey order="76" intorder="1">cohen1988statistical</bcf:citekey>
+    <bcf:citekey order="77" intorder="1">mcnemar1947note</bcf:citekey>
+    <bcf:citekey order="78" intorder="1">wilcoxon1945individual</bcf:citekey>
+    <bcf:citekey order="79" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">
