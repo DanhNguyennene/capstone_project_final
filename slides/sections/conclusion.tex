@@ -2,12 +2,9 @@
 
 \begin{frame}{Summary of Contributions}
   \begin{enumerate}
-    \item \textbf{Observer/Operator architecture} --- structural read/write separation with pending-action HITL confirmation; safety by construction
-    \item \textbf{Broad Slurm intent surface} --- 11 categories, 64 typed MCP tools covering the most common monitoring through confirmed destructive operations
-    \item \textbf{Grounded Slurm knowledge} --- hybrid BM25+semantic RAG over 2,276 documentation chunks with web-search fallback
-    \item \textbf{3,135-case benchmark dataset} --- manually constructed, scored on tool recall, routing, HITL, state, and judge quality
-    \item \textbf{Scenario-grid evaluation system} --- architecture-level metrics, parallel workers, persistent result artifacts, inspectable traces
-    \item \textbf{Domain-adapted fine-tuning} --- Qwen2.5-14B-Instruct via QLoRA distilled from commercial traces; \textbf{88.3\% mean weighted score}, closes 29\% of the gap to GPT-5-mini, locally deployable (no API dependency)
+    \item \textbf{Capacity-aware Observer/Operator architecture} --- structural read/write separation with tool partitioning (29 read-only vs.\ 40 action tools) and mandatory HITL confirmation; +6.1\,pp over monolithic baseline, +10.2\,pp on routing-neutral cases
+    \item \textbf{3,135-case Slurm benchmark} --- 11 categories $\times$ 5 scenarios with ground-truth labels for tool use, routing, HITL, and state transitions; publicly released as a reusable artifact
+    \item \textbf{Role-scoped fine-tuning methodology} --- QLoRA on Qwen2.5-14B-Instruct distilled from commercial traces with handoff-split, role-filtered training data; \textbf{88.3\% mean weighted score}, closes 29\% of the gap to GPT-5-mini, locally deployable (no API dependency)
   \end{enumerate}
 \end{frame}
 

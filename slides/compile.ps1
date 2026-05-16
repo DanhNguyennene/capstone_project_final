@@ -50,7 +50,8 @@ Invoke-CheckedStep -Label "[4/4] Running xelatex (final pass)..." -Command "xela
 if (Test-Path -LiteralPath "main.pdf") {
     $outName = "slides_HK252-DATN-417_2252102.pdf"
     Move-Item -Force -LiteralPath "main.pdf" -Destination $outName
-    Write-Host "=== Done! Output: $outName ==="
+    Copy-Item -Force -LiteralPath $outName -Destination (Join-Path (Join-Path $PSScriptRoot "..") $outName)
+    Write-Host "=== Done! Output: $outName (copied to project root) ==="
 }
 else {
     throw "Compilation failed. Check main.log for errors."

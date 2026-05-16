@@ -70,16 +70,19 @@ const normalizeProvider = value => {
   const normalized = String(value || '').trim().toLowerCase()
   if (normalized === 'openai') return 'openai'
   if (normalized === 'azure' || normalized === 'azure_openai' || normalized === 'azure-openai') return 'azure-openai'
+  if (normalized === 'finetuned' || normalized === 'ft' || normalized === 'lora') return 'finetuned'
   return 'ollama'
 }
 const clampParallelWorkers = value => Math.max(1, Math.min(8, Number(value) || 1))
-const modelOptionsForProvider = provider => (
-  normalizeProvider(provider) === 'openai'
-    ? OPENAI_MODEL_OPTIONS
-    : normalizeProvider(provider) === 'azure-openai'
-      ? AZURE_OPENAI_MODEL_OPTIONS
-      : OLLAMA_MODEL_OPTIONS
-)
+const FT_MODEL_OPTIONS = ['slurm-agent']
+
+const modelOptionsForProvider = provider => {
+  const p = normalizeProvider(provider)
+  if (p === 'openai') return OPENAI_MODEL_OPTIONS
+  if (p === 'azure-openai') return AZURE_OPENAI_MODEL_OPTIONS
+  if (p === 'finetuned') return FT_MODEL_OPTIONS
+  return OLLAMA_MODEL_OPTIONS
+}
 
 export default function App() {
   const [agentUrl,    setAgentUrl]    = useState(() => localStorage.getItem(URL_KEY) || defaultAgentUrl)
@@ -144,6 +147,7 @@ export default function App() {
   const modelFor = (provider, ollamaModel, openaiModel, azureModel) => {
     if (provider === 'openai') return openaiModel
     if (provider === 'azure-openai') return azureModel
+    if (provider === 'finetuned') return 'slurm-agent'
     return ollamaModel
   }
   const mainModel = modelFor(mainProvider, ollamaMainModel, openaiMainModel, azureOpenaiMainModel)

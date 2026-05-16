@@ -6,10 +6,9 @@
   State-changing operations affect all cluster users, and sensitive workload metadata cannot leave the site.
   \vspace{0.6em}
   \begin{enumerate}\setlength{\itemsep}{7pt}
-    \item \textbf{Natural-language interface} for broad Slurm operations — inspect jobs, nodes, partitions, accounting, and submit/control workloads in plain English.
-    \item \textbf{Observer/Operator control flow} — read-only observation separated from state-changing operation with an explicit HITL confirmation gate.
-    \item \textbf{Risk-aware MCP tool integration} — typed Slurm tool interfaces with parameter validation; state-changing actions routed through confirmation.
-    \item \textbf{Curated benchmark} — 3,135-case dataset across 11 Slurm categories with expected tools, routing, HITL policy, and state transitions.
-    \item \textbf{Domain-adapted fine-tuning} --- QLoRA on Qwen2.5-14B-Instruct distilled from evaluation traces; local deployment, no external API dependency.
+    \item \textbf{Natural-language interface} for broad Slurm operations --- inspect jobs, nodes, partitions, accounting, and submit/control workloads in plain English.
+    \item \textbf{Safety-enforcing dual-agent architecture} --- Observer (read-only) and Operator (write) with structural tool partitioning and mandatory HITL confirmation.
+    \item \textbf{Curated benchmark} --- 3,135-case dataset across 11 Slurm categories with ground-truth labels for tool use, routing, HITL, and state transitions.
+    \item \textbf{Domain-adapted fine-tuning} --- QLoRA on Qwen2.5-14B-Instruct distilled from commercial traces; local deployment, no external API dependency.
   \end{enumerate}
 \end{frame}

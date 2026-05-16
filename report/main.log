@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  16 MAY 2026 10:08
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  16 MAY 2026 13:30
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1553,21 +1553,10 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 
 ]) (sections/abstract.tex [3
 
-]
-Overfull \hbox (0.68369pt too wide) in paragraph at lines 8--9
-\TU/TimesNewRoman(0)/m/n/12 ation surface spanning monitoring, diagnosis, submi
-ssion, job control, accounting, QoS/resource
- []
+] [4
 
-
-Overfull \hbox (16.96193pt too wide) in paragraph at lines 8--9
-\TU/TimesNewRoman(0)/m/n/12 domain-adapted fine-tuning of an open-weight model 
-(Qwen2.5-14B-Instruct) using LoRA adapters
- []
-
-[4
-
-]) (sections/table-of-glossary.tex [5]) (sections/contents.tex [6
+])
+(sections/table-of-glossary.tex [5]) (sections/contents.tex [6
 
 ] (main.toc
 [7
@@ -1593,8 +1582,13 @@ Chapter 1.
 (sections/1.Introduction/1.1.Motivation.tex [1
 
 ])
-(sections/1.Introduction/1.2.Scope-Goals.tex [2])
-(sections/1.Introduction/1.3.Challenges.tex
+(sections/1.Introduction/1.2.Scope-Goals.tex
+Overfull \hbox (7.24417pt too wide) in paragraph at lines 10--11
+\TU/TimesNewRoman(0)/m/n/12 cialized agent workflow where read-only observation
+ is structurally separated from state-changing
+ []
+
+[2]) (sections/1.Introduction/1.3.Challenges.tex
 Overfull \hbox (7.48245pt too wide) in paragraph at lines 14--15
 []\TU/TimesNewRoman(0)/b/n/12 Solutions: \TU/TimesNewRoman(0)/m/n/12 The system
  separates read-only observation from state-changing operation through
@@ -1827,27 +1821,16 @@ File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
 <images/evaluation/ablation_per_category.png>
 [58]) [59]
 Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex
-Overfull \hbox (11.04263pt too wide) in paragraph at lines 9--10
-\TU/TimesNewRoman(0)/m/n/12 configuration inspection, documentation support, an
-d safety edge cases — grounded through
- []
+(sections/7.Conclusion/7.1.Summary.tex [60
 
-[60
-
-]
-Overfull \hbox (8.0566pt too wide) in paragraph at lines 24--25
-\TU/TimesNewRoman(0)/m/n/12 read, diagnose, account, documentation, and confirm
-ed action workflows. The Observer/Operator
- []
-
-) (sections/7.Conclusion/7.2.Limitations.tex [61]
+])
+(sections/7.Conclusion/7.2.Limitations.tex [61]
 Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--17
 \TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
 as-judge scoring introduces model-dependent
  []
 
-) [62] (sections/references.tex) [63]
+) (sections/references.tex) [62]
 Overfull \hbox (1.72935pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
 ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
@@ -1861,7 +1844,7 @@ text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] []
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[64
+[63
 
 ]
 Overfull \hbox (7.2249pt too wide) in paragraph at lines 140--140
@@ -1875,19 +1858,19 @@ Overfull \hbox (3.9435pt too wide) in paragraph at lines 140--140
 ion for knowledge-intensive NLP tasks”.
  []
 
-[65]
+[64]
 Overfull \hbox (0.3274pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[66] [67]
+[65] [66]
 Overfull \hbox (56.17505pt too wide) in paragraph at lines 140--140
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[68] 
+[67] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1907,6 +1890,6 @@ Here is how much of TeX's memory you used:
  74403 multiletter control sequences out of 15000+600000
  642813 words of font info for 139 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 110i,14n,131p,2030b,4995s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,14n,131p,1627b,4995s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (80 pages).
+Output written on main.pdf (79 pages).

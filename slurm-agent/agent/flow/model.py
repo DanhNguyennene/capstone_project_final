@@ -73,6 +73,11 @@ GITHUB_TOKEN: str = (
     or os.environ.get("GITHUB_PAT", "")
 )
 
+# ── Finetuned model config ────────────────────────────────────────────────────
+# LLM_PROVIDER=finetuned → use the locally-served LoRA model (serve_ft_model.py)
+FT_BASE_URL: str = os.environ.get("FT_BASE_URL", "http://localhost:8000/v1")
+FT_MODEL: str = os.environ.get("FT_MODEL", "slurm-agent")
+
 # ── Ollama config ─────────────────────────────────────────────────────────────
 # Override via env vars: SLURM_AGENT_MODEL, SLURM_AGENT_SPECIALIST_MODEL, SLURM_AGENT_BASE_URL
 DEFAULT_MODEL: str = os.environ.get("SLURM_AGENT_MODEL", "qwen3.5:9b")
@@ -81,6 +86,20 @@ OLLAMA_BASE_URL: str = os.environ.get("SLURM_AGENT_BASE_URL", "http://localhost:
 
 
 # ── Model factories ───────────────────────────────────────────────────────────
+
+def create_finetuned_model(
+    model_name: str | None = None,
+    base_url: str | None = None,
+) -> OpenAIChatCompletionsModel:
+    """Create a client pointing to the locally-served finetuned LoRA model."""
+    _model = model_name or FT_MODEL
+    _base = base_url or FT_BASE_URL
+    import httpx as _httpx
+    _http = _httpx.AsyncClient(trust_env=False, timeout=_httpx.Timeout(600.0))
+    client = AsyncOpenAI(base_url=_base, api_key="dummy", http_client=_http)
+    logger.info(f"[model] Finetuned backend: {_base} model={_model}")
+    return OpenAIChatCompletionsModel(model=_model, openai_client=client)
+
 
 def create_ollama_model(
     model_name: str,
@@ -198,7 +217,9 @@ def normalize_provider(provider: str | None = None) -> str:
     value = (provider or LLM_PROVIDER or "ollama").strip().lower()
     if value in {"azure", "azure_openai", "azure-openai"}:
         return "azure-openai"
-    if value not in {"ollama", "openai", "azure-openai", "copilot", "github-models"}:
+    if value in {"finetuned", "ft", "lora"}:
+        return "finetuned"
+    if value not in {"ollama", "openai", "azure-openai", "copilot", "github-models", "finetuned"}:
         return "ollama"
     return value
 
@@ -299,6 +320,8 @@ def resolve_model(
     LLM_PROVIDER=github-models            → GitHub Models API (works with PAT)
     """
     active_provider = normalize_provider(provider)
+    if active_provider == "finetuned":
+        return create_finetuned_model(model_name)
     if active_provider == "openai":
         return create_openai_model(model_name, token=openai_api_key, base_url=openai_base_url)
     if active_provider == "azure-openai":

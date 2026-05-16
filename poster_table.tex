@@ -109,11 +109,9 @@ Monolithic ablation$^\ddagger$ & 81.6\% & 77.5\% & 88.9\% & 78.9\% & 59.2\% & 77
 
 \sectionhead{Contributions}
 \begin{itemize}
-  \item Novel \textbf{Observer/Operator} dual-agent safety architecture for Slurm
-  \item HITL confirmation workflow for all destructive operations
-  \item Grounded RAG pipeline over 273 official Slurm docs
-  \item \textbf{3,135-case} curated benchmark with LLM-as-judge scoring
-  \item Cost-effective fine-tuning (\textasciitilde\$20) achieving 88.3\% mean weighted score
+  \item \textbf{Observer/Operator architecture} --- structural tool partitioning (29 read-only vs.\ 40 action) with mandatory HITL confirmation; +6.1\,pp over monolithic
+  \item \textbf{3,135-case Slurm benchmark} --- 11 categories, architecture-aware scoring (tool recall, routing, HITL, state); publicly released
+  \item \textbf{Role-scoped fine-tuning} --- QLoRA distillation with handoff-split traces; 88.3\% score, 29\% gap closure, locally deployable
 \end{itemize}
 
 \vspace{0.5em}

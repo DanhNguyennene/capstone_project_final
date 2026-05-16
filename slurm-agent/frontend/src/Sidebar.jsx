@@ -38,6 +38,7 @@ export default function Sidebar({
       <option value="ollama">Ollama</option>
       <option value="openai">OpenAI</option>
       <option value="azure-openai">Azure OpenAI</option>
+      <option value="finetuned">Finetuned (LoRA)</option>
     </select>
   )
 
