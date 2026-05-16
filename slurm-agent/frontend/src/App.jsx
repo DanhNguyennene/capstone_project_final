@@ -171,13 +171,13 @@ export default function App() {
   const { sendMessage, handleAction, abortRef } = useStream({
     agentUrl,
     mcpUrl,
-    llmProvider: mainProvider,
-    llmMainProvider: mainProvider,
-    llmSpecialistProvider: specialistProvider,
-    llmJudgeProvider: judgeProvider,
-    llmMainModel: mainModel,
-    llmSpecialistModel: specialistModel,
-    llmJudgeModel: judgeModel,
+    llmProvider: 'openai',
+    llmMainProvider: 'openai',
+    llmSpecialistProvider: 'openai',
+    llmJudgeProvider: 'openai',
+    llmMainModel: 'gpt-5-mini',
+    llmSpecialistModel: 'gpt-5-mini',
+    llmJudgeModel: 'gpt-5-mini',
     openaiParallel,
     activeIdRef, setSessions, setStreaming, setStatus, patchMsg, createSession,
     onTodoUpdate: setTodoList,
@@ -307,29 +307,6 @@ export default function App() {
         onNew={createSession}
         onSelect={selectSession}
         onDelete={deleteSession}
-        agentUrl={agentUrl}
-        onAgentUrlChange={setAgentUrl}
-        mcpUrl={mcpUrl}
-        onMcpUrlChange={setMcpUrl}
-        mainProvider={mainProvider}
-        specialistProvider={specialistProvider}
-        judgeProvider={judgeProvider}
-        onMainProviderChange={setMainProvider}
-        onSpecialistProviderChange={setSpecialistProvider}
-        onJudgeProviderChange={setJudgeProvider}
-        mainModel={mainModel}
-        specialistModel={specialistModel}
-        judgeModel={judgeModel}
-        mainModelOptions={mainModelOptions}
-        specialistModelOptions={specialistModelOptions}
-        judgeModelOptions={judgeModelOptions}
-        onMainModelChange={handleMainModelChange}
-        onSpecialistModelChange={handleSpecialistModelChange}
-        onJudgeModelChange={handleJudgeModelChange}
-        openaiParallel={openaiParallel}
-        onOpenaiParallelChange={setOpenaiParallel}
-        parallelWorkers={parallelWorkers}
-        onParallelWorkersChange={handleParallelWorkersChange}
         view={view}
         onViewChange={setView}
       />
