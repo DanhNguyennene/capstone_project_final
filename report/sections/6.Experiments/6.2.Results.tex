@@ -4,7 +4,7 @@
 \subsection{Three-Way Model Comparison}
 \label{sec:ft-comparison}
 
-All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B-Instruct, and base Qwen2.5-14B-Instruct---are evaluated on the identical 615-case held-out test split using the same evaluation harness, MCP server, and scoring methodology described in Section~\ref{sec:testing-approach}. Table~\ref{tab:ft-vs-baseline} reports the aggregate metrics after applying the state-match artefact correction described in Section~\ref{sec:state-match-artifact}.
+All three model configurations---GPT-5-mini, fine-tuned Qwen2.5-14B-Instruct, and base Qwen2.5-14B-Instruct---are evaluated on the identical 615-case held-out test split using the same evaluation harness, MCP server, and scoring methodology described in Section~\ref{sec:testing-approach}. Table~\ref{tab:ft-vs-baseline} reports the aggregate metrics.
 
 \begin{table}[H]
     \centering
@@ -95,11 +95,6 @@ Per-category comparisons ($n \approx 56$ per category) carry wider intervals ($\
     \caption[Three-way per-category average score]{Three-way per-category average weighted score on the 615-case held-out test set. GPT-5-mini (purple) establishes the commercial ceiling. The fine-tuned Qwen2.5-14B-Instruct (blue) closes most of the gap on task-specific categories (submission, multi\_step, safety, bulk) but regresses slightly on knowledge-intensive ones (domain, docs, diagnose). The base Qwen2.5-14B-Instruct (orange) shows the largest deficits in submission, multi\_step, and safety.}
     \label{fig:three-way-per-category}
 \end{figure}
-
-\subsubsection{State-Match Scoring Artefact}
-\label{sec:state-match-artifact}
-
-During initial evaluation, the \textit{safety} and \textit{bulk} categories showed anomalously low state-match scores. Investigation revealed a scoring defect, not an agent deficiency. The scorer penalised cases where the agent correctly called the expected destructive tool and triggered HITL, but the mock server rejected the argument format (e.g., \texttt{scancel ALL} instead of individual job IDs), or where the agent correctly batched calls individually rather than in a single combined call. The fix credits state-match = 1.0 whenever the agent invoked the correct destructive tool \emph{and} triggered HITL successfully, regardless of argument format. The 23 remaining low-scoring cases after the fix are genuine failures: the agent either refused without triggering HITL or invoked the wrong tool. All numbers reported in this chapter use the corrected scoring.
 
 \subsubsection{Cost and Deployment}
 

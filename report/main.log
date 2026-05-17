@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  16 MAY 2026 13:30
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.5.5)  17 MAY 2026 17:58
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1804,33 +1804,34 @@ categories where
 [54]
 File: images/evaluation/three_way_per_category.png Graphic file (type bmp)
 <images/evaluation/three_way_per_category.png>
- [55] [56]
-Overfull \hbox (8.51059pt too wide) in paragraph at lines 132--133
+ [55]
+Overfull \hbox (8.51059pt too wide) in paragraph at lines 127--128
 \TU/TimesNewRoman(0)/m/n/12 To isolate the architectural contribution of the du
 al-agent split from model capacity, base Qwen2.5-
  []
 
-[57]
-Overfull \hbox (5.5674pt too wide) in paragraph at lines 156--157
+[56]
+Overfull \hbox (5.5674pt too wide) in paragraph at lines 151--152
 []\TU/TimesNewRoman(0)/m/n/12 A recurring failure mode in the monolithic agent 
 is \TU/TimesNewRoman(0)/b/n/12 destructive action on read-only prompts\TU/Times
 NewRoman(0)/m/n/12 :
  []
 
+[57]
 File: images/evaluation/ablation_per_category.png Graphic file (type bmp)
 <images/evaluation/ablation_per_category.png>
-[58]) [59]
+) [58]
 Chapter 7.
-(sections/7.Conclusion/7.1.Summary.tex [60
+(sections/7.Conclusion/7.1.Summary.tex [59
 
 ])
-(sections/7.Conclusion/7.2.Limitations.tex [61]
+(sections/7.Conclusion/7.2.Limitations.tex [60]
 Overfull \hbox (6.37569pt too wide) in paragraph at lines 16--17
 \TU/TimesNewRoman(0)/m/n/12 different model stacks requires re-evaluation. LLM-
 as-judge scoring introduces model-dependent
  []
 
-) (sections/references.tex) [62]
+) (sections/references.tex) [61]
 Overfull \hbox (1.72935pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 AI Plain English. \TU/TimesNewRoman(0)/m/it/12 Bu
 ilt with LangGraph #13: ReAct Agent\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][
@@ -1844,7 +1845,7 @@ text Protocol Specification\TU/TimesNewRoman(0)/m/n/12 . [][]$[][][][][] [] []
 [] [][][][] [] [][][][][][][][][][][][][][][][][][][][] []
  []
 
-[63
+[62
 
 ]
 Overfull \hbox (7.2249pt too wide) in paragraph at lines 140--140
@@ -1858,19 +1859,19 @@ Overfull \hbox (3.9435pt too wide) in paragraph at lines 140--140
 ion for knowledge-intensive NLP tasks”.
  []
 
-[64]
+[63]
 Overfull \hbox (0.3274pt too wide) in paragraph at lines 140--140
 []\TU/TimesNewRoman(0)/m/n/12 Nils Reimers and Iryna Gurevych. “Sentence-BERT: 
 Sentence embeddings using Siamese
  []
 
-[65] [66]
+[64] [65]
 Overfull \hbox (56.17505pt too wide) in paragraph at lines 140--140
 \TU/TimesNewRoman(0)/m/n/12 Queries from Natural Language using Reinforcement L
 earning”. In: \TU/TimesNewRoman(0)/m/it/12 arXiv preprint arXiv:1709.00103
  []
 
-[67] 
+[66] 
 enddocument/afterlastpage (AED): lastpage setting LastPage.
 (main.aux)
  ***********
@@ -1884,12 +1885,12 @@ Package logreq Info: Writing requests to 'main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 46490 strings out of 402987
- 1069152 string characters out of 5447904
- 2061097 words of memory out of 5000000
- 74403 multiletter control sequences out of 15000+600000
+ 46489 strings out of 402987
+ 1069126 string characters out of 5447904
+ 2061033 words of memory out of 5000000
+ 74402 multiletter control sequences out of 15000+600000
  642813 words of font info for 139 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  110i,14n,131p,1627b,4995s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (79 pages).
+Output written on main.pdf (78 pages).
