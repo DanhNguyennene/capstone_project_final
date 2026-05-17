@@ -488,7 +488,13 @@ class SlurmAgentSystem:
             return cleaned
 
         def _observer_handoff_input_filter(handoff_data: HandoffInputData) -> HandoffInputData:
-            """Return Observer the original user request + full execution results for final summary."""
+            """Return Observer its prior context + Operator execution results for final summary.
+
+            Preserves the cleaned conversation history so the Observer retains its
+            earlier reasoning and discoveries.  Operator results and any Observer-side
+            tool outputs are collected into a clearly-labelled completion message
+            appended at the end.
+            """
             # ── 1. Recover the original user request from input_history ──────────
             original_request = ""
             for run_item in getattr(handoff_data, "input_history", ()) or ():
@@ -518,21 +524,34 @@ class SlurmAgentSystem:
                         if original_request:
                             break
 
-            # ── 2. Collect ALL tool outputs from the Operator turn ─────────────
-            snippets: List[str] = []
-            for bucket_name in ("new_items", "pre_handoff_items", "input_items"):
-                for run_item in getattr(handoff_data, bucket_name, ()) or ():
-                    snippets.extend(_extract_handoff_result_snippets(run_item))
+            # ── 2. Collect Observer's own tool outputs (pre-handoff) ─────────────
+            observer_snippets: List[str] = []
+            for run_item in getattr(handoff_data, "pre_handoff_items", ()) or ():
+                observer_snippets.extend(_extract_handoff_result_snippets(run_item))
 
+            # ── 3. Collect Operator's execution results ──────────────────────────
+            operator_snippets: List[str] = []
+            for bucket_name in ("new_items", "input_items"):
+                for run_item in getattr(handoff_data, bucket_name, ()) or ():
+                    operator_snippets.extend(_extract_handoff_result_snippets(run_item))
+
+            # ── 4. Dedup (observer first, then operator) ─────────────────────────
             seen: set = set()
-            unique_snippets: List[str] = []
-            for s in snippets:
+            unique_observer: List[str] = []
+            for s in observer_snippets:
                 norm = " ".join(s.split()).lower()
                 if norm not in seen:
                     seen.add(norm)
-                    unique_snippets.append(s[:2000])  # up to 2000 chars per snippet, no count cap
+                    unique_observer.append(s[:2000])
 
-            # ── 3. Build synthetic message: original request + all results ───────
+            unique_operator: List[str] = []
+            for s in operator_snippets:
+                norm = " ".join(s.split()).lower()
+                if norm not in seen:
+                    seen.add(norm)
+                    unique_operator.append(s[:2000])
+
+            # ── 5. Build completion message ──────────────────────────────────────
             lines = [
                 "The action requested by the user has been executed by the Operator.",
                 "Your task: write the final user-facing response summarising what happened.",
@@ -540,19 +559,29 @@ class SlurmAgentSystem:
             ]
             if original_request:
                 lines.append(f"\nOriginal user request: {original_request}")
-            if unique_snippets:
-                lines.append("\nExecution results (all tool outputs):")
-                lines.extend(f"- {s}" for s in unique_snippets)
-            else:
+            if unique_observer:
+                lines.append("\nYour prior observations (before handoff):")
+                lines.extend(f"- {s}" for s in unique_observer)
+            if unique_operator:
+                lines.append("\nOperator execution results:")
+                lines.extend(f"- {s}" for s in unique_operator)
+            elif not unique_observer:
                 lines.append("\nExecution results: no tool output was captured.")
 
+            # ── 6. Preserve cleaned history, append completion summary ───────────
             cleaned = remove_all_tools(handoff_data)
-            canonical_input = {
+            completion_msg = {
                 "role": "user",
                 "content": [{"type": "input_text", "text": "\n".join(lines)}],
             }
+            existing_history = cleaned.input_history
+            if isinstance(existing_history, tuple):
+                new_history = existing_history + (completion_msg,)
+            else:
+                new_history = (completion_msg,)
+
             return cleaned.clone(
-                input_history=(canonical_input,),
+                input_history=new_history,
                 pre_handoff_items=(),
                 input_items=(),
             )

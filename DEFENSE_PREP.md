@@ -867,9 +867,9 @@ Yes — the handoff is implemented as a **tool call** to a special `transfer_to_
 
 > **Q67. How is the return from Operator to Observer implemented?**
 
-After the Operator completes (executes tool or returns cancellation), a **handoff filter** (`_observer_handoff_input_filter`) constructs a synthetic user message containing: (1) the original user request, (2) all tool outputs from the Operator turn (deduplicated, truncated to 2,000 chars each). The Observer receives this as a fresh message with no prior conversation history — preventing it from re-triggering the handoff. It then generates the final user-facing response.
+After the Operator completes (executes tool or returns cancellation), a **handoff filter** (`_observer_handoff_input_filter`) appends a completion message to the Observer's existing (cleaned) conversation history. The message contains: (1) the original user request, (2) the Observer's own pre-handoff tool outputs (labelled as prior observations), and (3) all Operator tool outputs (deduplicated, truncated to 2,000 chars each). Tool call items are stripped from the history and an explicit "do not re-handoff" instruction is included. The Observer retains its earlier reasoning context while seeing what the Operator executed, then generates the final user-facing response.
 
-📝 **Key:** Handoff filter constructs synthetic user message with tool outputs (deduped, truncated 2K chars). Observer gets fresh message, no prior history → prevents re-handoff.
+📝 **Key:** Handoff filter preserves cleaned history + appends completion message (observer observations + operator results, deduped, 2K cap). Tool items stripped + no-rehandoff instruction → prevents loop.
 
 > **Q68. What is the OpenAI Agents SDK? Why use it over raw API calls?**
 
